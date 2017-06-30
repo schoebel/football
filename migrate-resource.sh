@@ -1,0 +1,884 @@
+#!/bin/bash
+#
+# This file is part of MARS project: http://schoebel.github.io/mars/
+#
+# Copyright (C) 2017 Thomas Schoebel-Theuer
+# Copyright (C) 2017 1&1 Internet AG
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+############################################################
+
+# TST summer 2017 lab prototype
+
+# Generic MARS background migration of a VM / container.
+# Plugins can be used for adaptation to system-specific sub-operations
+# (e.g. the 1&1-specific clustermanager cm3)
+
+# There are some basic conventions / assumptions:
+#   - MARS resource names are equal to LV names and to KVM / LXC names
+#   - All hosts are in DNS with their pure names (accessible via resolv.conf)
+#   - There is a 1:n relationship between each
+#        $storage_host : $hypervisor_host : $container_host
+
+set -o pipefail
+shopt -s nullglob
+export LC_ALL=C
+export start_stamp="$(date "+%F_%T" | sed 's/:/./g')"
+
+# parameters
+operation="${operation:-}"
+res="${res:-}"
+target_primary="${target_primary:-}"
+target_secondary="${target_secondary:-}"
+target_percent=${target_percent:-85}
+
+# short options
+dry_run=${dry_run:-0}
+verbose=${verbose:-0}
+confirm=${confirm:-1}
+force=${force:-0}
+logdir="${logdir:-.}"
+min_space="${min_space:-20000000}"
+
+# more complex options
+ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInteractiveAuthentication=no -o VerifyHostKeyDNS=no}"
+rsync_opt="${rsync_opt:- -aSH --info=STATS}"
+lvremove_opt="${lvremove_opt:--f}"
+
+######################################################################
+
+# help
+
+function helpme
+{
+    cat <<EOF
+Usage:
+  $0 --help
+     Show help
+  $0 --variable=<value>
+     Override any shell variable
+
+Actions for resource migration:
+
+  $0 migrate_prepare <resource> <target_primary> [<target_secondary>]
+     Allocate LVM space at the targets and start MARS replication.
+
+  $0 migrate_wait    <resource> <target_primary> [<target_secondary>]
+     Wait until MARS replication reports UpToDate.
+
+  $0 migrate_finish  <resource> <target_primary> [<target_secondary>]
+     Call hooks for handover to the targets.
+
+  $0 migrate         <resource> <target_primary> [<target_secondary>]
+     Run the sequence migrate_prepare ; migrate_wait ; migrate_finish.
+
+  $0 migrate_cleanup <resource>
+     Remove old / currently unused LV replicas from MARS and deallocate from LVM.
+
+Actions for inplace FS shrinking:
+
+  $0 shrink_prepare  <resource> <percent>
+     Allocate temporary LVM space (when possible) and create initial raw FS copy.
+
+  $0 shrink_finish   <resource> <percent>
+     Incrementally update the FS copy, swap old <=> new copy with small downtime.
+
+  $0 shrink_cleanup  <resource> <percent>
+     Remove old FS copy from LVM.
+
+  $0 shrink          <resource> <percent>
+     Run the sequence shrink_prepare ; shrink_finish ; shrink_cleanup.
+EOF
+}
+
+######################################################################
+
+# basic infrastructure
+
+function fail
+{
+    local txt="${1:-Unkown failure}"
+    echo "FAILURE: $txt" >> /dev/stderr
+    exit -1
+}
+
+function source_hooks
+{
+    local dir
+    local path
+    for dir in /etc/mars/hooks ./hooks .; do
+	for path in $dir/hooks-*.sh; do
+	    echo "Sourcing hooks in '$path'"
+	    source $path || fail "cannot source '$path'"
+	done
+    done
+}
+
+function scan_args
+{
+    local -a params
+    local index=0
+    local par
+    for par in "$@"; do
+	if [[ "$par" = "--help" ]]; then
+	    helpme
+	    exit 0
+	elif [[ "$par" =~ "=" ]]; then
+	    par="${par#--}"
+	    local lhs="$(echo "$par" | cut -d= -f1)"
+	    local rhs="$(echo "$par" | cut -d= -f2-)"
+	    lhs="${lhs//-/_}"
+	    echo "$lhs=$rhs"
+	    eval "$lhs=$rhs"
+	    continue
+	elif [[ ":$par" =~ ":--" ]]; then
+	    par="${par#--}"
+	    par="${par//-/_}"
+	    echo "$par=1"
+	    eval "$par=1"
+	    continue
+	fi
+	if (( !index )); then
+	    if [[ "$par" = "migrate_cleanup" ]]; then
+		local -a params=(operation res)	
+	    elif [[ "$par" =~ shrink ]]; then
+		local -a params=(operation res target_percent)
+	    elif [[ "$par" =~ migrate ]]; then
+		local -a params=(operation res target_primary target_secondary)
+	    else
+		helpme
+		fail "unknown operation '$1'"
+	    fi
+	fi
+	local lhs="${params[index]}"
+	if [[ "$lhs" != "" ]]; then
+	    echo "$lhs=$par"
+	    eval "$lhs=$par"
+	    (( index++ ))
+	else
+	    helpme
+	    fail "stray parameter '$par'"
+	fi
+    done
+}
+
+function do_confirm
+{
+    local skip="$1"
+    local response
+
+    (( !confirm )) && return 0
+
+    [[ "$skip" != "" ]] && skip="S to skip, "
+    echo -n "[CONFIRM: Press ${skip}Return to continue, ^C to abort] "
+    read -e response
+    ! [[ "$response" =~ ^[sS] ]]
+    return $?
+}
+
+function remote
+{
+    local host="$1"
+    local cmd="$2"
+    local nofail="${3:-0}"
+
+    (( verbose > 0 )) && echo "Executing on $host: '$cmd'" >> /dev/stderr
+    [[ "$host" = "" ]] && return
+    [[ "${cmd## }" = "" ]] && return
+    if ssh $ssh_opt "root@$host" "$cmd"; then
+	return 0
+    elif (( nofail )); then
+	return $?
+    else
+	fail "ssh to '$host' command '$cmd' failed with status $?"
+    fi
+}
+
+function remote_action
+{
+    local host="$1"
+    local cmd="$2"
+
+    if (( dry_run )); then
+	echo "DRY_RUN REMOTE $host ACTION '$cmd'"
+    elif (( confirm )); then
+	echo "REMOTE $host ACTION '$cmd'"
+	if do_confirm 1; then
+	    remote "$host" "$cmd"
+	else
+	    echo "SKIPPING $host ACTION '$cmd'"
+	fi
+    else
+	remote "$host" "$cmd"
+    fi
+}
+
+function log
+{
+    local dir="$1"
+    local file="$2"
+
+    if [[ "$dir" != "" ]] && [[ "$file" != "" ]]; then
+	tee "$dir/$file"
+    else
+	cat
+    fi
+}
+
+function exists_hook
+{
+    local name="$1"
+    [[ "$(type -t $name)" =~ function ]]
+}
+
+function call_hook
+{
+    local name="$1"
+    if exists_hook "$name"; then
+	(( verbose )) && echo "Running hook: $name $@" >> /dev/stderr
+	shift
+	$name "$@" || fail "cannot execute hook function '$name'"
+    else
+	echo "Skipping undefined hook '$name'"  >> /dev/stderr
+    fi
+}
+
+######################################################################
+
+# helper functions for determining hosts / relationships
+
+declare -A hypervisor_host
+
+function get_hyper
+{
+    local res="$1"
+
+    declare -g hypervisor_host
+    local hyper="${hypervisor_host[$res]}"
+    if [[ "$hyper" = "" ]]; then
+	hyper="$(call_hook hook_get_hyper "$res")" ||\
+	    fail "Cannot determine hypervisor hostname for resource '$res'"
+	hypervisor_host[$res]="$hyper"
+    fi
+    [[ "$hyper" = "" ]] && return -1
+    echo "$hyper"
+}
+
+declare -A storage_host
+
+function get_store
+{
+    local res="$1"
+
+    declare -g storage_host
+    local store="${storage_host[$res]}"
+    if [[ "$store" = "" ]]; then
+	store="$(call_hook hook_get_store "$res")" ||\
+	    fail "Cannot determine storage hostname for resource '$res'"
+	if [[ "$store" = "" ]]; then
+	    # assume local storage
+	    store="$(get_hyper "$res")"
+	fi
+	storage_host[$res]="$store"
+    fi
+    [[ "$store" = "" ]] && return -1
+    echo "$store"
+}
+
+declare -A vgs
+
+function get_vg
+{
+    local host="$1"
+
+    declare -g vgs
+    local vg="${vgs[$host]}"
+    if [[ "$vg" = "" ]]; then
+	vg="$(call_hook hook_get_vg "$host")" ||\
+	    fail "Cannot determine volume group for host '$host'"
+	vgs[$host]="$vg"
+    fi
+    [[ "$vg" = "" ]] && return -1
+    echo "$vg"
+}
+
+######################################################################
+
+# checks for LV migration
+
+function check_migration
+{
+    # works on global parameters
+    [[ "$target_primary" = "" ]] && fail "target hostname is not defined"
+    [[ "$target_primary" = "$primary" ]] && fail "target host '$target_primary' needs to be distinct from source host"
+    for host in $target_primary $target_secondary; do
+	ping -c 1 "$host" || fail "Host '$host' is not pingable"
+	remote "$host" "mountpoint /mars > /dev/null"
+	remote "$host" "[[ -d /mars/ips/ ]]"
+    done
+}
+
+function check_vg_space
+{
+    local host="$1"
+    local min_size="$2"
+
+    [[ "$host" = "" ]] && return
+
+    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+    local rest="$(remote "$host" "vgs --noheadings -o \"vg_free\" --units k $vg_name" | sed 's/\.[0-9]\+//' | sed 's/k//')" || fail "cannot determine VG rest space"
+    echo "$vg_name REST space on '$host' : $rest"
+    if (( rest <= min_size )); then
+	fail "NOT ENOUGH SPACE on $host (needed: $min_size)"
+    fi
+}
+
+######################################################################
+
+# actions for LV migration
+
+function create_migration_space
+{
+    local host="$1"
+    local lv_name="$2"
+    local size="$3"
+
+    # some checks
+    [[ "$host" = "" ]] && return
+    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+    remote "$host" "if [[ -e /dev/$vg_name/${lv_name} ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name} on $host - Do this by hand\"; exit -1; fi"
+
+    # do it
+    remote "$host" "lvcreate -L ${size}k -n $lv_name $vg_name"
+}
+
+function migration_prepare
+{
+    local source_primary="$1"
+    local lv_name="$2"
+    local target_primary="$3"
+    local target_secondary="$4"
+
+    # Ensure that "marsadm merge-cluster" has been executed.
+    # This is idempotent.
+    if exists_hook hook_merge_cluster; then
+	call_hook hook_merge_cluster "$source_primary" "$target_primary"
+	call_hook hook_merge_cluster "$source_primary" "$target_secondary"
+    else
+	remote "$target_primary" "marsadm merge-cluster $source_primary"
+	remote "$target_secondary" "marsadm merge-cluster $source_primary"
+    fi
+
+    remote "$target_primary" "marsadm wait-cluster"
+    # Idempotence: check whether the additional replica has been alread created
+    local already_present="$(remote "$target_primary" "marsadm view-is-attach infongt-eu4")"
+    if (( already_present )); then
+	echo "Nothing to do: resource '$lv_name' is already present at '$target_primary'"
+	return
+    fi
+
+    local size="$(( $(remote "$source_primary" "marsadm view-sync-size $lv_name") / 1024 ))" ||\
+	fail "cannot determine resource size"
+
+    check_vg_space "$target_primary" "$size"
+    check_vg_space "$target_secondary" "$size"
+
+    local primary_vg_name="$(get_vg "$target_primary")"
+    local secondary_vg_name="$(get_vg "$target_secondary")"
+    local primary_dev="/dev/$primary_vg_name/${lv_name}"
+    local secondary_dev="/dev/$secondary_vg_name/${lv_name}"
+
+    create_migration_space "$target_primary" "$lv_name" "$size"
+    create_migration_space "$target_secondary" "$lv_name" "$size"
+    if exists_hook hook_join_resource; then
+	call_hook hook_join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
+	call_hook hook_join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
+    else
+	remote "$target_primary" "marsadm join-resource $lv_name $primary_dev"
+	remote "$target_secondary" "marsadm join-resource $lv_name $secondary_dev"
+    fi
+    remote "$target_primary" "marsadm wait-cluster"
+}
+
+function wait_resource_uptodate
+{
+    local host_list="$1"
+    local res="$2"
+
+    local host
+    for host in $host_list; do
+	remote "$host" "marsadm wait-cluster"
+    done
+    (( verbose )) && echo "$(date) sync rests for '$host_list':"
+    local max_wait=60
+    while true; do
+	(( verbose )) && echo -n "$(date) sync rests:"
+	local syncing=0
+	local total_rest=0
+	for host in $host_list; do
+	    local rest="$(verbose=0 remote "$host" "marsadm view-sync-rest $res")"
+	    if (( verbose )); then
+		if (( rest < 1024 )); then
+		    echo -n " $(( rest ))B"
+		elif (( rest < 1024 * 1024 )); then
+		    echo -n " $(( rest / 1024 ))KiB"
+		elif (( rest < 1024 * 1024 * 1024 )); then
+		    echo -n " $(( rest / 1024 / 1024 ))MiB"
+		else
+		    echo -n " $(( rest / 1024 / 1024 / 1024 ))GiB"
+		fi
+	    fi
+	    if (( rest > 0 )); then
+		(( syncing++ ))
+	    else
+		local status="$(verbose=0 remote "$host" "marsadm view-diskstate $res")"
+		(( verbose )) && echo -n "/$status"
+		if ! [[ "$status" =~ UpToDate ]]; then
+		    (( syncing++ ))
+		fi
+	    fi
+	    (( total_rest += rest ))
+	done
+	(( verbose )) && echo ""
+	(( !syncing )) && break
+	if (( total_rest > 0 )); then
+	    sleep 60
+	else
+	    sleep 3
+	    (( max_wait-- < 0 )) && break
+	fi
+    done
+    (( verbose )) && echo "$(date) sync appears to have finished at '$host_list'"
+}
+
+function migrate_resource
+{
+    local source_primary="$1"
+    local target_primary="$2"
+    local target_secondary="$3"
+    local res="$4"
+
+    wait_resource_uptodate "$target_primary" "$res"
+    # critical path
+    call_hook hook_resource_stop "$source_primary" "$res"
+    call_hook hook_resource_migrate "$source_primary" "$target_primary" "$res"
+    call_hook hook_resource_start "$target_primary" "$res"
+    # non-critical path
+    call_hook hook_secondary_migrate "$target_secondary"
+}
+
+function migrate_cleanup
+{
+    local host_list="$1"
+    local res="$2"
+
+    local host
+    for host in $host_list; do
+	local vg_name="$(get_vg "$host")"
+	if [[ "$vg_name" != "" ]]; then
+	    remote "$host" "marsadm down $res || echo IGNORE"
+	    remote "$host" "marsadm leave-resource $res || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-tmp || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE"
+	fi
+    done
+}
+
+######################################################################
+
+# checks for FS shrinking
+
+function determine_shrinking
+{
+    # works on global variables
+    lv_path="$(remote "$primary" "lvs --noheadings --separator ':' -o \"vg_name,lv_name\"" | grep ":$res$" | sed 's/ //g' | awk -F':' '{ printf("/dev/%s/%s", $1, $2); }')" || fail "cannot determine lv_path"
+
+    vg_name="$(echo "$lv_path" | cut -d/ -f3)" || fail "cannot determine vg_name"
+
+    echo "Determined the following VG name: \"$vg_name\""
+    echo "Determined the following LV path: \"$lv_path\""
+
+    df="$(remote "$hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
+    used_space="$(echo "$df" | awk '{print $3;}')"
+    total_space="$(echo "$df" | awk '{print $2;}')"
+    target_space="${target_space:-$(( used_space * 100 / target_percent + 1 ))}" || fail "cannot compute target_space"
+    (( target_space < min_space )) && target_space=$min_space
+
+    echo "Determined USED  space: $used_space"
+    echo "Determined TOTAL space: $total_space"
+    echo "Computed TARGET  space: $target_space"
+
+    if (( target_space >= total_space )); then
+	echo "No need for shrinking the LV space of $res"
+	(( !force )) && exit 0
+    fi
+    for host in $primary $secondary_list; do
+	check_vg_space "$host" "$target_space"
+    done
+}
+
+######################################################################
+
+# actions for FS shrinking
+
+mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
+
+function create_shrink_space
+{
+    local host="$1"
+    local lv_name="$2"
+    local size="$3"
+
+    # some checks
+    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-copy ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-copy on $host - Do this by hand\"; exit -1; fi"
+    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
+
+    # do it
+    remote "$host" "lvcreate -L ${size}k -n ${lv_name}-tmp $vg_name"
+    remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}-tmp"
+}
+
+function create_shrink_space_all
+{
+    local host_list="$1"
+    local lv_name="$2"
+    local size="$3"
+
+    local host
+    for host in $host_list; do
+	create_shrink_space "$host" "$lv_name" "$size" "$count"
+    done
+}
+
+function copy_data
+{
+    local host="$1"
+    local hyper="$2"
+    local store="$3"
+    local lv_name="$4"
+    local nice="${5:-nice -19 ionice -c3}"
+    local add_opt="${6:-}"
+
+    local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+    local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
+    local dev_tmp="/dev/$vg_name/${lv_name}-tmp"
+    if [[ "$store" != "$hyper" ]]; then
+	# create remote devices instead
+	local old_dev="$dev_tmp"
+	dev_tmp="$(call_hook hook_connect "$store" "$hyper" "$lv_name-tmp" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	echo "using tmp dev '$dev_tmp'"
+	[[ "$dev_tmp" = "" ]] && fail "cannot setup remote device between hosts '$store' => '$hyper'"
+    fi
+
+    remote "$hyper" "mkdir -p ${mnt}-tmp"
+    remote "$hyper" "mount $dev_tmp ${mnt}-tmp"
+    remote "$hyper" "for i in {1..3}; do $nice rsync $rsync_opt $add_opt ${mnt}/ ${mnt}-tmp/ && exit 0; echo RESTARTING \$(date); done; exit -1"
+    remote "$hyper" "umount ${mnt}-tmp/"
+
+    if [[ "$store" != "$hyper" ]]; then
+	sleep 1
+	call_hook hook_disconnect "$store" "$hyper" "$lv_name-tmp"
+    fi
+}
+
+function hot_phase
+{
+    local hyper="$1"
+    local primary="$2"
+    local secondary_list="$3"
+    local lv_name="$4"
+
+    local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+    local vg_name="$(get_vg "$primary")" || fail "cannot determine VG for host '$host'"
+    local dev="/dev/$vg_name/${lv_name}"
+    local dev_tmp="$dev-tmp"
+    local mars_dev="/dev/mars/${lv_name}"
+
+    # some checks
+    remote "$primary" "if [[ -e ${dev}-copy ]]; then echo \"REFUSING to overwrite ${dev}-copy on $primary - First remove it - Do this by hand\"; exit -1; fi"
+    remote "$primary" "if ! [[ -e $dev_tmp ]]; then echo \"Cannot start hot phase: $dev_tmp is missing. Run 'prepare' first!\"; exit -1; fi"
+
+    # last online incremental rsync
+    copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
+
+    # go offline
+    call_hook hook_resource_stop "$primary" "$lv_name"
+
+    remote "$primary" "marsadm primary $lv_name"
+    if [[ "$primary" != "$hyper" ]]; then
+	# create remote devices instead
+	mars_dev="$(call_hook hook_connect "$primary" "$hyper" "$lv_name" "1" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	echo "using tmp mars dev '$mars_dev'"
+	[[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
+    fi
+    remote "$hyper" "mount $mars_dev $mnt/"
+
+    copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
+
+    remote "$hyper" "umount $mnt/"
+    remote "$hyper" "rmdir ${mnt}-tmp || echo IGNORE"
+    if [[ "$primary" != "$hyper" ]]; then
+	# remove remote devices
+	sleep 1
+	call_hook hook_disconnect "$primary" "$hyper" "$lv_name" "1"
+    fi
+    remote "$primary" "marsadm wait-umount $lv_name"
+    remote "$primary" "marsadm secondary $lv_name"
+    local host
+    for host in $primary $secondary_list; do
+	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+	remote "$host" "marsadm down $lv_name || echo IGNORE"
+	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE"
+	remote "$host" "lvrename $vg_name ${lv_name} ${lv_name}-copy"
+	remote "$host" "lvrename $vg_name ${lv_name}-tmp ${lv_name}"
+    done
+    remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE"
+    remote "$primary" "marsadm create-resource --force $lv_name $dev"
+    remote "$primary" "marsadm primary $lv_name"
+
+    call_hook hook_resource_start "$primary" "$lv_name"
+
+    for host in $secondary_list; do
+	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+	dev="/dev/$vg_name/${lv_name}"
+	if exists_hook hook_join_resource; then
+	    call_hook hook_join_resource "$primary" "$host" "$lv_name" "$dev"
+	else
+	    remote "$host" "marsadm join-resource $lv_name $dev"
+	fi
+    done
+}
+
+function cleanup_old_remains
+{
+    local host_list="$1"
+    local lv_name="$2"
+
+    local host
+    for host in $host_list; do
+	local vg_name="$(get_vg "$host")"
+	if [[ "$vg_name" != "" ]]; then
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-copy || echo IGNORE"
+	else
+	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
+	fi
+    done
+}
+
+######################################################################
+
+# internal actions (using global parameters)
+
+### for migration
+
+function migrate_prepare
+{
+    call_hook hook_prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
+
+    migration_prepare "$primary" "$res" "$target_primary" "$target_secondary"
+
+    #call_hook hook_finish_hosts "$primary $secondary_list $target_primary $target_secondary"
+}
+
+function migrate_wait
+{
+    wait_resource_uptodate "$target_primary $target_secondary" "$res"
+}
+
+function migrate_finish
+{
+    migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
+}
+
+function migrate_clean
+{
+    migrate_cleanup "$to_clean_old" "$res"
+    cleanup_old_remains "$to_clean_new" "$res"
+}
+
+### for shrinking
+
+function shrink_prepare
+{
+    create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
+    copy_data "$res" "$hyper" "$primary" "$res"
+}
+
+function shrink_finish
+{
+    hot_phase "$hyper" "$primary" "$secondary_list" "$res"
+}
+
+function shrink_cleanup
+{
+    cleanup_old_remains "$primary $secondary_list" "$res"
+}
+
+######################################################################
+
+# MAIN: get and check parameters, determine hosts and resources, run actions
+
+ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
+
+{
+echo "$0 $@"
+
+scan_args "$@"
+
+source_hooks
+
+# optional: allow syntax "resource:hypervisor:storage"
+if [[ "$res" =~ : ]]; then
+    rest="${res#*:}"
+    res="${res%%:*}"
+    if [[ "$rest" =~ : ]]; then
+	storage_host[$res]="${rest#*:}"
+	rest="${rest%:*}"
+    fi
+    hypervisor_host[$res]="${rest%:*}"
+fi
+
+if [[ "$res" = "" ]]; then
+    helpme
+    fail "No resource name parameter given"
+fi
+
+hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be determined"
+
+echo "Determined the following CURRENT hypervisor: \"$hyper\""
+
+primary="$(get_store "$res")" || fail "No current primary hostname can be determined"
+
+echo "Determined the following CURRENT primary: \"$primary\""
+
+for host in $hyper $primary; do
+    ping -c 1 "$host" || fail "Host '$host' is not pingable"
+done
+
+remote "$primary" "mountpoint /mars"
+remote "$primary" "[[ -d /mars/ips/ ]]"
+remote "$primary" "marsadm view $res"
+
+if (( $(remote "$primary" "marsadm view-is-primary $res") <= 0 )); then
+    fail "Resource '$res' on host '$primary' is not in PRIMARY role"
+fi
+
+mnt="$(call_hook hook_get_mountpoint "$res")"
+if [[ "$mnt" != "" ]]; then
+    remote "$hyper" "mountpoint $mnt"
+fi
+
+secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list"
+
+echo "Determined the following secondaries: '$secondary_list'"
+
+for host in $secondary_list; do
+    ping -c 1 "$host" || fail "Host '$host' is not pingable"
+    remote "$host" "mountpoint /mars > /dev/null"
+    remote "$host" "[[ -d /mars/ips/ ]]"
+#    if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ finish ]]; then
+#	local check
+#	for check in $target_primary $target_secondary; do
+#	    if [[ "$check" = "$host" ]]; then
+#		fail "target '$check' is also a secondary - this cannot work"
+#	    fi
+#	done
+#    fi
+done
+
+# check connections (only for migration)
+if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup ]]; then
+    check_migration
+fi
+
+if [[ "$operation" = migrate_cleanup ]]; then
+    to_clean_old="$(hook_determine_old_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
+    to_clean_new="$(hook_determine_new_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
+    if [[ "$to_clean_old$to_clean_new" = "" ]]; then
+	echo "NOTHING TO DO"
+	exit 0
+    fi
+    echo "-------------"
+    echo "Temporary $res partitions will be removed from:"
+    echo "$to_clean_new"
+    echo "Stray $res partitions will be removed from:"
+    echo "$to_clean_old"
+fi
+
+# determine sizes and available space (only for shrinking)
+if [[ "$operation" =~ shrink ]] && ! [[ "$operation" =~ cleanup ]]; then
+    determine_shrinking
+fi
+
+# confirmation
+
+if [[ "$target_primary" != "" ]]; then
+    echo "Using the following TARGET primary:   \"$target_primary\""
+    echo "Using the following TARGET secondary: \"$target_secondary\""
+fi
+
+do_confirm
+
+(( verbose < 1 )) && verbose=1
+
+# main: start the internal actions
+
+case "${operation//-/_}" in
+migrate_prepare)
+  migrate_prepare
+  ;;
+migrate_wait)
+  migrate_wait
+  ;;
+migrate_finish)
+  migrate_finish
+  ;;
+migrate)
+  migrate_prepare
+  migrate_wait
+  migrate_finish
+  ;;
+migrate_cleanup)
+  migrate_clean
+  ;;
+
+shrink_prepare)
+  shrink_prepare
+  ;;
+shrink_finish)
+  shrink_finish
+  ;;
+shrink_cleanup)
+  shrink_cleanup
+  ;;
+shrink)
+  shrink_prepare
+  shrink_finish
+  shrink_cleanup
+  ;;
+
+*)
+  helpme
+  echo "Unknown operation '$operation'"
+  exit -1
+  ;;
+esac
+
+echo "DONE $(date)"
+} 2>&1 | log "$logdir" "migration.$start_stamp.$LOGNAME.log"
