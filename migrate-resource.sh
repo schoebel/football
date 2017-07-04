@@ -232,7 +232,7 @@ function log
     local file="$2"
 
     if [[ "$dir" != "" ]] && [[ "$file" != "" ]]; then
-	tee "$dir/$file"
+	tee /dev/stderr | sed -u 's/\(curl .*\)-u *[^ ]*/\1/' > "$dir/$file" 2>&1
     else
 	cat
     fi
