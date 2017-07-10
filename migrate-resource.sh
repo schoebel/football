@@ -537,6 +537,33 @@ function determine_shrinking
 
 mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
+do_quota="${do_quota:-1}"
+xfs_dump_dir="${xfs_dump_dir:-xfs-quota-$start_stamp}"
+xfs_quota_enable="${xfs_quota_enable:-xfs_quota -x -c enable}"
+xfs_dump="${xfs_dump:-xfs_quota -x -c dump}"
+xfs_restore="${xfs_restore:-xfs_quota -x -c restore}"
+
+function transfer_quota
+{
+    local hyper="$1"
+    local lv_name="$2"
+    local mnt1="$3" # needs to be already mounted
+    local mnt2="$4" # needs to be already mounted
+
+    (( !do_quota )) && return
+
+    mkdir -p "$xfs_dump_dir"
+    local dumpfile="$xfs_dump_dir/dump.$hyper.$lv_name"
+
+    # checks
+    remote "$hyper" "mountpoint $mnt1 && mountpoint $mnt2"
+    # enable quota
+    remote "$hyper" "$xfs_quota_enable $m2"
+
+    # transfer quota
+    remote "$hyper" "$xfs_dump $mnt1" > $dumpfile
+    remote "$hyper" "$xfs_restore $mnt2" < $dumpfile
+}
 
 function create_shrink_space
 {
@@ -589,6 +616,7 @@ function copy_data
     remote "$hyper" "mkdir -p ${mnt}-tmp"
     remote "$hyper" "mount $mount_opts $dev_tmp ${mnt}-tmp"
     remote "$hyper" "for i in {1..3}; do $nice rsync $rsync_opt $add_opt ${mnt}/ ${mnt}-tmp/ && exit 0; echo RESTARTING \$(date); done; exit -1"
+    transfer_quota "$hyper" "$lv_name" "$mnt" "${mnt}-tmp"
     remote "$hyper" "umount ${mnt}-tmp/"
 
     if [[ "$store" != "$hyper" ]]; then
