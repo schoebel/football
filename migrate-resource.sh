@@ -535,6 +535,8 @@ function determine_shrinking
 
 # actions for FS shrinking
 
+optimize_dentry_cache="${optimize_dentry_cache:-1}"
+
 mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
 do_quota="${do_quota:-1}"
@@ -646,20 +648,30 @@ function hot_phase
     copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
 
     # go offline
-    call_hook hook_resource_stop "$primary" "$lv_name"
+    if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
+	# retain mountpoints
+	call_hook hook_resource_stop_vm "$hyper" "$lv_name"
+    else
+	# stop completely
+	call_hook hook_resource_stop "$primary" "$lv_name"
 
-    remote "$primary" "marsadm primary $lv_name"
-    if [[ "$primary" != "$hyper" ]]; then
+	remote "$primary" "marsadm primary $lv_name"
+	if [[ "$primary" != "$hyper" ]]; then
 	# create remote devices instead
-	mars_dev="$(call_hook hook_connect "$primary" "$hyper" "$lv_name" "1" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
-	echo "using tmp mars dev '$mars_dev'"
-	[[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
+	    mars_dev="$(call_hook hook_connect "$primary" "$hyper" "$lv_name" "1" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	    echo "using tmp mars dev '$mars_dev'"
+	    [[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
+	fi
+	remote "$hyper" "mount $mount_opts $mars_dev $mnt/"
     fi
-    remote "$hyper" "mount $mount_opts $mars_dev $mnt/"
 
     copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
 
-    remote "$hyper" "umount $mnt/"
+    if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
+	call_hook hook_resource_stop_rest "$hyper" "$primary" "$lv_name"
+    else
+	remote "$hyper" "umount $mnt/"
+    fi
     remote "$hyper" "rmdir ${mnt}-tmp || echo IGNORE"
     if [[ "$primary" != "$hyper" ]]; then
 	# remove remote devices

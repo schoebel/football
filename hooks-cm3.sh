@@ -57,7 +57,30 @@ function hook_resource_stop
     local host="$1"
     local res="$2"
 
+    # stop the whole stack
     remote "$host" "cm3 --stop $res || cm3 --stop $res || { mountpoint /vol/$res && umount /vol/$res; } || false"
+}
+
+function hook_resource_stop_vm
+{
+    local hyper="$1"
+    local res="$2"
+
+    # stop only the vm, keep intermediate mounts etc
+    remote "$hyper" "nodeagent vmstop $res"
+}
+
+function hook_resource_stop_rest
+{
+    local hyper="$1"
+    local primary="$2"
+    local res="$3"
+
+    # stop the rest of the stack
+    remote "$hyper" "nodeagent stop $res"
+    local mnt="$(hook_get_mountpoint "$res")"
+    remote "$hyper" "mountpoint $mnt && { umount -f $mnt ; exit \$?; } || true"
+    hook_resource_stop "$primary" "$res"
 }
 
 function hook_resource_start
