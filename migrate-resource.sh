@@ -536,6 +536,7 @@ function determine_shrinking
 # actions for FS shrinking
 
 mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
+mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
 
 function create_shrink_space
 {
@@ -586,7 +587,7 @@ function copy_data
     fi
 
     remote "$hyper" "mkdir -p ${mnt}-tmp"
-    remote "$hyper" "mount $dev_tmp ${mnt}-tmp"
+    remote "$hyper" "mount $mount_opts $dev_tmp ${mnt}-tmp"
     remote "$hyper" "for i in {1..3}; do $nice rsync $rsync_opt $add_opt ${mnt}/ ${mnt}-tmp/ && exit 0; echo RESTARTING \$(date); done; exit -1"
     remote "$hyper" "umount ${mnt}-tmp/"
 
@@ -626,7 +627,7 @@ function hot_phase
 	echo "using tmp mars dev '$mars_dev'"
 	[[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
     fi
-    remote "$hyper" "mount $mars_dev $mnt/"
+    remote "$hyper" "mount $mount_opts $mars_dev $mnt/"
 
     copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
 
