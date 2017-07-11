@@ -429,3 +429,14 @@ function hook_connect
     echo "New iscsi tid: $iscsi_tid"
     echo "NEW_DEV:$new_dev"
 }
+
+###########################################
+
+# Hooks for extending of XFS
+
+function hook_extend_iscsi
+{
+    local hyper="$1"
+
+    remote "$hyper" "iscsiadm -m session -R"
+}

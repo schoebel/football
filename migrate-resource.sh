@@ -101,6 +101,21 @@ Actions for inplace FS shrinking:
 
   $0 shrink          <resource> <percent>
      Run the sequence shrink_prepare ; shrink_finish ; shrink_cleanup.
+
+Actions for inplace FS extension:
+
+  $0 extend          <resource> <percent>
+
+General features:
+
+  - instead of <percent>, an absolute amount of storage with suffix
+    'k' or 'm' or 'g' can be given.
+
+  - when <resource> is currently stopped, login to the container is
+    not possible, and in turn the hypervisor node and primary storage node
+    cannot be automatically determined. In such a case, the missing
+    nodes can be specified via the syntax
+        <resource>:<hypervisor>:<primary_storage>
 EOF
 }
 
@@ -154,7 +169,7 @@ function scan_args
 	if (( !index )); then
 	    if [[ "$par" = "migrate_cleanup" ]]; then
 		local -a params=(operation res)	
-	    elif [[ "$par" =~ shrink ]]; then
+	    elif [[ "$par" =~ shrink|extend ]]; then
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ migrate ]]; then
 		local -a params=(operation res target_primary target_secondary)
@@ -502,7 +517,7 @@ function migrate_cleanup
 
 # checks for FS shrinking
 
-function determine_shrinking
+function determine_space
 {
     # works on global variables
     lv_path="$(remote "$primary" "lvs --noheadings --separator ':' -o \"vg_name,lv_name\"" | grep ":$res$" | sed 's/ //g' | awk -F':' '{ printf("/dev/%s/%s", $1, $2); }')" || fail "cannot determine lv_path"
@@ -515,19 +530,51 @@ function determine_shrinking
     df="$(remote "$hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
     used_space="$(echo "$df" | awk '{print $3;}')"
     total_space="$(echo "$df" | awk '{print $2;}')"
-    target_space="${target_space:-$(( used_space * 100 / target_percent + 1 ))}" || fail "cannot compute target_space"
+    # absolute or relative space computation
+    case "$target_percent" in
+    *k)
+	target_space="${target_percent%k}"
+	;;
+    *m)
+	target_space="$(( ${target_percent%m} * 1024 ))"
+	;;
+    *g)
+	target_space="$(( ${target_percent%g} * 1024 * 1024 ))"
+	;;
+    *)
+	target_space="${target_space:-$(( used_space * 100 / target_percent + 1 ))}" || fail "cannot compute target_space"
+	;;
+    esac
     (( target_space < min_space )) && target_space=$min_space
 
     echo "Determined USED  space: $used_space"
     echo "Determined TOTAL space: $total_space"
     echo "Computed TARGET  space: $target_space"
+}
 
+function check_shrinking
+{
+    # works on global variables
     if (( target_space >= total_space )); then
 	echo "No need for shrinking the LV space of $res"
 	(( !force )) && exit 0
     fi
     for host in $primary $secondary_list; do
 	check_vg_space "$host" "$target_space"
+    done
+}
+
+function check_extending
+{
+    # works on global variables
+    if (( target_space <= total_space )); then
+	echo "No need for extending the LV space of $res"
+	(( !force )) && exit 0
+    fi
+    delta_space="$(( target_space - total_space + 1024 ))"
+    echo "Computed DELTA   space: $delta_space"
+    for host in $primary $secondary_list; do
+	check_vg_space "$host" "$delta_space"
     done
 }
 
@@ -724,6 +771,43 @@ function cleanup_old_remains
 
 ######################################################################
 
+# actions for _online_ FS extension / resizing
+
+fs_resize_cmd="${fs_resize_cmd:-xfs_growfs -d}"
+
+function extend_fs
+{
+    local hyper="$1"
+    local primary="$2"
+    local secondary_list="$3"
+    local lv_name="$4"
+    local size="$5"
+
+    local mnt="$(call_hook hook_get_mountpoint "$res")"
+
+    # extend the LV first
+
+    local host
+    for host in $primary $secondary_list; do
+	local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+	local dev="/dev/$vg_name/$lv_name"
+	remote "$host" "lvresize -L ${size}k $dev"
+    done
+
+    remote "$primary" "marsadm resize $lv_name"
+    sleep 1
+
+    # propagate new size over intermediate iSCSI
+    if [[ "$hyper" != "$primary" ]]; then
+	call_hook hook_extend_iscsi "$hyper"
+	sleep 3
+    fi
+
+    remote "$hyper" "$fs_resize_cmd $mnt"
+}
+
+######################################################################
+
 # internal actions (using global parameters)
 
 ### for migration
@@ -769,6 +853,13 @@ function shrink_finish
 function shrink_cleanup
 {
     cleanup_old_remains "$primary $secondary_list" "$res"
+}
+
+### for extending
+
+function extend_stack
+{
+    extend_fs "$hyper" "$primary" "$secondary_list" "$res" "$target_space"
 }
 
 ######################################################################
@@ -862,9 +953,13 @@ if [[ "$operation" = migrate_cleanup ]]; then
     echo "$to_clean_old"
 fi
 
-# determine sizes and available space (only for shrinking)
+# determine sizes and available space (only for extending / shrinking)
 if [[ "$operation" =~ shrink ]] && ! [[ "$operation" =~ cleanup ]]; then
-    determine_shrinking
+    determine_space
+    check_shrinking
+elif [[ "$operation" =~ extend ]]; then
+    determine_space
+    check_extending
 fi
 
 # confirmation
@@ -912,6 +1007,10 @@ shrink)
   shrink_prepare
   shrink_finish
   shrink_cleanup
+  ;;
+
+extend)
+  extend_stack
   ;;
 
 *)
