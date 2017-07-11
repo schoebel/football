@@ -399,7 +399,7 @@ function migration_prepare
 
     remote "$target_primary" "marsadm wait-cluster"
     # Idempotence: check whether the additional replica has been alread created
-    local already_present="$(remote "$target_primary" "marsadm view-is-attach infongt-eu4")"
+    local already_present="$(remote "$target_primary" "marsadm view-is-attach $lv_name")"
     if (( already_present )); then
 	echo "Nothing to do: resource '$lv_name' is already present at '$target_primary'"
 	return
