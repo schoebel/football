@@ -642,36 +642,56 @@ function create_shrink_space_all
     done
 }
 
-function copy_data
+# convention: add a suffix -tmp to the device and mountpoint names each
+
+function make_tmp_mount
 {
-    local host="$1"
-    local hyper="$2"
-    local store="$3"
-    local lv_name="$4"
-    local nice="${5:-nice -19 ionice -c3}"
-    local add_opt="${6:-}"
+    local hyper="$1"
+    local store="$2"
+    local lv_name="$3"
+    local suffix="${4:--tmp}"
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
     local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
-    local dev_tmp="/dev/$vg_name/${lv_name}-tmp"
+    local dev_tmp="/dev/$vg_name/$lv_name$suffix"
     if [[ "$store" != "$hyper" ]]; then
 	# create remote devices instead
 	local old_dev="$dev_tmp"
-	dev_tmp="$(call_hook hook_connect "$store" "$hyper" "$lv_name-tmp" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	dev_tmp="$(call_hook hook_connect "$store" "$hyper" "$lv_name$suffix" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
 	echo "using tmp dev '$dev_tmp'"
 	[[ "$dev_tmp" = "" ]] && fail "cannot setup remote device between hosts '$store' => '$hyper'"
     fi
+    remote "$hyper" "mkdir -p $mnt$suffix"
+    remote "$hyper" "mount $mount_opts $dev_tmp $mnt$suffix"
+}
 
-    remote "$hyper" "mkdir -p ${mnt}-tmp"
-    remote "$hyper" "mount $mount_opts $dev_tmp ${mnt}-tmp"
-    remote "$hyper" "for i in {1..3}; do $nice rsync $rsync_opt $add_opt ${mnt}/ ${mnt}-tmp/ && exit 0; echo RESTARTING \$(date); done; exit -1"
-    transfer_quota "$hyper" "$lv_name" "$mnt" "${mnt}-tmp"
-    remote "$hyper" "umount ${mnt}-tmp/"
+function make_tmp_umount
+{
+    local hyper="$1"
+    local store="$2"
+    local lv_name="$3"
+    local suffix="${4:--tmp}"
+
+    remote "$hyper" "umount $mnt$suffix/"
 
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
-	call_hook hook_disconnect "$store" "$hyper" "$lv_name-tmp"
+	call_hook hook_disconnect "$store" "$hyper" "$lv_name$suffix"
     fi
+}
+
+function copy_data
+{
+    local hyper="$1"
+    local lv_name="$2"
+    local suffix="${3:--tmp}"
+    local nice="${4:-nice -19 ionice -c3}"
+    local add_opt="${5:-}"
+
+    local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+
+    remote "$hyper" "for i in {1..3}; do $nice rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
+    transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
 }
 
 function hot_phase
@@ -680,25 +700,30 @@ function hot_phase
     local primary="$2"
     local secondary_list="$3"
     local lv_name="$4"
+    local suffix="${5:--tmp}"
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
     local vg_name="$(get_vg "$primary")" || fail "cannot determine VG for host '$host'"
-    local dev="/dev/$vg_name/${lv_name}"
-    local dev_tmp="$dev-tmp"
-    local mars_dev="/dev/mars/${lv_name}"
+    local dev="/dev/$vg_name/$lv_name"
+    local dev_tmp="$dev$suffix"
+    local mars_dev="/dev/mars/$lv_name"
 
     # some checks
     remote "$primary" "if [[ -e ${dev}-copy ]]; then echo \"REFUSING to overwrite ${dev}-copy on $primary - First remove it - Do this by hand\"; exit -1; fi"
     remote "$primary" "if ! [[ -e $dev_tmp ]]; then echo \"Cannot start hot phase: $dev_tmp is missing. Run 'prepare' first!\"; exit -1; fi"
 
+    # additional temporary mount
+    make_tmp_mount "$hyper" "$primary" "$lv_name" "$suffix"
+
     # last online incremental rsync
-    copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "--delete"
 
     # go offline
     if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
 	# retain mountpoints
 	call_hook hook_resource_stop_vm "$hyper" "$lv_name"
     else
+	optimize_dentry_cache=0
 	# stop completely
 	call_hook hook_resource_stop "$primary" "$lv_name"
 
@@ -712,18 +737,19 @@ function hot_phase
 	remote "$hyper" "mount $mount_opts $mars_dev $mnt/"
     fi
 
-    copy_data "$lv_name" "$hyper" "$primary" "$lv_name" "time" "--delete"
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "--delete"
 
-    if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
+    make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
+    remote "$hyper" "rmdir $mnt$suffix || echo IGNORE"
+    if (( optimize_dentry_cache )); then
 	call_hook hook_resource_stop_rest "$hyper" "$primary" "$lv_name"
     else
 	remote "$hyper" "umount $mnt/"
-    fi
-    remote "$hyper" "rmdir ${mnt}-tmp || echo IGNORE"
-    if [[ "$primary" != "$hyper" ]]; then
-	# remove remote devices
-	sleep 1
-	call_hook hook_disconnect "$primary" "$hyper" "$lv_name" "1"
+	if [[ "$primary" != "$hyper" ]]; then
+	    # remove intermediate remote device
+	    sleep 1
+	    call_hook hook_disconnect "$primary" "$hyper" "$lv_name" "1"
+	fi
     fi
     remote "$primary" "marsadm wait-umount $lv_name"
     remote "$primary" "marsadm secondary $lv_name"
@@ -732,8 +758,8 @@ function hot_phase
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
 	remote "$host" "marsadm down $lv_name || echo IGNORE"
 	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE"
-	remote "$host" "lvrename $vg_name ${lv_name} ${lv_name}-copy"
-	remote "$host" "lvrename $vg_name ${lv_name}-tmp ${lv_name}"
+	remote "$host" "lvrename $vg_name $lv_name ${lv_name}-copy"
+	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
     remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE"
     remote "$primary" "marsadm create-resource --force $lv_name $dev"
@@ -842,7 +868,9 @@ function migrate_clean
 function shrink_prepare
 {
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
-    copy_data "$res" "$hyper" "$primary" "$res"
+    make_tmp_mount "$hyper" "$primary" "$res"
+    copy_data "$hyper" "$res"
+    make_tmp_umount "$hyper" "$primary" "$res"
 }
 
 function shrink_finish
