@@ -85,6 +85,11 @@ Actions for resource migration:
   $0 migrate         <resource> <target_primary> [<target_secondary>]
      Run the sequence migrate_prepare ; migrate_wait ; migrate_finish.
 
+  $0 migrate_config  <resource> <target_primary>
+     Transfer only the cluster config, without changing the MARS replicas.
+     This does no resource stopping / restarting.
+     Useful for reverting a failed migration.
+
   $0 migrate_cleanup <resource>
      Remove old / currently unused LV replicas from MARS and deallocate from LVM.
 
@@ -857,6 +862,11 @@ function migrate_finish
     migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
 }
 
+function migrate_config
+{
+    call_hook hook_resource_migrate "$primary" "$target_primary" "$res"
+}
+
 function migrate_clean
 {
     migrate_cleanup "$to_clean_old" "$res"
@@ -1017,6 +1027,9 @@ migrate)
   migrate_prepare
   migrate_wait
   migrate_finish
+  ;;
+migrate_config)
+  migrate_config
   ;;
 migrate_cleanup)
   migrate_clean
