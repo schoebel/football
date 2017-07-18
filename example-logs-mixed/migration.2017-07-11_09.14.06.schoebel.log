@@ -1,0 +1,1114 @@
+./migrate-resource.sh migrate infongt-eu6:icpu16:istore2a icpu5128 icpu5133
+operation=migrate
+res=infongt-eu6:icpu16:istore2a
+target_primary=icpu5128
+target_secondary=icpu5133
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu16"
+Determined the following CURRENT primary: "istore2a"
+PING icpu16.schlund.de (10.46.0.131) 56(84) bytes of data.
+64 bytes from icpu16.schlund.de (10.46.0.131): icmp_seq=1 ttl=59 time=0.555 ms
+
+--- icpu16.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.555/0.555/0.555/0.000 ms
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=60 time=0.525 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.525/0.525/0.525/0.000 ms
+/mars is a mountpoint
+  infongt-eu6 UpToDate Replicating DCASFR Primary istore2a 
+/vol/infongt-eu6 is a mountpoint
+Determined the following secondaries: 'istore2b'
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=59 time=1.33 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.330/1.330/1.330/0.000 ms
+PING icpu5128.schlund.de (10.46.12.75) 56(84) bytes of data.
+64 bytes from icpu5128.schlund.de (10.46.12.75): icmp_seq=1 ttl=59 time=0.465 ms
+
+--- icpu5128.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.465/0.465/0.465/0.000 ms
+PING icpu5133.schlund.de (10.46.28.75) 56(84) bytes of data.
+64 bytes from icpu5133.schlund.de (10.46.28.75): icmp_seq=1 ttl=58 time=1.26 ms
+
+--- icpu5133.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.263/1.263/1.263/0.000 ms
+Using the following TARGET primary:   "icpu5128"
+Using the following TARGET secondary: "icpu5133"
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_prepare_hosts hook_prepare_hosts istore2a istore2b icpu5128 icpu5133
+Executing on istore2a: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+ui-firewalling: unrecognized service
+Using firewalling.istore 
+HOOKDIR /etc/firewall-istore.d/
+Stopping firewalling
+Stopping firewall-hook /etc/firewall-istore.d//dhcp
+  deleting portmap-rules
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd_cluster
+Stopping firewall-hook /etc/firewall-istore.d//ehb
+  deleting ehb-rules
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//hostname_intern
+  deleting hostnames-rules
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//iscsi
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//mars
+Stopping firewall-hook /etc/firewall-istore.d//orwelld
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//sasoap
+iptables: No chain/target/match by that name.
+Executing on istore2b: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+ui-firewalling: unrecognized service
+Using firewalling.istore 
+HOOKDIR /etc/firewall-istore.d/
+Stopping firewalling
+Stopping firewall-hook /etc/firewall-istore.d//dhcp
+  deleting portmap-rules
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd_cluster
+Stopping firewall-hook /etc/firewall-istore.d//ehb
+  deleting ehb-rules
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//hostname_intern
+iptables: No chain/target/match by that name.
+  deleting hostnames-rules
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//iscsi
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//mars
+Stopping firewall-hook /etc/firewall-istore.d//orwelld
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//sasoap
+iptables: No chain/target/match by that name.
+Executing on icpu5128: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Executing on icpu5133: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Running hook: hook_merge_cluster hook_merge_cluster istore2a icpu5128
+Executing on istore2a: 'marsadm lowlevel-ls-host-ips'
+WARNING: EXPERTS ONLY -- risky lowlevel command 'lowlevel-ls-host-ips'
+Peer 'istore2a' has IP '10.46.98.4'
+Executing on icpu5128: 'marsadm merge-cluster --ssh-port=24 10.46.98.4'
+Using SSH port '24' from command line.
+Linux icpu5128 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING 10.46.98.4 (10.46.98.4) 56(84) bytes of data.
+64 bytes from 10.46.98.4: icmp_seq=1 ttl=64 time=0.089 ms
+
+--- 10.46.98.4 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.089/0.089/0.089/0.000 ms
+ssh: connect to host 10.46.98.4 port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING icpu5133 (10.46.102.189) 56(84) bytes of data.
+64 bytes from icpu5133 (10.46.102.189): icmp_seq=1 ttl=61 time=0.958 ms
+
+--- icpu5133 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.958/0.958/0.958/0.000 ms
+Linux icpu5133 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5133 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=64 time=0.083 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.083/0.083/0.083/0.000 ms
+Linux icpu5138 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+Linux icpu5138 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=0.868 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.868/0.868/0.868/0.000 ms
+ssh: connect to host icpu5139 port 24: Connection timed out
+ssh: connect to host icpu5139 port 22: Connection refused
+ssh: connect to host icpu5139 port 24: Connection timed out
+WARNING: SSH to 'icpu5139' does not work on any port
+PING 10.46.102.191 (10.46.102.191) 56(84) bytes of data.
+64 bytes from 10.46.102.191: icmp_seq=1 ttl=61 time=1.19 ms
+
+--- 10.46.102.191 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.195/1.195/1.195/0.000 ms
+Linux icpu5139 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+Linux icpu5139 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=64 time=0.196 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.196/0.196/0.196/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=61 time=0.849 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.849/0.849/0.849/0.000 ms
+ssh: connect to host istore2b port 24: Connection refused
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Other cluster peer '10.46.98.4' has the same UUID.
+No resource name checking necessary.
+Operation 'merge-cluster' will therfore work logically idempotent.
+receiving incremental file list
+
+sent 11 bytes  received 73 bytes  56.00 bytes/sec
+total size is 38  speedup is 0.45
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  58.00 bytes/sec
+total size is 38  speedup is 0.44
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  58.00 bytes/sec
+total size is 38  speedup is 0.44
+receiving incremental file list
+actual-icpu5128/
+actual-icpu5133/
+actual-icpu5138/
+actual-icpu5139/
+actual-istore2b/
+resource-infong375/actual-istore2b/
+resource-infong376/actual-istore2b/
+resource-infongm1/actual-istore2a/
+resource-infongm1/actual-istore2b/
+resource-infongt-eu4/
+resource-infongt-eu4/skip-check-icpu5133 -> 000022836
+resource-infongt-eu4/actual-icpu5128/
+resource-infongt-eu4/actual-icpu5128/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-copy-syncstatus-icpu5128 -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-device-icpu5128 -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-icpu5133/
+resource-infongt-eu4/actual-icpu5133/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-copy-syncstatus-icpu5133 -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-icpu5138/
+resource-infongt-eu4/actual-icpu5138/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-copy-syncstatus-icpu5138 -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-device-icpu5138 -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-icpu5139/
+resource-infongt-eu4/actual-icpu5139/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-copy-syncstatus-icpu5139 -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-device-icpu5139 -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-istore2a/
+resource-infongt-eu4/actual-istore2a/.deleted- -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-copy-syncstatus-istore2a -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-device-istore2a -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-open-count -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-istore2b/
+resource-infongt-eu4/actual-istore2b/.deleted- -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-copy-syncstatus-istore2b -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-open-count -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-sync_rate -> 1
+resource-infongt-eu4/defaults-icpu5128/
+resource-infongt-eu4/defaults-icpu5128/.deleted- -> 1
+resource-infongt-eu4/defaults-icpu5133/
+resource-infongt-eu4/defaults-icpu5133/.deleted- -> 1
+resource-infongt-eu4/defaults-icpu5138/
+resource-infongt-eu4/defaults-icpu5138/.deleted- -> 1
+resource-infongt-eu4/defaults-icpu5139/
+resource-infongt-eu4/defaults-icpu5139/.deleted- -> 1
+resource-infongt-eu4/defaults-istore2a/
+resource-infongt-eu4/defaults-istore2a/.deleted- -> 1
+resource-infongt-eu4/defaults-istore2b/
+resource-infongt-eu4/defaults-istore2b/.deleted- -> 1
+resource-infongt-eu4/local-icpu5128/
+resource-infongt-eu4/local-icpu5128/.deleted- -> 1
+resource-infongt-eu4/local-icpu5138/
+resource-infongt-eu4/local-icpu5138/.deleted- -> 1
+resource-infongt-eu4/local-icpu5139/
+resource-infongt-eu4/local-icpu5139/.deleted- -> 1
+resource-infongt-eu4/local-istore2a/
+resource-infongt-eu4/local-istore2a/.deleted- -> 1
+resource-infongt-eu4/local-istore2b/
+resource-infongt-eu4/local-istore2b/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5128/
+resource-infongt-eu4/todo-icpu5128/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-sync -> 1
+resource-infongt-eu4/todo-icpu5133/
+resource-infongt-eu4/todo-icpu5133/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-sync -> 1
+resource-infongt-eu4/todo-icpu5138/
+resource-infongt-eu4/todo-icpu5138/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-sync -> 1
+resource-infongt-eu4/todo-icpu5139/
+resource-infongt-eu4/todo-icpu5139/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-sync -> 1
+resource-infongt-eu4/todo-istore2a/
+resource-infongt-eu4/todo-istore2a/.deleted- -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-attach -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-connect -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-sync -> 1
+resource-infongt-eu4/todo-istore2b/
+resource-infongt-eu4/todo-istore2b/.deleted- -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-attach -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-connect -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-sync -> 1
+resource-infongt-eu5/
+resource-infongt-eu5/actual-icpu5138/
+resource-infongt-eu5/actual-icpu5139/
+resource-infongt-eu6/.deleted-log-000010179-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000010180-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000010181-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000010182-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010178-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010178-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010179-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010179-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010180-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010180-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010181-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010181-icpu5139 -> 1
+resource-infongt-eu6/actual-icpu5138/
+resource-infongt-eu6/actual-icpu5139/
+resource-infongt-eu6/actual-istore2a/
+resource-infongt-eu6/actual-istore2b/
+resource-infongt-eu6/defaults-icpu5138/
+resource-infongt-eu6/defaults-icpu5139/
+resource-infongt-eu6/local-icpu5138/
+resource-infongt-eu6/local-icpu5139/
+resource-infongt-eu6/local-icpu5139/.deleted- -> 1
+resource-infongt-eu6/todo-icpu5138/
+resource-infongt-eu6/todo-icpu5139/
+resource-infongt-eu7/
+resource-infongt-eu7/actual-icpu5138/
+resource-infongt-eu7/actual-icpu5139/
+resource-lv-0/actual-icpu5128/
+resource-lv-0/actual-icpu5133/
+todo-global/
+
+sent 1,111 bytes  received 125,434 bytes  253,090.00 bytes/sec
+total size is 3,182,033  speedup is 25.15
+sending incremental file list
+./
+actual-icpu5128/
+actual-istore2a/
+resource-infongt-eu6/.deleted-actsize-icpu5139 -> 1
+resource-infongt-eu6/.deleted-data-icpu5139 -> 1
+resource-infongt-eu6/.deleted-device-icpu5139 -> 1
+resource-infongt-eu6/.deleted-replay-icpu5139 -> 1
+resource-infongt-eu6/.deleted-skip-check-icpu5139 -> 1
+resource-infongt-eu6/.deleted-syncpos-icpu5139 -> 1
+resource-infongt-eu6/.deleted-syncstatus-icpu5139 -> 1
+resource-infongt-eu6/.deleted-verifystatus-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000015326-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000015327-icpu5138 -> 1
+resource-infongt-eu6/actual-icpu5138/.deleted-device-icpu5138 -> 1
+resource-infongt-eu6/actual-icpu5139/.deleted-copy-syncstatus-icpu5139 -> 1
+resource-infongt-eu6/actual-icpu5139/.deleted-file_rate -> 1
+resource-infongt-eu6/actual-icpu5139/.deleted-has-emergency -> 1
+resource-infongt-eu6/actual-icpu5139/.deleted-is-attached -> 1
+
+sent 123,899 bytes  received 712 bytes  83,074.00 bytes/sec
+total size is 209,667  speedup is 1.68
+Running hook: hook_merge_cluster hook_merge_cluster istore2a icpu5133
+Executing on istore2a: 'marsadm lowlevel-ls-host-ips'
+WARNING: EXPERTS ONLY -- risky lowlevel command 'lowlevel-ls-host-ips'
+Peer 'istore2a' has IP '10.46.98.4'
+Executing on icpu5133: 'marsadm merge-cluster --ssh-port=24 10.46.98.4'
+Using SSH port '24' from command line.
+Linux icpu5133 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING 10.46.98.4 (10.46.98.4) 56(84) bytes of data.
+64 bytes from 10.46.98.4: icmp_seq=1 ttl=61 time=0.836 ms
+
+--- 10.46.98.4 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.836/0.836/0.836/0.000 ms
+ssh: connect to host 10.46.98.4 port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING icpu5128 (10.46.98.175) 56(84) bytes of data.
+64 bytes from icpu5128 (10.46.98.175): icmp_seq=1 ttl=61 time=0.816 ms
+
+--- icpu5128 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.816/0.816/0.816/0.000 ms
+Linux icpu5128 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5128 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=58 time=0.866 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.866/0.866/0.866/0.000 ms
+ssh: connect to host icpu5138 port 24: Connection timed out
+ssh: connect to host icpu5138 port 22: Connection refused
+ssh: connect to host icpu5138 port 24: Connection timed out
+WARNING: SSH to 'icpu5138' does not work on any port
+PING 10.46.98.177 (10.46.98.177) 56(84) bytes of data.
+64 bytes from 10.46.98.177: icmp_seq=1 ttl=61 time=0.827 ms
+
+--- 10.46.98.177 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.827/0.827/0.827/0.000 ms
+Linux icpu5138 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+Linux icpu5138 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=64 time=0.076 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.076/0.076/0.076/0.000 ms
+Linux icpu5139 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+Linux icpu5139 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=61 time=0.825 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.825/0.825/0.825/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=64 time=0.072 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.072/0.072/0.072/0.000 ms
+ssh: connect to host istore2b port 24: Connection refused
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Other cluster peer '10.46.98.4' has the same UUID.
+No resource name checking necessary.
+Operation 'merge-cluster' will therfore work logically idempotent.
+receiving incremental file list
+
+sent 11 bytes  received 73 bytes  56.00 bytes/sec
+total size is 38  speedup is 0.45
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  58.00 bytes/sec
+total size is 38  speedup is 0.44
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  174.00 bytes/sec
+total size is 38  speedup is 0.44
+receiving incremental file list
+./
+actual-icpu5128/
+actual-icpu5133/
+actual-icpu5138/
+actual-icpu5139/
+actual-istore2a/
+actual-istore2b/
+resource-infong375/
+resource-infong375/actual-istore2a/
+resource-infong376/
+resource-infong376/actual-istore2a/
+resource-infongm1/
+resource-infongm1/actual-istore2a/
+resource-infongt-eu4/
+resource-infongt-eu4/actual-icpu5128/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-copy-syncstatus-icpu5128 -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-device-icpu5128 -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-icpu5133/
+resource-infongt-eu4/actual-icpu5133/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-copy-syncstatus-icpu5133 -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-icpu5138/
+resource-infongt-eu4/actual-icpu5138/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-copy-syncstatus-icpu5138 -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-device-icpu5138 -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-icpu5139/
+resource-infongt-eu4/actual-icpu5139/.deleted- -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-copy-syncstatus-icpu5139 -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-device-icpu5139 -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-open-count -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-istore2a/
+resource-infongt-eu4/actual-istore2a/.deleted- -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-copy-syncstatus-istore2a -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-device-istore2a -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-open-count -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-sync_rate -> 1
+resource-infongt-eu4/actual-istore2b/.deleted- -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-copy-syncstatus-istore2b -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-file_rate -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-has-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-attached -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-copying -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-primary -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-replaying -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-is-syncing -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-logfile-update -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-open-count -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-replay-code -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-replay_rate -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-sync_rate -> 1
+resource-infongt-eu4/defaults-icpu5128/
+resource-infongt-eu4/defaults-icpu5128/.deleted- -> 1
+resource-infongt-eu4/defaults-icpu5133/
+resource-infongt-eu4/defaults-icpu5133/.deleted- -> 1
+resource-infongt-eu4/defaults-icpu5138/
+resource-infongt-eu4/defaults-icpu5138/.deleted- -> 1
+resource-infongt-eu4/defaults-icpu5139/
+resource-infongt-eu4/defaults-icpu5139/.deleted- -> 1
+resource-infongt-eu4/defaults-istore2a/
+resource-infongt-eu4/defaults-istore2a/.deleted- -> 1
+resource-infongt-eu4/defaults-istore2b/
+resource-infongt-eu4/defaults-istore2b/.deleted- -> 1
+resource-infongt-eu4/local-icpu5128/
+resource-infongt-eu4/local-icpu5128/.deleted- -> 1
+resource-infongt-eu4/local-icpu5138/
+resource-infongt-eu4/local-icpu5138/.deleted- -> 1
+resource-infongt-eu4/local-icpu5139/
+resource-infongt-eu4/local-icpu5139/.deleted- -> 1
+resource-infongt-eu4/local-istore2a/
+resource-infongt-eu4/local-istore2a/.deleted- -> 1
+resource-infongt-eu4/local-istore2b/
+resource-infongt-eu4/local-istore2b/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5128/
+resource-infongt-eu4/todo-icpu5128/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5128/.deleted-sync -> 1
+resource-infongt-eu4/todo-icpu5133/
+resource-infongt-eu4/todo-icpu5133/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5133/.deleted-sync -> 1
+resource-infongt-eu4/todo-icpu5138/
+resource-infongt-eu4/todo-icpu5138/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5138/.deleted-sync -> 1
+resource-infongt-eu4/todo-icpu5139/
+resource-infongt-eu4/todo-icpu5139/.deleted- -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-attach -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-connect -> 1
+resource-infongt-eu4/todo-icpu5139/.deleted-sync -> 1
+resource-infongt-eu4/todo-istore2a/
+resource-infongt-eu4/todo-istore2a/.deleted- -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-attach -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-connect -> 1
+resource-infongt-eu4/todo-istore2a/.deleted-sync -> 1
+resource-infongt-eu4/todo-istore2b/
+resource-infongt-eu4/todo-istore2b/.deleted- -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-allow-replay -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-attach -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-connect -> 1
+resource-infongt-eu4/todo-istore2b/.deleted-sync -> 1
+resource-infongt-eu5/
+resource-infongt-eu5/actual-icpu5138/
+resource-infongt-eu5/actual-icpu5139/
+resource-infongt-eu6/
+resource-infongt-eu6/.deleted-log-000010179-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000010180-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000010181-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000010182-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010178-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010178-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010179-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010179-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010180-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010180-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000010181-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000010181-icpu5139 -> 1
+resource-infongt-eu6/actual-icpu5138/
+resource-infongt-eu6/actual-icpu5139/
+resource-infongt-eu6/actual-istore2a/
+resource-infongt-eu6/defaults-icpu5138/
+resource-infongt-eu6/local-icpu5138/
+resource-infongt-eu6/todo-icpu5138/
+resource-infongt-eu6/todo-icpu5138/.deleted- -> 1
+resource-infongt-eu6/todo-icpu5139/
+resource-infongt-eu7/
+resource-infongt-eu7/actual-icpu5138/
+resource-infongt-eu7/actual-icpu5139/
+resource-lv-0/actual-icpu5133/
+todo-global/
+
+sent 1,105 bytes  received 125,731 bytes  253,672.00 bytes/sec
+total size is 3,258,495  speedup is 25.69
+sending incremental file list
+./
+actual-icpu5128/
+actual-icpu5133/
+actual-icpu5138/
+actual-icpu5139/
+actual-istore2b/
+resource-infong375/
+resource-infong375/actual-istore2a/
+resource-infong375/actual-istore2b/
+resource-infong376/
+resource-infong376/actual-istore2a/
+resource-infong376/actual-istore2b/
+resource-infongm1/
+resource-infongm1/actual-istore2a/
+resource-infongm1/actual-istore2b/
+resource-infongt-eu4/
+resource-infongt-eu4/actual-icpu5128/
+resource-infongt-eu4/actual-icpu5133/
+resource-infongt-eu4/actual-icpu5138/
+resource-infongt-eu4/actual-icpu5139/
+resource-infongt-eu4/actual-istore2a/
+resource-infongt-eu4/actual-istore2b/
+resource-infongt-eu5/
+resource-infongt-eu5/actual-icpu5138/
+resource-infongt-eu5/actual-icpu5139/
+resource-infongt-eu6/
+resource-infongt-eu6/version-000015326-istore2a -> 00000000000000000000000000000000,log-000015326-istore2a,0:
+resource-infongt-eu6/version-000015326-istore2b -> 00000000000000000000000000000000,log-000015326-istore2a,0:
+resource-infongt-eu6/actual-icpu5138/
+resource-infongt-eu6/actual-icpu5139/
+resource-infongt-eu6/actual-istore2a/
+resource-infongt-eu6/actual-istore2b/
+resource-infongt-eu7/
+resource-infongt-eu7/actual-icpu5138/
+resource-infongt-eu7/actual-icpu5139/
+resource-lv-0/actual-icpu5128/
+resource-lv-0/actual-icpu5133/
+
+sent 123,752 bytes  received 771 bytes  83,015.33 bytes/sec
+total size is 231,894  speedup is 1.86
+Executing on icpu5128: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on icpu5128: 'marsadm view-is-attach infongt-eu4'
+Nothing to do: resource 'infongt-eu6' is already present at 'icpu5128'
+Executing on icpu5128: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on icpu5133: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Tue Jul 11 09:15:12 CEST 2017 sync rests for 'icpu5128 icpu5133':
+Tue Jul 11 09:15:12 CEST 2017 sync rests:WARNING: cannot read symlink '/mars/resource-infongt-eu6/syncstatus-icpu5128'
+ 19GiBWARNING: cannot read symlink '/mars/resource-infongt-eu6/syncstatus-icpu5133'
+ 19GiB
+Tue Jul 11 09:16:12 CEST 2017 sync rests:WARNING: cannot read symlink '/mars/resource-infongt-eu6/syncstatus-icpu5128'
+ 19GiBWARNING: cannot read symlink '/mars/resource-infongt-eu6/syncstatus-icpu5133'
+ 19GiB
+Tue Jul 11 09:17:13 CEST 2017 sync rests:WARNING: cannot read symlink '/mars/resource-infongt-eu6/syncstatus-icpu5128'
+ 19GiBWARNING: cannot read symlink '/mars/resource-infongt-eu6/syncstatus-icpu5133'
+ 19GiB

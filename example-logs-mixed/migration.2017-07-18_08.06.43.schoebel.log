@@ -1,0 +1,83 @@
+./migrate-resource.sh extend infongt-eu6 50g
+operation=extend
+res=infongt-eu6
+target_percent=50g
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu5138"
+Determined the following CURRENT primary: "icpu5138"
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.515 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.515/0.515/0.515/0.000 ms
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.274 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.274/0.274/0.274/0.000 ms
+/mars is a mountpoint
+  infongt-eu6 UpToDate Replicating DCASFR Primary icpu5138 
+ERRORS   FILE (2): available with --verbose
+/vol/infongt-eu6 is a mountpoint
+Determined the following secondaries: 'icpu5139'
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.28 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.280/1.280/1.280/0.000 ms
+Determined the following VG name: "vginfong"
+Determined the following LV path: "/dev/vginfong/infongt-eu6"
+Determined USED  space: 995480
+Determined TOTAL space: 19990528
+Computed TARGET  space: 52428800
+Computed DELTA   space: 32439296
+vginfong REST space on 'icpu5138' :   7184683008
+vginfong REST space on 'icpu5139' :   7184683008
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu6
+
+===================================================================
+1. Extend the LV
+
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'lvresize -L 52428800k /dev/vginfong/infongt-eu6'
+  Size of logical volume vginfong/infongt-eu6 changed from 19.07 GiB (4883 extents) to 50.00 GiB (12800 extents).
+  Logical volume infongt-eu6 successfully resized
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'lvresize -L 52428800k /dev/vginfong/infongt-eu6'
+  Size of logical volume vginfong/infongt-eu6 changed from 19.07 GiB (4883 extents) to 50.00 GiB (12800 extents).
+  Logical volume infongt-eu6 successfully resized
+
+===================================================================
+2. Extend the MARS resource
+
+Executing on icpu5138: 'marsadm resize infongt-eu6'
+---------------------------- check preconditions:
+old_size=20480786432
+possible_size=20480786432
+new_size=20480786432
+---------------------------- set new size:
+---------------------------- wait for change:
+Device size is now 20480786432.
+
+===================================================================
+3. Resize the filesystem
+
+Executing on icpu5138: 'xfs_growfs -d /vol/infongt-eu6'
+meta-data=/dev/mars/infongt-eu6  isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=0
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data size unchanged, skipping
+DONE Tue Jul 18 08:06:52 CEST 2017

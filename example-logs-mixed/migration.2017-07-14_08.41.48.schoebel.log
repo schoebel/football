@@ -1,0 +1,272 @@
+./migrate-resource.sh migrate_cleanup infongt-eu6
+operation=migrate_cleanup
+res=infongt-eu6
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu5138"
+Determined the following CURRENT primary: "icpu5138"
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.505 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.505/0.505/0.505/0.000 ms
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.479 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.479/0.479/0.479/0.000 ms
+/mars is a mountpoint
+  infongt-eu6 UpToDate Replicating DCASFR Primary icpu5138 
+ERRORS   FILE (2): available with --verbose
+/vol/infongt-eu6 is a mountpoint
+Determined the following secondaries: 'icpu5139
+istore2a
+istore2b'
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.29 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.297/1.297/1.297/0.000 ms
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=60 time=0.564 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.564/0.564/0.564/0.000 ms
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=59 time=1.35 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.357/1.357/1.357/0.000 ms
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5138.schlund.de"
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5139.schlund.de"
+curl -s  -X "GET" "http://clustermw:3042/storagehosts/istore2a.schlund.de"
+FOREIGN:istore2a
+curl -s  -X "GET" "http://clustermw:3042/storagehosts/istore2b.schlund.de"
+FOREIGN:istore2b
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5138.schlund.de"
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5138.schlund.de"
+FOREIGN:icpu5138
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5139.schlund.de"
+FOREIGN:icpu5139
+curl -s  -X "GET" "http://clustermw:3042/storagehosts/istore2a.schlund.de"
+curl -s  -X "GET" "http://clustermw:3042/storagehosts/istore2b.schlund.de"
+-------------
+Temporary infongt-eu6 partitions will be removed from:
+icpu5138
+icpu5139
+Stray infongt-eu6 partitions will be removed from:
+istore2a
+istore2b
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'marsadm down infongt-eu6 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu6
+successfully started pause-sync-local on resource infongt-eu6
+successfully started pause-fetch on resource infongt-eu6
+successfully started detach on resource infongt-eu6
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu6/actual-istore2a/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu6' is no longer present
+OK, '/mars/resource-infongt-eu6/actual-istore2a/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu6/actual-istore2a/is-syncing' has acceptable value '0'
+Executing on istore2a: 'marsadm leave-resource infongt-eu6 || echo IGNORE'
+---------------------------- check preconditions:
+OK, '/mars/resource-infongt-eu6/actual-istore2a/is-attached' has acceptable value '0'
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001604479 / 1604528
+waiting for deletions to apply locally....
+deleted: 001604528 / 1604528
+found replay link '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000017759-icpu5138,2165240,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5139' -> 'log-000017759-icpu5138,2165240,0'
+found replay link '/mars/resource-infongt-eu6/replay-istore2b' -> 'log-000017759-icpu5138,2165240,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000017759-icpu5138,2165240,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5139' -> 'log-000017759-icpu5138,2165240,0'
+found replay link '/mars/resource-infongt-eu6/replay-istore2b' -> 'log-000017759-icpu5138,2165240,0'
+checking 'version-000017756-icpu5138'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-icpu5138'
+checking 'version-000017756-icpu5139'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-icpu5139'
+checking 'version-000017756-istore2a'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-istore2a'
+checking 'version-000017756-istore2b'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-istore2b'
+checking 'version-000017757-icpu5138'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-icpu5138'
+checking 'version-000017757-icpu5139'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-icpu5139'
+checking 'version-000017757-istore2a'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-istore2a'
+checking 'version-000017757-istore2b'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-istore2b'
+checking 'version-000017758-icpu5138'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-icpu5138'
+checking 'version-000017758-icpu5139'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-icpu5139'
+checking 'version-000017758-istore2a'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-istore2a'
+checking 'version-000017758-istore2b'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-istore2b'
+checking 'version-000017759-icpu5138'
+  corresponding logfile is 'log-000017759-icpu5138'
+  ok 'version-000017759-icpu5138'
+checking 'version-000017759-icpu5139'
+  corresponding logfile is 'log-000017759-icpu5138'
+  ok 'version-000017759-icpu5139'
+checking 'version-000017759-istore2a'
+  corresponding logfile is 'log-000017759-icpu5138'
+checking 'version-000017759-istore2b'
+  corresponding logfile is 'log-000017759-icpu5138'
+  ok 'version-000017759-istore2b'
+checking 'log-000017757-istore2a'
+  ok 'log-000017757-istore2a'
+checking 'log-000017758-istore2a'
+  ok 'log-000017758-istore2a'
+checking 'log-000017759-icpu5138'
+  ok 'log-000017759-icpu5138'
+info: logfile 'log-000017756-istore2a' is referenced (4), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001604528 / 1604529
+waiting for deletions to apply locally....
+deleted: 001604529 / 1604529
+deleted: 001604529 / 1604529
+Executing on istore2a: 'lvremove -f /dev/vg2a/infongt-eu6-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on istore2a: 'lvremove -f /dev/vg2a/infongt-eu6-copy || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on istore2a: 'lvremove -f /dev/vg2a/infongt-eu6 || echo IGNORE'
+  Logical volume "infongt-eu6" successfully removed
+Running hook: hook_get_vg hook_get_vg istore2b
+Executing on istore2b: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2b: 'marsadm down infongt-eu6 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu6
+successfully started pause-sync-local on resource infongt-eu6
+successfully started pause-fetch on resource infongt-eu6
+successfully started detach on resource infongt-eu6
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu6/actual-istore2b/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu6' is no longer present
+OK, '/mars/resource-infongt-eu6/actual-istore2b/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu6/actual-istore2b/is-syncing' has acceptable value '0'
+Executing on istore2b: 'marsadm leave-resource infongt-eu6 || echo IGNORE'
+---------------------------- check preconditions:
+OK, '/mars/resource-infongt-eu6/actual-istore2b/is-attached' has acceptable value '0'
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001604529 / 1604580
+waiting for deletions to apply locally....
+deleted: 001604580 / 1604580
+found replay link '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000017759-icpu5138,2362036,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5139' -> 'log-000017759-icpu5138,2362036,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000017759-icpu5138,2362036,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5139' -> 'log-000017759-icpu5138,2362036,0'
+checking 'version-000017756-icpu5138'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-icpu5138'
+checking 'version-000017756-icpu5139'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-icpu5139'
+checking 'version-000017756-istore2a'
+  corresponding logfile is 'log-000017756-istore2a'
+  ok 'version-000017756-istore2a'
+checking 'version-000017756-istore2b'
+  corresponding logfile is 'log-000017756-istore2a'
+checking 'version-000017757-icpu5138'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-icpu5138'
+checking 'version-000017757-icpu5139'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-icpu5139'
+checking 'version-000017757-istore2a'
+  corresponding logfile is 'log-000017757-istore2a'
+  ok 'version-000017757-istore2a'
+checking 'version-000017757-istore2b'
+  corresponding logfile is 'log-000017757-istore2a'
+checking 'version-000017758-icpu5138'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-icpu5138'
+checking 'version-000017758-icpu5139'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-icpu5139'
+checking 'version-000017758-istore2a'
+  corresponding logfile is 'log-000017758-istore2a'
+  ok 'version-000017758-istore2a'
+checking 'version-000017758-istore2b'
+  corresponding logfile is 'log-000017758-istore2a'
+checking 'version-000017759-icpu5138'
+  corresponding logfile is 'log-000017759-icpu5138'
+  ok 'version-000017759-icpu5138'
+checking 'version-000017759-icpu5139'
+  corresponding logfile is 'log-000017759-icpu5138'
+  ok 'version-000017759-icpu5139'
+checking 'version-000017759-istore2b'
+  corresponding logfile is 'log-000017759-icpu5138'
+checking 'log-000017757-istore2a'
+  ok 'log-000017757-istore2a'
+checking 'log-000017758-istore2a'
+  ok 'log-000017758-istore2a'
+checking 'log-000017759-icpu5138'
+  ok 'log-000017759-icpu5138'
+info: logfile 'log-000017756-istore2a' is referenced (3), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001604580 / 1604584
+waiting for deletions to apply locally....
+deleted: 001604584 / 1604584
+deleted: 001604584 / 1604584
+Executing on istore2b: 'lvremove -f /dev/vg2b/infongt-eu6-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on istore2b: 'lvremove -f /dev/vg2b/infongt-eu6-copy || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on istore2b: 'lvremove -f /dev/vg2b/infongt-eu6 || echo IGNORE'
+  Logical volume "infongt-eu6" successfully removed
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'lvremove -f /dev/vginfong/infongt-eu6-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5138: 'lvremove -f /dev/vginfong/infongt-eu6-copy || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'lvremove -f /dev/vginfong/infongt-eu6-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5139: 'lvremove -f /dev/vginfong/infongt-eu6-copy || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+DONE Fri Jul 14 08:42:41 CEST 2017

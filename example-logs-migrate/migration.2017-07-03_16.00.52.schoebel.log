@@ -1,0 +1,1088 @@
+./migrate-resource.sh migrate infongt-eu4:icpu15:istore2a icpu5128 icpu5133
+operation=migrate
+res=infongt-eu4:icpu15:istore2a
+target_primary=icpu5128
+target_secondary=icpu5133
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu15"
+Determined the following CURRENT primary: "istore2a"
+PING icpu15.schlund.de (10.46.0.130) 56(84) bytes of data.
+64 bytes from icpu15.schlund.de (10.46.0.130): icmp_seq=1 ttl=59 time=0.564 ms
+
+--- icpu15.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.564/0.564/0.564/0.000 ms
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=60 time=0.706 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.706/0.706/0.706/0.000 ms
+/mars is a mountpoint
+  infongt-eu4 UpToDate Replicating DCASFR Primary istore2a 
+/vol/infongt-eu4 is a mountpoint
+Determined the following secondaries: 'icpu5128
+icpu5133
+icpu5138
+icpu5139
+istore2b'
+PING icpu5128.schlund.de (10.46.12.75) 56(84) bytes of data.
+64 bytes from icpu5128.schlund.de (10.46.12.75): icmp_seq=1 ttl=59 time=0.534 ms
+
+--- icpu5128.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.534/0.534/0.534/0.000 ms
+PING icpu5133.schlund.de (10.46.28.75) 56(84) bytes of data.
+64 bytes from icpu5133.schlund.de (10.46.28.75): icmp_seq=1 ttl=58 time=1.25 ms
+
+--- icpu5133.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.254/1.254/1.254/0.000 ms
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.407 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.407/0.407/0.407/0.000 ms
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=2.18 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 2.188/2.188/2.188/0.000 ms
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=59 time=1.07 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.075/1.075/1.075/0.000 ms
+PING icpu5128.schlund.de (10.46.12.75) 56(84) bytes of data.
+64 bytes from icpu5128.schlund.de (10.46.12.75): icmp_seq=1 ttl=59 time=0.422 ms
+
+--- icpu5128.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.422/0.422/0.422/0.000 ms
+PING icpu5133.schlund.de (10.46.28.75) 56(84) bytes of data.
+64 bytes from icpu5133.schlund.de (10.46.28.75): icmp_seq=1 ttl=58 time=1.23 ms
+
+--- icpu5133.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.237/1.237/1.237/0.000 ms
+Using the following TARGET primary:   "icpu5128"
+Using the following TARGET secondary: "icpu5133"
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_prepare_hosts hook_prepare_hosts istore2a icpu5128
+icpu5133
+icpu5138
+icpu5139
+istore2b icpu5128 icpu5133
+Executing on istore2a: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+ui-firewalling: unrecognized service
+Using firewalling.istore 
+HOOKDIR /etc/firewall-istore.d/
+Stopping firewalling
+Stopping firewall-hook /etc/firewall-istore.d//dhcp
+  deleting portmap-rules
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd_cluster
+Stopping firewall-hook /etc/firewall-istore.d//ehb
+  deleting ehb-rules
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//hostname_intern
+iptables: No chain/target/match by that name.
+  deleting hostnames-rules
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//iscsi
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//mars
+Stopping firewall-hook /etc/firewall-istore.d//orwelld
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//sasoap
+Executing on icpu5128: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Executing on icpu5133: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Executing on icpu5138: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Executing on icpu5139: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Executing on istore2b: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+ui-firewalling: unrecognized service
+Using firewalling.istore 
+HOOKDIR /etc/firewall-istore.d/
+Stopping firewalling
+Stopping firewall-hook /etc/firewall-istore.d//dhcp
+  deleting portmap-rules
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_dhcp_in':/lib/xtables/libipt_fwhook_dhcp_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//drbd_cluster
+Stopping firewall-hook /etc/firewall-istore.d//ehb
+  deleting ehb-rules
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_out':/lib/xtables/libipt_fwhook_ehb_ctrls_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_ctrls_in':/lib/xtables/libipt_fwhook_ehb_ctrls_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_out':/lib/xtables/libipt_fwhook_ehb_hosts_out.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+iptables: No chain/target/match by that name.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_ehb_hosts_in':/lib/xtables/libipt_fwhook_ehb_hosts_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//hostname_intern
+iptables: No chain/target/match by that name.
+  deleting hostnames-rules
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_hostnames_in':/lib/xtables/libipt_fwhook_hostnames_in.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//iscsi
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//mars
+Stopping firewall-hook /etc/firewall-istore.d//orwelld
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables v1.4.8: Couldn't load target `fwhook_orwelld':/lib/xtables/libipt_fwhook_orwelld.so: cannot open shared object file: No such file or directory
+
+Try `iptables -h' or 'iptables --help' for more information.
+iptables: No chain/target/match by that name.
+Stopping firewall-hook /etc/firewall-istore.d//sasoap
+iptables: No chain/target/match by that name.
+Executing on icpu5128: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Executing on icpu5133: 'service ui-firewalling stop || /etc/init.d/firewalling stop'
+Running hook: hook_merge_cluster hook_merge_cluster istore2a icpu5128
+Executing on istore2a: 'marsadm lowlevel-ls-host-ips'
+WARNING: EXPERTS ONLY -- risky lowlevel command 'lowlevel-ls-host-ips'
+Peer 'istore2a' has IP '10.46.98.4'
+Executing on icpu5128: 'marsadm merge-cluster --ssh-port=24 10.46.98.4'
+Using SSH port '24' from command line.
+Linux icpu5128 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING 10.46.98.4 (10.46.98.4) 56(84) bytes of data.
+64 bytes from 10.46.98.4: icmp_seq=1 ttl=64 time=0.146 ms
+
+--- 10.46.98.4 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.146/0.146/0.146/0.000 ms
+ssh: connect to host 10.46.98.4 port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING icpu5133 (10.46.102.189) 56(84) bytes of data.
+64 bytes from icpu5133 (10.46.102.189): icmp_seq=1 ttl=61 time=0.797 ms
+
+--- icpu5133 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.797/0.797/0.797/0.000 ms
+Linux icpu5133 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5133 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=64 time=0.053 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.053/0.053/0.053/0.000 ms
+Linux icpu5138 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5138 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=0.841 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.841/0.841/0.841/0.000 ms
+ssh: connect to host icpu5139 port 24: Connection timed out
+ssh: connect to host icpu5139 port 22: Connection refused
+ssh: connect to host icpu5139 port 24: Connection timed out
+WARNING: SSH to 'icpu5139' does not work on any port
+PING 10.46.102.191 (10.46.102.191) 56(84) bytes of data.
+64 bytes from 10.46.102.191: icmp_seq=1 ttl=61 time=0.813 ms
+
+--- 10.46.102.191 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.813/0.813/0.813/0.000 ms
+Linux icpu5139 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5139 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=64 time=1.64 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.645/1.645/1.645/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=61 time=0.903 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.903/0.903/0.903/0.000 ms
+ssh: connect to host istore2b port 24: Connection refused
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Other cluster peer '10.46.98.4' has the same UUID.
+No resource name checking necessary.
+Operation 'merge-cluster' will therfore work logically idempotent.
+receiving incremental file list
+
+sent 11 bytes  received 73 bytes  56.00 bytes/sec
+total size is 38  speedup is 0.45
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  58.00 bytes/sec
+total size is 38  speedup is 0.44
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  58.00 bytes/sec
+total size is 38  speedup is 0.44
+receiving incremental file list
+./
+actual-icpu5128/
+actual-istore2a/
+actual-istore2b/
+resource-infongm1/
+resource-infongt-eu4/
+resource-infongt-eu4/actual-icpu5128/
+resource-infongt-eu4/actual-icpu5133/
+resource-infongt-eu4/actual-icpu5139/
+resource-infongt-eu4/actual-istore2b/
+resource-infongt-eu4/todo-icpu5128/
+resource-infongt-eu4/todo-icpu5139/
+resource-infongt-eu4/todo-istore2b/
+resource-infongt-eu5/actual-icpu5138/
+resource-infongt-eu6/actual-icpu5138/
+resource-infongt-eu7/actual-icpu5138/
+resource-lv-0/actual-icpu5128/
+resource-lv-0/actual-icpu5133/
+todo-global/
+
+sent 199 bytes  received 163,925 bytes  328,248.00 bytes/sec
+total size is 5,073,156  speedup is 30.91
+sending incremental file list
+./
+actual-icpu5128/
+actual-istore2a/
+resource-infong375/.deleted-log-000140866-istore2b -> 1
+resource-infong375/.deleted-log-000140867-istore2b -> 1
+resource-infong375/.deleted-log-000140868-istore2b -> 1
+resource-infong375/.deleted-log-000140869-istore2b -> 1
+resource-infong375/.deleted-log-000140870-istore2b -> 1
+resource-infong375/.deleted-version-000140865-istore2a -> 1
+resource-infong375/.deleted-version-000140865-istore2b -> 1
+resource-infong375/.deleted-version-000140866-istore2a -> 1
+resource-infong375/.deleted-version-000140866-istore2b -> 1
+resource-infong375/.deleted-version-000140867-istore2a -> 1
+resource-infong375/.deleted-version-000140867-istore2b -> 1
+resource-infong375/.deleted-version-000140868-istore2a -> 1
+resource-infong375/.deleted-version-000140868-istore2b -> 1
+resource-infong375/.deleted-version-000140869-istore2a -> 1
+resource-infong375/.deleted-version-000140869-istore2b -> 1
+resource-infong376/.deleted-log-000140838-istore2b -> 1
+resource-infong376/.deleted-log-000140839-istore2b -> 1
+resource-infong376/.deleted-log-000140840-istore2b -> 1
+resource-infong376/.deleted-log-000140841-istore2b -> 1
+resource-infong376/.deleted-log-000140842-istore2b -> 1
+resource-infong376/.deleted-version-000140837-istore2a -> 1
+resource-infong376/.deleted-version-000140837-istore2b -> 1
+resource-infong376/.deleted-version-000140838-istore2a -> 1
+resource-infong376/.deleted-version-000140838-istore2b -> 1
+resource-infong376/.deleted-version-000140839-istore2a -> 1
+resource-infong376/.deleted-version-000140839-istore2b -> 1
+resource-infong376/.deleted-version-000140840-istore2a -> 1
+resource-infong376/.deleted-version-000140840-istore2b -> 1
+resource-infong376/.deleted-version-000140841-istore2a -> 1
+resource-infong376/.deleted-version-000140841-istore2b -> 1
+resource-infongm1/.deleted-log-000140571-istore2b -> 1
+resource-infongm1/.deleted-log-000140572-istore2b -> 1
+resource-infongm1/.deleted-log-000140573-istore2b -> 1
+resource-infongm1/.deleted-log-000140574-istore2b -> 1
+resource-infongm1/.deleted-log-000140575-istore2b -> 1
+resource-infongm1/.deleted-version-000140570-istore2a -> 1
+resource-infongm1/.deleted-version-000140571-istore2a -> 1
+resource-infongm1/.deleted-version-000140571-istore2b -> 1
+resource-infongm1/.deleted-version-000140572-istore2a -> 1
+resource-infongm1/.deleted-version-000140572-istore2b -> 1
+resource-infongm1/.deleted-version-000140573-istore2a -> 1
+resource-infongm1/.deleted-version-000140574-istore2a -> 1
+resource-infongm1/.deleted-version-000140574-istore2b -> 1
+resource-infongt-eu4/
+resource-infongt-eu4/.deleted-2.warn.status -> 1
+resource-infongt-eu4/.deleted-actual-icpu5128 -> 1
+resource-infongt-eu4/.deleted-actual-icpu5133 -> 1
+resource-infongt-eu4/.deleted-actual-icpu5138 -> 1
+resource-infongt-eu4/.deleted-actual-icpu5139 -> 1
+resource-infongt-eu4/.deleted-actual-istore2a -> 1
+resource-infongt-eu4/.deleted-actual-istore2b -> 1
+resource-infongt-eu4/.deleted-defaults -> 1
+resource-infongt-eu4/.deleted-defaults-icpu5128 -> 1
+resource-infongt-eu4/.deleted-defaults-icpu5133 -> 1
+resource-infongt-eu4/.deleted-defaults-icpu5138 -> 1
+resource-infongt-eu4/.deleted-defaults-icpu5139 -> 1
+resource-infongt-eu4/.deleted-defaults-istore2a -> 1
+resource-infongt-eu4/.deleted-defaults-istore2b -> 1
+resource-infongt-eu4/.deleted-local-icpu5128 -> 1
+resource-infongt-eu4/.deleted-local-icpu5138 -> 1
+resource-infongt-eu4/.deleted-local-icpu5139 -> 1
+resource-infongt-eu4/.deleted-local-istore2a -> 1
+resource-infongt-eu4/.deleted-local-istore2b -> 1
+resource-infongt-eu4/.deleted-log-000014685-icpu5138 -> 1
+resource-infongt-eu4/.deleted-log-000014686-icpu5138 -> 1
+resource-infongt-eu4/.deleted-log-000014687-icpu5138 -> 1
+resource-infongt-eu4/.deleted-log-000014688-icpu5138 -> 1
+resource-infongt-eu4/.deleted-log-000014689-icpu5138 -> 1
+resource-infongt-eu4/.deleted-logstatus-istore2a.status -> 1
+resource-infongt-eu4/.deleted-primary -> 1
+resource-infongt-eu4/.deleted-size -> 1
+resource-infongt-eu4/.deleted-todo-icpu5128 -> 1
+resource-infongt-eu4/.deleted-todo-icpu5133 -> 1
+resource-infongt-eu4/.deleted-todo-icpu5138 -> 1
+resource-infongt-eu4/.deleted-todo-icpu5139 -> 1
+resource-infongt-eu4/.deleted-todo-istore2a -> 1
+resource-infongt-eu4/.deleted-todo-istore2b -> 1
+resource-infongt-eu4/.deleted-userspace -> 1
+resource-infongt-eu4/.deleted-version-000014684-icpu5128 -> 1
+resource-infongt-eu4/.deleted-version-000014684-icpu5138 -> 1
+resource-infongt-eu4/.deleted-version-000014684-icpu5139 -> 1
+resource-infongt-eu4/.deleted-version-000014684-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000014684-istore2b -> 1
+resource-infongt-eu4/.deleted-version-000014685-icpu5128 -> 1
+resource-infongt-eu4/.deleted-version-000014685-icpu5138 -> 1
+resource-infongt-eu4/.deleted-version-000014685-icpu5139 -> 1
+resource-infongt-eu4/.deleted-version-000014685-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000014686-icpu5128 -> 1
+resource-infongt-eu4/.deleted-version-000014686-icpu5138 -> 1
+resource-infongt-eu4/.deleted-version-000014686-icpu5139 -> 1
+resource-infongt-eu4/.deleted-version-000014686-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000014686-istore2b -> 1
+resource-infongt-eu4/.deleted-version-000014687-icpu5128 -> 1
+resource-infongt-eu4/.deleted-version-000014687-icpu5138 -> 1
+resource-infongt-eu4/.deleted-version-000014687-icpu5139 -> 1
+resource-infongt-eu4/.deleted-version-000014687-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000014688-icpu5128 -> 1
+resource-infongt-eu4/.deleted-version-000014688-icpu5138 -> 1
+resource-infongt-eu4/.deleted-version-000014688-icpu5139 -> 1
+resource-infongt-eu4/.deleted-version-000014688-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000014688-istore2b -> 1
+resource-infongt-eu4/.deleted-version-000020835-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000020835-istore2b -> 1
+resource-infongt-eu4/.deleted-version-000020836-icpu5139 -> 1
+resource-infongt-eu4/.deleted-version-000020836-istore2a -> 1
+resource-infongt-eu4/.deleted-version-000020836-istore2b -> 1
+resource-infongt-eu4/skip-check-icpu5128 -> 000021835
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5128/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5133/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5138/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-device-icpu5139 -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-icpu5139/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-istore2a/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-bad-log-name -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-emergency -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-log-not-contiguous -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replay-size -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replay-stop -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-replaylink-not-readable -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-sequence-trash -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-space-low -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-splitbrain-detected -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-versionlink-not-readable -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-err-versionlink-skip -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-fetch -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-not-yet-finished -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-start -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-replay-tolerance -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-sync -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-versionlink-not-equal -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-inf-versionlink-not-yet-exist -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-wrn-log-consecutive -> 1
+resource-infongt-eu4/actual-istore2b/.deleted-msg-wrn-space-low -> 1
+resource-infongt-eu5/.deleted-log-000009598-icpu5139 -> 1
+resource-infongt-eu5/.deleted-log-000009599-icpu5139 -> 1
+resource-infongt-eu5/.deleted-log-000009600-icpu5139 -> 1
+resource-infongt-eu5/.deleted-log-000009601-icpu5139 -> 1
+resource-infongt-eu5/.deleted-log-000009602-icpu5139 -> 1
+resource-infongt-eu5/.deleted-log-000009603-icpu5139 -> 1
+resource-infongt-eu5/.deleted-version-000009597-icpu5138 -> 1
+resource-infongt-eu5/.deleted-version-000009597-icpu5139 -> 1
+resource-infongt-eu5/.deleted-version-000009598-icpu5138 -> 1
+resource-infongt-eu5/.deleted-version-000009598-icpu5139 -> 1
+resource-infongt-eu5/.deleted-version-000009599-icpu5138 -> 1
+resource-infongt-eu5/.deleted-version-000009599-icpu5139 -> 1
+resource-infongt-eu5/.deleted-version-000009600-icpu5138 -> 1
+resource-infongt-eu5/.deleted-version-000009600-icpu5139 -> 1
+resource-infongt-eu5/.deleted-version-000009601-icpu5138 -> 1
+resource-infongt-eu5/.deleted-version-000009601-icpu5139 -> 1
+resource-infongt-eu5/.deleted-version-000009602-icpu5138 -> 1
+resource-infongt-eu5/.deleted-version-000009602-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000008063-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000008064-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000008065-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000008066-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000008067-icpu5139 -> 1
+resource-infongt-eu6/.deleted-log-000008068-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000008062-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000008062-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000008063-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000008063-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000008064-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000008064-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000008065-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000008065-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000008066-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000008066-icpu5139 -> 1
+resource-infongt-eu6/.deleted-version-000008067-icpu5138 -> 1
+resource-infongt-eu6/.deleted-version-000008067-icpu5139 -> 1
+resource-infongt-eu7/.deleted-log-000007979-icpu5139 -> 1
+resource-infongt-eu7/.deleted-log-000007980-icpu5139 -> 1
+resource-infongt-eu7/.deleted-log-000007981-icpu5139 -> 1
+resource-infongt-eu7/.deleted-log-000007982-icpu5139 -> 1
+resource-infongt-eu7/.deleted-log-000007983-icpu5139 -> 1
+resource-infongt-eu7/.deleted-log-000007984-icpu5139 -> 1
+resource-infongt-eu7/.deleted-version-000007978-icpu5138 -> 1
+resource-infongt-eu7/.deleted-version-000007978-icpu5139 -> 1
+resource-infongt-eu7/.deleted-version-000007979-icpu5138 -> 1
+resource-infongt-eu7/.deleted-version-000007979-icpu5139 -> 1
+resource-infongt-eu7/.deleted-version-000007980-icpu5138 -> 1
+resource-infongt-eu7/.deleted-version-000007980-icpu5139 -> 1
+resource-infongt-eu7/.deleted-version-000007981-icpu5138 -> 1
+resource-infongt-eu7/.deleted-version-000007981-icpu5139 -> 1
+resource-infongt-eu7/.deleted-version-000007982-icpu5138 -> 1
+resource-infongt-eu7/.deleted-version-000007982-icpu5139 -> 1
+resource-infongt-eu7/.deleted-version-000007983-icpu5138 -> 1
+resource-infongt-eu7/.deleted-version-000007983-icpu5139 -> 1
+
+sent 173,927 bytes  received 1,493 bytes  116,946.67 bytes/sec
+total size is 2,688,195  speedup is 15.32
+Running hook: hook_merge_cluster hook_merge_cluster istore2a icpu5133
+Executing on istore2a: 'marsadm lowlevel-ls-host-ips'
+WARNING: EXPERTS ONLY -- risky lowlevel command 'lowlevel-ls-host-ips'
+Peer 'istore2a' has IP '10.46.98.4'
+Executing on icpu5133: 'marsadm merge-cluster --ssh-port=24 10.46.98.4'
+Using SSH port '24' from command line.
+Linux icpu5133 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING 10.46.98.4 (10.46.98.4) 56(84) bytes of data.
+64 bytes from 10.46.98.4: icmp_seq=1 ttl=61 time=0.853 ms
+
+--- 10.46.98.4 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.853/0.853/0.853/0.000 ms
+ssh: connect to host 10.46.98.4 port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING icpu5128 (10.46.98.175) 56(84) bytes of data.
+64 bytes from icpu5128 (10.46.98.175): icmp_seq=1 ttl=61 time=0.802 ms
+
+--- icpu5128 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.802/0.802/0.802/0.000 ms
+Linux icpu5128 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5128 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=58 time=0.858 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.858/0.858/0.858/0.000 ms
+ssh: connect to host icpu5138 port 24: Connection timed out
+ssh: connect to host icpu5138 port 22: Connection refused
+ssh: connect to host icpu5138 port 24: Connection timed out
+WARNING: SSH to 'icpu5138' does not work on any port
+PING 10.46.98.177 (10.46.98.177) 56(84) bytes of data.
+64 bytes from 10.46.98.177: icmp_seq=1 ttl=61 time=0.819 ms
+
+--- 10.46.98.177 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.819/0.819/0.819/0.000 ms
+Linux icpu5138 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5138 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=64 time=0.056 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.056/0.056/0.056/0.000 ms
+Linux icpu5139 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+Linux icpu5139 3.14.79-grsec+ #1196 SMP Tue Jun 20 13:04:30 CEST 2017 x86_64 GNU/Linux
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=61 time=0.859 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.859/0.859/0.859/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=64 time=0.070 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.070/0.070/0.070/0.000 ms
+ssh: connect to host istore2b port 24: Connection refused
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Linux istore2b 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+Other cluster peer '10.46.98.4' has the same UUID.
+No resource name checking necessary.
+Operation 'merge-cluster' will therfore work logically idempotent.
+receiving incremental file list
+
+sent 11 bytes  received 73 bytes  56.00 bytes/sec
+total size is 38  speedup is 0.45
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 82 bytes  received 12 bytes  188.00 bytes/sec
+total size is 38  speedup is 0.40
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  58.00 bytes/sec
+total size is 38  speedup is 0.44
+sending incremental file list
+
+sent 76 bytes  received 11 bytes  174.00 bytes/sec
+total size is 38  speedup is 0.44
+receiving incremental file list
+actual-icpu5128/
+actual-icpu5133/
+actual-icpu5138/
+actual-icpu5139/
+actual-istore2b/
+resource-infong375/actual-istore2a/
+resource-infong375/actual-istore2b/
+resource-infong376/actual-istore2a/
+resource-infong376/actual-istore2b/
+resource-infongm1/actual-istore2a/
+resource-infongm1/actual-istore2b/
+resource-infongt-eu4/skip-check-icpu5128 -> 000021835
+resource-infongt-eu4/actual-icpu5128/
+resource-infongt-eu4/actual-icpu5133/
+resource-infongt-eu4/actual-icpu5138/
+resource-infongt-eu4/actual-icpu5139/
+resource-infongt-eu4/actual-icpu5139/.deleted-device-icpu5139 -> 1
+resource-infongt-eu4/actual-istore2b/
+resource-infongt-eu4/todo-icpu5133/
+resource-infongt-eu4/todo-icpu5138/
+resource-infongt-eu4/todo-icpu5139/
+resource-infongt-eu4/todo-istore2b/
+resource-infongt-eu5/
+resource-infongt-eu5/actual-icpu5138/
+resource-infongt-eu5/actual-icpu5139/
+resource-infongt-eu6/
+resource-infongt-eu6/actual-icpu5138/
+resource-infongt-eu6/actual-icpu5139/
+resource-infongt-eu7/
+resource-infongt-eu7/actual-icpu5138/
+resource-infongt-eu7/actual-icpu5139/
+resource-lv-0/actual-icpu5128/
+resource-lv-0/actual-icpu5133/
+todo-global/
+
+sent 246 bytes  received 173,885 bytes  348,262.00 bytes/sec
+total size is 5,204,851  speedup is 29.89
+sending incremental file list
+actual-icpu5133/
+actual-istore2a/
+resource-infong375/actual-istore2a/
+resource-infong376/actual-istore2a/
+resource-infongm1/actual-istore2a/
+resource-infongt-eu4/skip-check-icpu5133 -> 000021835
+resource-infongt-eu4/actual-icpu5128/
+resource-infongt-eu4/actual-icpu5139/
+resource-infongt-eu4/local-icpu5133/
+resource-infongt-eu4/local-icpu5133/.deleted- -> 1
+resource-infongt-eu5/
+resource-infongt-eu5/actual-icpu5139/
+resource-infongt-eu6/
+resource-infongt-eu6/actual-icpu5139/
+resource-infongt-eu7/
+resource-infongt-eu7/actual-icpu5139/
+resource-lv-0/actual-icpu5128/
+
+sent 172,580 bytes  received 680 bytes  115,506.67 bytes/sec
+total size is 2,718,276  speedup is 15.69
+Executing on icpu5128: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on icpu5128: 'marsadm view-is-attach infongt-eu4'
+Nothing to do: resource 'infongt-eu4' is already present at 'icpu5128'
+Executing on icpu5128: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on icpu5133: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Mon Jul  3 16:02:02 CEST 2017 sync rests for 'icpu5128 icpu5133':
+Mon Jul  3 16:02:02 CEST 2017 sync rests: 0B/UpToDate 0B/UpToDate
+Mon Jul  3 16:02:03 CEST 2017 sync appears to have finished at 'icpu5128 icpu5133'
+Executing on icpu5128: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Mon Jul  3 16:02:08 CEST 2017 sync rests for 'icpu5128':
+Mon Jul  3 16:02:08 CEST 2017 sync rests: 0B/UpToDate
+Mon Jul  3 16:02:08 CEST 2017 sync appears to have finished at 'icpu5128'
+Running hook: hook_resource_stop hook_resource_stop istore2a infongt-eu4
+Executing on istore2a: 'cm3 --stop infongt-eu4 || cm3 --stop infongt-eu4 || { mountpoint /vol/infongt-eu4 && umount /vol/infongt-eu4; } || false'
+Shutdown infongt-eu4.
+stop: UPDATE mars_infongt-eu4  ...... OK [0s]
+stop: UPDATE iet_infongt-eu4 ...... OK
+stop: infongt-eu4.schlund.de is updated.
+stop: STOP infongt-eu4.schlund.de  ...(vmstop:120s) (dissemble:120s) (delete) ... OK [43s]
+stop: UPDATE icpu15.schlund.de  ...... OK [1s]
+stop: icpu15.schlund.de is updated.
+stop: Skipped 'update_prev_vmhost' since no previous VMHost is linked with infongt-eu4.schlund.de
+stop: VM infongt-eu4.schlund.de is stopped.
+stop: Clearing VMHost for infongt-eu4.schlund.de, no longer using icpu15.schlund.de
+stop: Stopping storage for infongt-eu4.schlund.de
+stop: DOWN iet_infongt-eu4  ...(remove_tid) ... OK [0s]
+stop: DOWN mars_infongt-eu4  ...(wait-umount:20s) (switch-secondary:120s) ... OK [9s]
+stop: DOWN /dev/vg2a/infongt-eu4  ...... OK [0s]
+stop: infongt-eu4.schlund.de is stopped.
+stop: COMMAND FINISHED in 53 seconds
+Shutdown of infongt-eu4.schlund.de finished.
+Running hook: hook_resource_migrate hook_resource_migrate istore2a icpu5128 infongt-eu4
+curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "GET" "http://clustermw:3042/storagehosts/istore2a.schlund.de"
+curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "GET" "http://clustermw:3042/nodes/icpu5128.schlund.de"
+Moving config from cluster 'cluster2' to cluster 'cluster496'
+curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "GET" "http://clustermw:3042/vms/infongt-eu4.schlund.de"
+{
+   "zone" : "EUROPE",
+   "hostips" : {
+      "HA_IP_V6" : [
+         "2001:8D8:5FF:5B:212:227:24:80"
+      ],
+      "IPV6_PREFIXES" : [
+         "2001:8d8:1001:6044::/64"
+      ],
+      "HA_IP" : [
+         "212.227.24.80"
+      ]
+   },
+   "macids" : {},
+   "hwclass_id" : "25125",
+   "segment" : "PraesenzNetz-20",
+   "name" : "infongt-eu4.schlund.de",
+   "hvt_id" : "8048",
+   "type" : "infong",
+   "bz_id" : "400",
+   "properties" : {
+      "START_TINCAS" : "/tmp/tincas.sock",
+      "INFONG_TYPE" : "standalone",
+      "CBI" : "Jessie",
+      "MAX_KUNDEN" : "123",
+      "START_SP_DOCROOT_APACHE" : "yes",
+      "MAX_KUNDEN_PERF" : "123",
+      "DDOS_PROTECT" : "standard",
+      "START_FTP_SERVER" : "yes",
+      "START_SSL_APACHE" : "yes",
+      "TZ" : "Europe/Berlin",
+      "DASTOOL" : "dastool7.schlund.de",
+      "START_STD_APACHE" : "yes",
+      "OS_DEBIAN_VERSION" : "Jessie",
+      "START_MYSQL" : "no",
+      "START_DAV_APACHE" : "yes",
+      "DEFAULT_CHROOT_ID" : "7",
+      "ENABLE_MOD_DEFLATE" : "yes"
+   },
+   "_links" : {
+      "cluster_assoc" : {
+         "href" : "http://clustermw:3042/clusters/cluster2/vms/infongt-eu4.schlund.de"
+      },
+      "dns" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de/dns"
+      },
+      "segment" : {
+         "href" : "http://clustermw:3042/segments/PraesenzNetz-20"
+      },
+      "self" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de"
+      },
+      "segment_assoc" : {
+         "href" : "http://clustermw:3042/segments/PraesenzNetz-20/vms/infongt-eu4.schlund.de"
+      },
+      "properties" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de/properties"
+      },
+      "hostips" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de/hostips"
+      },
+      "cluster" : {
+         "href" : "http://clustermw:3042/clusters/cluster2"
+      }
+   },
+   "country" : "DE",
+   "cluster" : "cluster2",
+   "flavour" : "cla_perf_straf",
+   "region" : "EUROPE",
+   "hostip_params" : {
+      "2001:8d8:1001:6044::/64" : {
+         "protocol" : "6",
+         "type" : "delegation",
+         "netinterface" : "eth0"
+      },
+      "2001:8D8:5FF:5B:212:227:24:80" : {
+         "netinterface" : "eth0",
+         "type" : "system",
+         "protocol" : "6"
+      },
+      "212.227.24.80" : {
+         "type" : "system",
+         "protocol" : "4",
+         "netinterface" : "eth0"
+      }
+   },
+   "host_id" : "20212725"
+}
+clustertool DELETE /clusters/cluster2/vms/infongt-eu4.schlund.de
+curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "DELETE" "http://clustermw:3042/clusters/cluster2/vms/infongt-eu4.schlund.de"
+{"_links":{"add_storagehost":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2\/storagehosts\/%NAME%"},"add_vm":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2\/vms\/%NAME%"},"self":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2"},"vms":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2\/vms"},"add_node":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2\/nodes\/%NAME%"},"storagehosts":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2\/storagehosts"},"nodes":{"href":"http:\/\/clustermw:3042\/clusters\/cluster2\/nodes"},"manage":[{"href":"http:\/\/istore2b.schlund.de:2424\/"},{"href":"http:\/\/istore2a.schlund.de:2424\/"}]},"name":"cluster2","segment":"PraesenzNetz-II","vms":{"infong375.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/vms\/infong375.schlund.de"}},"infong376.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/vms\/infong376.schlund.de"}},"infongm1.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/vms\/infongm1.schlund.de"}}},"properties":{"NETWORK_SEGMENT":"PraesenzNetz-II","SYSTEM_TYPE":"CLUSTER_SHARED_HOSTING_LINUX","CLUSTERCONF_SERIAL":"30"},"storagehosts":{"istore2b.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/storagehosts\/istore2b.schlund.de"}},"istore2a.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/storagehosts\/istore2a.schlund.de"}}},"bz_id":"20000","nodes":{"icpu20.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu20.schlund.de"}},"icpu623.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu623.schlund.de"}},"icpu16.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu16.schlund.de"}},"icpu21.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu21.schlund.de"}},"icpu179.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu179.schlund.de"}},"icpu15.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu15.schlund.de"}},"icpu18.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu18.schlund.de"}},"icpu177.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu177.schlund.de"}},"icpu17.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu17.schlund.de"}},"icpu180.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu180.schlund.de"}},"icpu624.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu624.schlund.de"}},"icpu19.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu19.schlund.de"}},"icpu178.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu178.schlund.de"}}}}clustertool PUT /clusters/cluster496/vms/infongt-eu4.schlund.de
+curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "PUT" "http://clustermw:3042/clusters/cluster496/vms/infongt-eu4.schlund.de"
+{"_links":{"add_storagehost":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496\/storagehosts\/%NAME%"},"add_vm":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496\/vms\/%NAME%"},"self":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496"},"vms":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496\/vms"},"nodes":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496\/nodes"},"add_node":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496\/nodes\/%NAME%"},"storagehosts":{"href":"http:\/\/clustermw:3042\/clusters\/cluster496\/storagehosts"}},"name":"cluster496","segment":"PraesenzNetz-20","vms":{"infongt-eu4.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/vms\/infongt-eu4.schlund.de"}}},"properties":{"NETWORK_SEGMENT":"PraesenzNetz-20","CLUSTERCONF_SERIAL":"8"},"storagehosts":{},"bz_id":"500","nodes":{"icpu5128.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu5128.schlund.de"}},"icpu5133.schlund.de":{"self":{"href":"http:\/\/clustermw:3042\/nodes\/icpu5133.schlund.de"}}}}curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "GET" "http://clustermw:3042/vms/infongt-eu4.schlund.de"
+{
+   "country" : "DE",
+   "name" : "infongt-eu4.schlund.de",
+   "zone" : "EUROPE",
+   "hwclass_id" : "25125",
+   "_links" : {
+      "cluster_assoc" : {
+         "href" : "http://clustermw:3042/clusters/cluster496/vms/infongt-eu4.schlund.de"
+      },
+      "properties" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de/properties"
+      },
+      "segment_assoc" : {
+         "href" : "http://clustermw:3042/segments/PraesenzNetz-20/vms/infongt-eu4.schlund.de"
+      },
+      "cluster" : {
+         "href" : "http://clustermw:3042/clusters/cluster496"
+      },
+      "hostips" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de/hostips"
+      },
+      "dns" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de/dns"
+      },
+      "segment" : {
+         "href" : "http://clustermw:3042/segments/PraesenzNetz-20"
+      },
+      "self" : {
+         "href" : "http://clustermw:3042/vms/infongt-eu4.schlund.de"
+      }
+   },
+   "flavour" : "cla_perf_straf",
+   "hostips" : {
+      "HA_IP" : [
+         "212.227.24.80"
+      ],
+      "HA_IP_V6" : [
+         "2001:8D8:5FF:5B:212:227:24:80"
+      ],
+      "IPV6_PREFIXES" : [
+         "2001:8d8:1001:6044::/64"
+      ]
+   },
+   "hvt_id" : "8048",
+   "bz_id" : "400",
+   "region" : "EUROPE",
+   "type" : "infong",
+   "segment" : "PraesenzNetz-20",
+   "macids" : {},
+   "properties" : {
+      "OS_DEBIAN_VERSION" : "Jessie",
+      "START_MYSQL" : "no",
+      "MAX_KUNDEN_PERF" : "123",
+      "START_STD_APACHE" : "yes",
+      "DDOS_PROTECT" : "standard",
+      "START_FTP_SERVER" : "yes",
+      "TZ" : "Europe/Berlin",
+      "ENABLE_MOD_DEFLATE" : "yes",
+      "START_TINCAS" : "/tmp/tincas.sock",
+      "DASTOOL" : "dastool7.schlund.de",
+      "DEFAULT_CHROOT_ID" : "7",
+      "START_SP_DOCROOT_APACHE" : "yes",
+      "START_DAV_APACHE" : "yes",
+      "START_SSL_APACHE" : "yes",
+      "INFONG_TYPE" : "standalone",
+      "CBI" : "Jessie",
+      "MAX_KUNDEN" : "123"
+   },
+   "host_id" : "20212725",
+   "cluster" : "cluster496",
+   "hostip_params" : {
+      "212.227.24.80" : {
+         "protocol" : "4",
+         "type" : "system",
+         "netinterface" : "eth0"
+      },
+      "2001:8D8:5FF:5B:212:227:24:80" : {
+         "netinterface" : "eth0",
+         "type" : "system",
+         "protocol" : "6"
+      },
+      "2001:8d8:1001:6044::/64" : {
+         "type" : "delegation",
+         "netinterface" : "eth0",
+         "protocol" : "6"
+      }
+   }
+}
+diff: ./json-backup.2017-07-03_16.00.52/infongt-eu4.pp.old.json: No such file or directory
+diff: ./json-backup.2017-07-03_16.00.52/infongt-eu4.pp.new.json: No such file or directory
+curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "PUT" "http://clustermw:3042/clusters/cluster2/properties/CLUSTERCONF_SERIAL"
+{"properties":{"NETWORK_SEGMENT":"PraesenzNetz-II","SYSTEM_TYPE":"CLUSTER_SHARED_HOSTING_LINUX","CLUSTERCONF_SERIAL":"31"}}curl -s -u "tschoebeltheuer:Thui5Lie5eiL5osh" -X "PUT" "http://clustermw:3042/clusters/cluster496/properties/CLUSTERCONF_SERIAL"
+{"properties":{"NETWORK_SEGMENT":"PraesenzNetz-20","CLUSTERCONF_SERIAL":"9"}}Executing on istore2a: 'cm3 --update --force'
+Update started.
+Update of cluster finished.
+Executing on icpu5128: 'cm3 --update --force'
+Update started.
+Update of cluster finished.
+Executing on istore2a: 'service clustermanager restart'
+Updating Clustermanager config: daemon.conf.
+Restarting Clustermanager: clustermanagerd (quit) (start).
+Executing on icpu5128: 'service clustermanager restart'
+Running hook: hook_resource_start hook_resource_start icpu5128 infongt-eu4
+Executing on icpu5128: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on icpu5128: 'service clustermanager restart'
+Executing on icpu5128: 'marsadm primary infongt-eu4'
+---------------------------- check preconditions:
+Current designated primary: (none)
+OK, it seems that sync has finished on host 'icpu5128'.
+OK, it seems that sync has finished on host 'icpu5133'.
+OK, it seems that sync has finished on host 'icpu5138'.
+OK, it seems that sync has finished on host 'icpu5139'.
+OK, it seems that sync has finished on host 'istore2a'.
+OK, it seems that sync has finished on host 'istore2b'.
+OK, '/mars/resource-infongt-eu4/todo-icpu5128/attach' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-icpu5128/connect' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-icpu5128/allow-replay' has acceptable value '1'
+---------------------------- leave primary state:
+all 5 peer(s) seem to be alive
+Using last primary 'istore2a' as a substitute.
+---------------------------- wait when necessary:
+---------------------------- switch to primary:
+designated primary changed from '(none)' to 'icpu5128'
+---------------------------- wait for device:
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' is present
+Executing on icpu5128: 'cm3 --stop infongt-eu4; cm3 --start infongt-eu4 || { cm3 --stop infongt-eu4; cm3 --start infongt-eu4; } || false'
+Shutdown infongt-eu4.
+stop: UPDATE mars_infongt-eu4  ...... OK [0s]
+stop: VM::SAInfongBase: Name:	infongt-eu4
+stop: VM::SAInfongBase: State:	NOT_PRESENT
+stop: infongt-eu4.schlund.de is updated.
+stop: Skipped 'vmhandler_stop' since vm infongt-eu4.schlund.de is already stopped
+stop: VM infongt-eu4.schlund.de is stopped.
+stop: Stopping storage for infongt-eu4.schlund.de
+stop: DOWN mars_infongt-eu4  ...(wait-umount:20s) ... OK [0s]
+stop: DOWN /dev/vginfong/infongt-eu4  ...... OK [0s]
+stop: infongt-eu4.schlund.de is stopped.
+stop: COMMAND FINISHED in 0 seconds
+Shutdown of infongt-eu4.schlund.de finished.
+Startup infongt-eu4.
+start: UPDATE mars_infongt-eu4  ...... OK [0s]
+start: VM::SAInfongBase: Name:	infongt-eu4
+start: VM::SAInfongBase: State:	NOT_PRESENT
+start: infongt-eu4.schlund.de is updated.
+start: Using VMHost 'icpu5128.schlund.de' (policy: 'free')
+start: Reserving VMHost icpu5128.schlund.de
+start: Starting storage for infongt-eu4.schlund.de
+start: UP /dev/vginfong/infongt-eu4  ...... OK (skipped) [0s]
+start: UP mars_infongt-eu4  ...(switch-primary:120s) ... OK [1s]
+start: Starting VM for infongt-eu4.schlund.de via nodeagent
+start: START infongt-eu4.schlund.de  ...(init) (assemble:300s) (vmstart:300s) ... OK [1s]
+start: infongt-eu4.schlund.de is started.
+start: COMMAND FINISHED in 2 seconds
+Startup of infongt-eu4.schlund.de finished.
+Running hook: hook_secondary_migrate hook_secondary_migrate icpu5133
+Executing on icpu5133: 'cm3 --update --force'
+Update started.
+Update of cluster finished.
+DONE Mon Jul  3 16:03:55 CEST 2017

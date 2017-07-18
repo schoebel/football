@@ -1,0 +1,6 @@
+./migrate-resource.sh extend infongt-eu6 50g
+operation=extend
+res=infongt-eu6
+target_percent=50g
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'

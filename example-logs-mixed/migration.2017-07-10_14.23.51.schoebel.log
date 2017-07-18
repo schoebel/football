@@ -1,0 +1,431 @@
+./migrate-resource.sh --force=1 shrink infongt-eu6
+force=1
+operation=shrink
+res=infongt-eu6
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu5139"
+Determined the following CURRENT primary: "icpu5139"
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.27 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.276/1.276/1.276/0.000 ms
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.28 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.284/1.284/1.284/0.000 ms
+/mars is a mountpoint
+  infongt-eu6 UpToDate Replicating DCASFR Primary icpu5139 
+/vol/infongt-eu6 is a mountpoint
+Determined the following secondaries: 'icpu5138'
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.271 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.271/0.271/0.271/0.000 ms
+Determined the following VG name: "vginfong"
+Determined the following LV path: "/dev/vginfong/infongt-eu6"
+Determined USED  space: 993376
+Determined TOTAL space: 19990528
+Computed TARGET  space: 20000000
+No need for shrinking the LV space of infongt-eu6
+vginfong REST space on 'icpu5139' :   7184683008
+vginfong REST space on 'icpu5138' :   7164682240
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'if [[ -e /dev/vginfong/infongt-eu6-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu6-copy on icpu5139 - Do this by hand"; exit -1; fi'
+Executing on icpu5139: 'if [[ -e /dev/vginfong/infongt-eu6-tmp ]]; then lvremove -f /dev/vginfong/infongt-eu6-tmp; fi'
+Executing on icpu5139: 'lvcreate -L 20000000k -n infongt-eu6-tmp vginfong'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu6-tmp" created
+Executing on icpu5139: 'mkfs.xfs -dagcount=1024 /dev/vginfong/infongt-eu6-tmp'
+meta-data=/dev/vginfong/infongt-eu6-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'if [[ -e /dev/vginfong/infongt-eu6-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu6-copy on icpu5138 - Do this by hand"; exit -1; fi'
+Executing on icpu5138: 'if [[ -e /dev/vginfong/infongt-eu6-tmp ]]; then lvremove -f /dev/vginfong/infongt-eu6-tmp; fi'
+  Logical volume "infongt-eu6-tmp" successfully removed
+Executing on icpu5138: 'lvcreate -L 20000000k -n infongt-eu6-tmp vginfong'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu6-tmp" created
+Executing on icpu5138: 'mkfs.xfs -dagcount=1024 /dev/vginfong/infongt-eu6-tmp'
+meta-data=/dev/vginfong/infongt-eu6-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu6
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'mkdir -p /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'mount -o rw,nosuid,noatime,attr2,inode64,usrquota /dev/vginfong/infongt-eu6-tmp /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'for i in {1..3}; do nice -19 ionice -c3 rsync  -aSH --info=STATS  /vol/infongt-eu6/ /vol/infongt-eu6-tmp/ && exit 0; echo RESTARTING $(date); done; exit -1'
+
+sent 1,384,759,604 bytes  received 1,136,588 bytes  19,940,952.40 bytes/sec
+total size is 1,381,031,677  speedup is 1.00
+Executing on icpu5139: 'mountpoint /vol/infongt-eu6 && mountpoint /vol/infongt-eu6-tmp'
+/vol/infongt-eu6 is a mountpoint
+/vol/infongt-eu6-tmp is a mountpoint
+Executing on icpu5139: 'xfs_quota -x -c enable '
+XFS_QUOTAON: File exists
+XFS_QUOTAON: File exists
+Executing on icpu5139: 'xfs_quota -x -c dump /vol/infongt-eu6'
+Executing on icpu5139: 'xfs_quota -x -c restore /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'umount /vol/infongt-eu6-tmp/'
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu6
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'if [[ -e /dev/vginfong/infongt-eu6-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu6-copy on icpu5139 - First remove it - Do this by hand"; exit -1; fi'
+Executing on icpu5139: 'if ! [[ -e /dev/vginfong/infongt-eu6-tmp ]]; then echo "Cannot start hot phase: /dev/vginfong/infongt-eu6-tmp is missing. Run 'prepare' first!"; exit -1; fi'
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu6
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'mkdir -p /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'mount -o rw,nosuid,noatime,attr2,inode64,usrquota /dev/vginfong/infongt-eu6-tmp /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'for i in {1..3}; do time rsync  -aSH --info=STATS --delete /vol/infongt-eu6/ /vol/infongt-eu6-tmp/ && exit 0; echo RESTARTING $(date); done; exit -1'
+
+sent 958,928 bytes  received 4,530 bytes  128,461.07 bytes/sec
+total size is 1,381,032,726  speedup is 1,433.41
+
+real	0m6.677s
+user	0m0.300s
+sys	0m1.436s
+Executing on icpu5139: 'mountpoint /vol/infongt-eu6 && mountpoint /vol/infongt-eu6-tmp'
+/vol/infongt-eu6 is a mountpoint
+/vol/infongt-eu6-tmp is a mountpoint
+Executing on icpu5139: 'xfs_quota -x -c enable '
+XFS_QUOTAON: File exists
+XFS_QUOTAON: File exists
+Executing on icpu5139: 'xfs_quota -x -c dump /vol/infongt-eu6'
+Executing on icpu5139: 'xfs_quota -x -c restore /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'umount /vol/infongt-eu6-tmp/'
+Running hook: hook_resource_stop_vm hook_resource_stop_vm icpu5139 infongt-eu6
+Executing on icpu5139: 'nodeagent vmstop infongt-eu6'
+Set target state 'ASSEMBLED' for instance 'infongt-eu6'
+Stop container 'infongt-eu6' 
+Routing: currently active instances:  infongt-eu7
+Routing: currently passive instances: infongt-eu6
+Routing (quagga): execute scripts
+ |--> /var/lib/nodeagent/instances/infongt-eu6/quagga-peers4.sh
+ |--> /var/lib/nodeagent/instances/infongt-eu7/quagga-peers4.sh
+ |--> /var/lib/nodeagent/instances/infongt-eu6/quagga-peers6.sh
+ |--> /var/lib/nodeagent/instances/infongt-eu7/quagga-peers6.sh
+Routing (bird): update bird config
+ |--> /var/lib/nodeagent/network/bird-static-routes4.conf
+ |--> /var/lib/nodeagent/network/bird-static-routes6.conf
+ |--> /var/lib/nodeagent/network/bird-peers4.conf
+ |--> /var/lib/nodeagent/network/bird-peers6.conf
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu6
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'mkdir -p /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'mount -o rw,nosuid,noatime,attr2,inode64,usrquota /dev/vginfong/infongt-eu6-tmp /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'for i in {1..3}; do time rsync  -aSH --info=STATS --delete /vol/infongt-eu6/ /vol/infongt-eu6-tmp/ && exit 0; echo RESTARTING $(date); done; exit -1'
+
+sent 967,290 bytes  received 4,584 bytes  129,583.20 bytes/sec
+total size is 1,381,040,981  speedup is 1,421.01
+
+real	0m6.988s
+user	0m0.356s
+sys	0m1.412s
+Executing on icpu5139: 'mountpoint /vol/infongt-eu6 && mountpoint /vol/infongt-eu6-tmp'
+/vol/infongt-eu6 is a mountpoint
+/vol/infongt-eu6-tmp is a mountpoint
+Executing on icpu5139: 'xfs_quota -x -c enable '
+XFS_QUOTAON: File exists
+XFS_QUOTAON: File exists
+Executing on icpu5139: 'xfs_quota -x -c dump /vol/infongt-eu6'
+Executing on icpu5139: 'xfs_quota -x -c restore /vol/infongt-eu6-tmp'
+Executing on icpu5139: 'umount /vol/infongt-eu6-tmp/'
+Running hook: hook_resource_stop_rest hook_resource_stop_rest icpu5139 icpu5139 infongt-eu6
+Executing on icpu5139: 'nodeagent stop infongt-eu6'
+Set target state 'ASSEMBLED' for instance 'infongt-eu6'
+No-Op: Container 'infongt-eu6' already stopped.
+Routing: currently active instances:  infongt-eu7
+Routing: currently passive instances: infongt-eu6
+Routing (quagga): execute scripts
+ |--> /var/lib/nodeagent/instances/infongt-eu6/quagga-peers4.sh
+ |--> /var/lib/nodeagent/instances/infongt-eu7/quagga-peers4.sh
+ |--> /var/lib/nodeagent/instances/infongt-eu6/quagga-peers6.sh
+ |--> /var/lib/nodeagent/instances/infongt-eu7/quagga-peers6.sh
+Routing (bird): update bird config
+ |--> /var/lib/nodeagent/network/bird-static-routes4.conf
+ |--> /var/lib/nodeagent/network/bird-static-routes6.conf
+ |--> /var/lib/nodeagent/network/bird-peers4.conf
+ |--> /var/lib/nodeagent/network/bird-peers6.conf
+Set target state 'CONFIGURED' for instance 'infongt-eu6'
+No-Op: No mntpoint defined for volume tmp-chroots
+Clean up volume 'tmp-chroots' from source 'filesys'
+Unmount /vol/infongt-eu6
+ |--> umount /vol/infongt-eu6
+Clean up volume 'import' from source 'device'
+ |--> UMOUNT: --
+Clean up volume 'mountall' from source 'command'
+ |--> CLEANUP: --
+Cleanup static routes to container
+ |--> Quagga6: vtysh -c "conf t" -c "no ip route 2001:8D8:5FF:5B:212:227:24:82/128 intbr0"
+ |--> Bird6: 
+ |--> Quagga4: vtysh -c "conf t" -c "no ip route 212.227.24.82/32 intbr0"
+ |--> Bird4: 
+Cleanup BGP peer configuration to container
+ |--> Quagga4: vtysh -c "conf t" -c "router bgp 8560" -c "bgp router-id 0.0.0.0" -c "neighbor 169.254.254.155 peer-group PRIVATE_PEER_GROUP_V4"
+ |--> Bird4: 
+ |--> Quagga6: vtysh -c "conf t" -c "router bgp 8560" -c "bgp router-id 0.0.0.0" -c "neighbor fdc0:baa1:feed:ff:169:254:254:155 peer-group PRIVATE_PEER_GROUP_V6"
+ |--> Bird6: 
+Destroy container 'infongt-eu6'
+Executing on icpu5139: 'mountpoint /vol/infongt-eu6 && { umount -f /vol/infongt-eu6 ; exit $?; } || true'
+/vol/infongt-eu6 is not a mountpoint
+Executing on icpu5139: 'cm3 --stop infongt-eu6 || cm3 --stop infongt-eu6 || { mountpoint /vol/infongt-eu6 && umount /vol/infongt-eu6; } || false'
+Shutdown infongt-eu6.
+stop: UPDATE mars_infongt-eu6  ...... OK [0s]
+stop: VM::SAInfongBase: Name:	infongt-eu6
+stop: VM::SAInfongBase: State:	CONFIGURED
+stop: VM::SAInfongBase: Address:	169.254.254.155
+stop: infongt-eu6.schlund.de is updated.
+stop: Skipped 'vmhandler_stop' since vm infongt-eu6.schlund.de is already stopped
+stop: VM infongt-eu6.schlund.de is stopped.
+stop: Stopping storage for infongt-eu6.schlund.de
+stop: DOWN mars_infongt-eu6  ...(wait-umount:20s) ... OK [0s]
+stop: DOWN /dev/vginfong/infongt-eu6  ...... OK [0s]
+stop: infongt-eu6.schlund.de is stopped.
+stop: COMMAND FINISHED in 0 seconds
+Shutdown of infongt-eu6.schlund.de finished.
+Executing on icpu5139: 'rmdir /vol/infongt-eu6-tmp || echo IGNORE'
+Executing on icpu5139: 'marsadm wait-umount infongt-eu6'
+OK, device for resource 'infongt-eu6' is not in use.
+Executing on icpu5139: 'marsadm secondary infongt-eu6'
+---------------------------- check preconditions:
+Current designated primary: icpu5139
+all preconditions OK for resource 'infongt-eu6'
+---------------------------- leave primary state:
+designated primary changed from 'icpu5139' to '(none)'
+---------------------------- wait for effect:
+WARNING: device '/dev/mars/infongt-eu6' has not yet disappeared
+device '/dev/mars/infongt-eu6' is no longer present
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'marsadm down infongt-eu6 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu6
+successfully started pause-sync-local on resource infongt-eu6
+successfully started pause-fetch on resource infongt-eu6
+successfully started detach on resource infongt-eu6
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu6/actual-icpu5139/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu6' is no longer present
+OK, '/mars/resource-infongt-eu6/actual-icpu5139/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu6/actual-icpu5139/is-syncing' has acceptable value '0'
+Executing on icpu5139: 'marsadm leave-resource --force infongt-eu6 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001593634 / 1593681
+waiting for deletions to apply locally....
+deleted: 001593681 / 1593681
+found replay link '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000012214-icpu5139,3555220,0'
+found replay link '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000012214-icpu5139,3555220,0'
+checking 'version-000012212-icpu5138'
+  corresponding logfile is 'log-000012212-icpu5139'
+  ok 'version-000012212-icpu5138'
+checking 'version-000012212-icpu5139'
+  corresponding logfile is 'log-000012212-icpu5139'
+  ok 'version-000012212-icpu5139'
+checking 'version-000012213-icpu5138'
+  corresponding logfile is 'log-000012213-icpu5139'
+  ok 'version-000012213-icpu5138'
+checking 'version-000012213-icpu5139'
+  corresponding logfile is 'log-000012213-icpu5139'
+  ok 'version-000012213-icpu5139'
+checking 'version-000012214-icpu5138'
+  corresponding logfile is 'log-000012214-icpu5139'
+  ok 'version-000012214-icpu5138'
+checking 'version-000012214-icpu5139'
+  corresponding logfile is 'log-000012214-icpu5139'
+  ok 'version-000012214-icpu5139'
+checking 'log-000012213-icpu5139'
+  ok 'log-000012213-icpu5139'
+checking 'log-000012214-icpu5139'
+  ok 'log-000012214-icpu5139'
+info: logfile 'log-000012212-icpu5139' is referenced (2), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001593681 / 1593681
+deleted: 001593681 / 1593681
+Executing on icpu5139: 'lvrename vginfong infongt-eu6 infongt-eu6-copy'
+  Renamed "infongt-eu6" to "infongt-eu6-copy" in volume group "vginfong"
+Executing on icpu5139: 'lvrename vginfong infongt-eu6-tmp infongt-eu6'
+  Renamed "infongt-eu6-tmp" to "infongt-eu6" in volume group "vginfong"
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'marsadm down infongt-eu6 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu6
+successfully started pause-sync-local on resource infongt-eu6
+successfully started pause-fetch on resource infongt-eu6
+successfully started detach on resource infongt-eu6
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu6/actual-icpu5138/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu6' is no longer present
+OK, '/mars/resource-infongt-eu6/actual-icpu5138/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu6/actual-icpu5138/is-syncing' has acceptable value '0'
+Executing on icpu5138: 'marsadm leave-resource --force infongt-eu6 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001593681 / 1593731
+waiting for deletions to apply locally....
+deleted: 001593731 / 1593731
+Resource contains no valid information - there is nothing to purge
+deleted: 001593731 / 1593731
+Executing on icpu5138: 'lvrename vginfong infongt-eu6 infongt-eu6-copy'
+  Renamed "infongt-eu6" to "infongt-eu6-copy" in volume group "vginfong"
+Executing on icpu5138: 'lvrename vginfong infongt-eu6-tmp infongt-eu6'
+  Renamed "infongt-eu6-tmp" to "infongt-eu6" in volume group "vginfong"
+Executing on icpu5139: 'marsadm delete-resource infongt-eu6 || echo IGNORE'
+deleted: 001593731 / 1593792
+waiting for deletions to apply locally....
+deleted: 001593792 / 1593792
+Executing on icpu5139: 'marsadm create-resource --force infongt-eu6 /dev/vginfong/infongt-eu6'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+WARNING: resource directory 'infongt-eu6' already exists
+creating new resource 'infongt-eu6'
+block device '/dev/vginfong/infongt-eu6': determined size = 20480786432 bytes
+using existing device '/dev/vginfong/infongt-eu6'
+resource 'infongt-eu6' will appear as local device '/dev/mars/infongt-eu6'
+successfully created resource 'infongt-eu6'
+Executing on icpu5139: 'marsadm primary infongt-eu6'
+---------------------------- check preconditions:
+Current designated primary: icpu5139
+OK, '/mars/resource-infongt-eu6/todo-icpu5139/attach' has acceptable value '1'
+OK, '/mars/resource-infongt-eu6/todo-icpu5139/connect' has acceptable value '1'
+OK, '/mars/resource-infongt-eu6/todo-icpu5139/allow-replay' has acceptable value '1'
+---------------------------- leave primary state:
+---------------------------- wait when necessary:
+---------------------------- switch to primary:
+designated primary changed from 'icpu5139' to 'icpu5139'
+---------------------------- wait for device:
+device '/dev/mars/infongt-eu6' not yet present
+device '/dev/mars/infongt-eu6' is present
+Running hook: hook_resource_start hook_resource_start icpu5139 infongt-eu6
+Executing on icpu5139: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on icpu5139: 'service clustermanager restart'
+Executing on icpu5139: 'marsadm primary infongt-eu6'
+---------------------------- check preconditions:
+Current designated primary: icpu5139
+OK, '/mars/resource-infongt-eu6/todo-icpu5139/attach' has acceptable value '1'
+OK, '/mars/resource-infongt-eu6/todo-icpu5139/connect' has acceptable value '1'
+OK, '/mars/resource-infongt-eu6/todo-icpu5139/allow-replay' has acceptable value '1'
+---------------------------- leave primary state:
+---------------------------- wait when necessary:
+---------------------------- switch to primary:
+designated primary changed from 'icpu5139' to 'icpu5139'
+---------------------------- wait for device:
+device '/dev/mars/infongt-eu6' is present
+Executing on icpu5139: 'cm3 --stop infongt-eu6; cm3 --start infongt-eu6 || { cm3 --stop infongt-eu6; cm3 --start infongt-eu6; } || false'
+Shutdown infongt-eu6.
+stop: Delay of 5 seconds. Still reading initial configuration and updating status.
+stop: UPDATE mars_infongt-eu6  ...... OK [1s]
+stop: VM::SAInfongBase: Name:	infongt-eu6
+stop: VM::SAInfongBase: State:	CONFIGURED
+stop: VM::SAInfongBase: Address:	169.254.254.155
+stop: infongt-eu6.schlund.de is updated.
+stop: Shutdown of infongt-eu6.schlund.de skipped: already STOPPED
+stop: COMMAND FINISHED in 6 seconds
+Shutdown of infongt-eu6.schlund.de skipped: already STOPPED
+Startup infongt-eu6.
+start: UPDATE mars_infongt-eu6  ...... OK [0s]
+start: VM::SAInfongBase: Name:	infongt-eu6
+start: VM::SAInfongBase: State:	CONFIGURED
+start: VM::SAInfongBase: Address:	169.254.254.155
+start: infongt-eu6.schlund.de is updated.
+start: Using VMHost 'icpu5139.schlund.de' (policy: 'free')
+start: Reserving VMHost icpu5139.schlund.de
+start: Starting storage for infongt-eu6.schlund.de
+start: UP /dev/vginfong/infongt-eu6  ...... OK (skipped) [0s]
+start: UP mars_infongt-eu6  ...(switch-primary:120s) ... OK [0s]
+start: Starting VM for infongt-eu6.schlund.de via nodeagent
+start: START infongt-eu6.schlund.de  ...(init) (assemble:300s) (vmstart:300s) ... OK [5s]
+start: infongt-eu6.schlund.de is started.
+start: COMMAND FINISHED in 5 seconds
+Startup of infongt-eu6.schlund.de finished.
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_join_resource hook_join_resource icpu5139 icpu5138 infongt-eu6 /dev/vginfong/infongt-eu6
+Executing on icpu5138: 'marsadm join-resource --ssh-port=24 infongt-eu6 /dev/vginfong/infongt-eu6'
+Using SSH port '24' from command line.
+joining to existing resource 'infongt-eu6'
+block device '/dev/vginfong/infongt-eu6': determined size = 20480786432 bytes
+PING icpu5139 (10.46.102.191) 56(84) bytes of data.
+64 bytes from icpu5139 (10.46.102.191): icmp_seq=1 ttl=61 time=0.826 ms
+
+--- icpu5139 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.826/0.826/0.826/0.000 ms
+Linux icpu5139 3.14.79-grsec+ #1234 SMP Tue Jul 4 14:36:13 CEST 2017 x86_64 GNU/Linux
+receiving incremental file list
+skip-check-icpu5139 -> 13214
+actual-icpu5138/
+defaults-icpu5139/
+defaults/
+local-icpu5139/
+todo-icpu5138/
+todo-icpu5139/
+userspace/
+
+sent 219 bytes  received 19,577 bytes  39,592.00 bytes/sec
+total size is 2,143,329  speedup is 108.27
+all 5 peer(s) seem to be alive
+using existing device '/dev/vginfong/infongt-eu6'
+resource 'infongt-eu6' will appear as local device '/dev/mars/infongt-eu6'
+creating new replaylink '/mars/resource-infongt-eu6/replay-icpu5138' -> 'log-000013214-icpu5139,0,0'
+creating new version symlink '/mars/resource-infongt-eu6/version-000013213-icpu5138' -> '00000000000000000000000000000000,log-000013213-icpu5139,0:'
+WARNING: cannot read symlink '/mars/resource-infongt-eu6/version-000013212-icpu5139'
+cannot create new version symlink '/mars/resource-infongt-eu6/version-000013212-icpu5138'
+sending incremental file list
+data-icpu5138 -> /dev/vginfong/infongt-eu6
+
+sent 85 bytes  received 19 bytes  208.00 bytes/sec
+total size is 25  speedup is 0.24
+successfully joined resource 'infongt-eu6'
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'lvremove -f /dev/vginfong/infongt-eu6-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5139: 'lvremove -f /dev/vginfong/infongt-eu6-copy || echo IGNORE'
+  Logical volume "infongt-eu6-copy" successfully removed
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'lvremove -f /dev/vginfong/infongt-eu6-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5138: 'lvremove -f /dev/vginfong/infongt-eu6-copy || echo IGNORE'
+  Logical volume "infongt-eu6-copy" successfully removed
+DONE Mon Jul 10 14:26:42 CEST 2017

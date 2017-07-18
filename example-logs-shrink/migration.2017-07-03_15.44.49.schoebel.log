@@ -1,0 +1,1556 @@
+./migrate-resource.sh --force=1 shrink infongt-eu4:icpu15:istore2a
+force=1
+operation=shrink
+res=infongt-eu4:icpu15:istore2a
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu15"
+Determined the following CURRENT primary: "istore2a"
+PING icpu15.schlund.de (10.46.0.130) 56(84) bytes of data.
+64 bytes from icpu15.schlund.de (10.46.0.130): icmp_seq=1 ttl=59 time=0.580 ms
+
+--- icpu15.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.580/0.580/0.580/0.000 ms
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=60 time=0.537 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.537/0.537/0.537/0.000 ms
+/mars is a mountpoint
+  infongt-eu4 WriteBack Replicating DCASFr Primary istore2a 
+/vol/infongt-eu4 is a mountpoint
+Determined the following secondaries: 'icpu5128
+icpu5133
+icpu5138
+icpu5139
+istore2b'
+PING icpu5128.schlund.de (10.46.12.75) 56(84) bytes of data.
+64 bytes from icpu5128.schlund.de (10.46.12.75): icmp_seq=1 ttl=59 time=0.426 ms
+
+--- icpu5128.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.426/0.426/0.426/0.000 ms
+PING icpu5133.schlund.de (10.46.28.75) 56(84) bytes of data.
+64 bytes from icpu5133.schlund.de (10.46.28.75): icmp_seq=1 ttl=58 time=1.29 ms
+
+--- icpu5133.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.292/1.292/1.292/0.000 ms
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.593 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.593/0.593/0.593/0.000 ms
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.38 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.381/1.381/1.381/0.000 ms
+PING istore2b.schlund.de (10.46.102.2) 56(84) bytes of data.
+64 bytes from istore2b.schlund.de (10.46.102.2): icmp_seq=1 ttl=59 time=1.28 ms
+
+--- istore2b.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.280/1.280/1.280/0.000 ms
+Determined the following VG name: "vg2a"
+Determined the following LV path: "/dev/vg2a/infongt-eu4"
+Determined USED  space: 991992
+Determined TOTAL space: 19990528
+Computed TARGET  space: 20000000
+No need for shrinking the LV space of infongt-eu4
+vg2a REST space on 'istore2a' :   21506990080
+vginfong REST space on 'icpu5128' :   12912082944
+vginfong REST space on 'icpu5133' :   12912082944
+vginfong REST space on 'icpu5138' :   6110941184
+vginfong REST space on 'icpu5139' :   6110941184
+vg2b REST space on 'istore2b' :   21534457856
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'if [[ -e /dev/vg2a/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vg2a/infongt-eu4-copy on istore2a - Do this by hand"; exit -1; fi'
+Executing on istore2a: 'if [[ -e /dev/vg2a/infongt-eu4-tmp ]]; then lvremove -f /dev/vg2a/infongt-eu4-tmp; fi'
+Executing on istore2a: 'lvcreate -L 20000000k -n infongt-eu4-tmp vg2a'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu4-tmp" created
+Executing on istore2a: 'mkfs.xfs -dagcount=1024 /dev/vg2a/infongt-eu4-tmp'
+meta-data=/dev/vg2a/infongt-eu4-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_vg hook_get_vg icpu5128
+Executing on icpu5128: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5128: 'if [[ -e /dev/vginfong/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu4-copy on icpu5128 - Do this by hand"; exit -1; fi'
+Executing on icpu5128: 'if [[ -e /dev/vginfong/infongt-eu4-tmp ]]; then lvremove -f /dev/vginfong/infongt-eu4-tmp; fi'
+Executing on icpu5128: 'lvcreate -L 20000000k -n infongt-eu4-tmp vginfong'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu4-tmp" created
+Executing on icpu5128: 'mkfs.xfs -dagcount=1024 /dev/vginfong/infongt-eu4-tmp'
+meta-data=/dev/vginfong/infongt-eu4-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=4096  attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_vg hook_get_vg icpu5133
+Executing on icpu5133: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5133: 'if [[ -e /dev/vginfong/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu4-copy on icpu5133 - Do this by hand"; exit -1; fi'
+Executing on icpu5133: 'if [[ -e /dev/vginfong/infongt-eu4-tmp ]]; then lvremove -f /dev/vginfong/infongt-eu4-tmp; fi'
+Executing on icpu5133: 'lvcreate -L 20000000k -n infongt-eu4-tmp vginfong'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu4-tmp" created
+Executing on icpu5133: 'mkfs.xfs -dagcount=1024 /dev/vginfong/infongt-eu4-tmp'
+meta-data=/dev/vginfong/infongt-eu4-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=4096  attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'if [[ -e /dev/vginfong/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu4-copy on icpu5138 - Do this by hand"; exit -1; fi'
+Executing on icpu5138: 'if [[ -e /dev/vginfong/infongt-eu4-tmp ]]; then lvremove -f /dev/vginfong/infongt-eu4-tmp; fi'
+Executing on icpu5138: 'lvcreate -L 20000000k -n infongt-eu4-tmp vginfong'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu4-tmp" created
+Executing on icpu5138: 'mkfs.xfs -dagcount=1024 /dev/vginfong/infongt-eu4-tmp'
+meta-data=/dev/vginfong/infongt-eu4-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'if [[ -e /dev/vginfong/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vginfong/infongt-eu4-copy on icpu5139 - Do this by hand"; exit -1; fi'
+Executing on icpu5139: 'if [[ -e /dev/vginfong/infongt-eu4-tmp ]]; then lvremove -f /dev/vginfong/infongt-eu4-tmp; fi'
+Executing on icpu5139: 'lvcreate -L 20000000k -n infongt-eu4-tmp vginfong'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu4-tmp" created
+Executing on icpu5139: 'mkfs.xfs -dagcount=1024 /dev/vginfong/infongt-eu4-tmp'
+meta-data=/dev/vginfong/infongt-eu4-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_vg hook_get_vg istore2b
+Executing on istore2b: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2b: 'if [[ -e /dev/vg2b/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vg2b/infongt-eu4-copy on istore2b - Do this by hand"; exit -1; fi'
+Executing on istore2b: 'if [[ -e /dev/vg2b/infongt-eu4-tmp ]]; then lvremove -f /dev/vg2b/infongt-eu4-tmp; fi'
+Executing on istore2b: 'lvcreate -L 20000000k -n infongt-eu4-tmp vg2b'
+  Rounding up size to full physical extent 19.07 GiB
+  Logical volume "infongt-eu4-tmp" created
+Executing on istore2b: 'mkfs.xfs -dagcount=1024 /dev/vg2b/infongt-eu4-tmp'
+meta-data=/dev/vg2b/infongt-eu4-tmp isize=256    agcount=1024, agsize=4883 blks
+         =                       sectsz=512   attr=2, projid32bit=0
+data     =                       bsize=4096   blocks=5000192, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu4
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_connect hook_connect istore2a icpu15 infongt-eu4-tmp
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -u || echo IGNORE'
+IGNORE
+iscsiadm: No matching sessions found
+Executing on istore2a: 'ietadm --op delete --tid=4711 || echo IGNORE'
+IGNORE
+No such file or directory.
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'ifconfig eth1'
+using iscsi IP '10.46.65.1'
+Executing on icpu15: 'ping -c1 10.46.65.1'
+PING 10.46.65.1 (10.46.65.1) 56(84) bytes of data.
+64 bytes from 10.46.65.1: icmp_seq=1 ttl=64 time=0.107 ms
+
+--- 10.46.65.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.107/0.107/0.107/0.000 ms
+Executing on istore2a: 'ietadm --op new --tid=4711 --params=Name=iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp'
+Executing on istore2a: 'ietadm --op new --tid=4711 --lun=0 --params=Path=/dev/vg2a/infongt-eu4-tmp'
+Executing on icpu15: 'iscsiadm -m discovery -p 10.46.65.1 --type sendtargets'
+10.46.65.1:3260,1 iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp
+10.46.65.1:3260,1 iqn.2003-11.de.schlund:infongt-eu4.icpu15.schlund.de
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:mywebsite-rolling-1.45.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.237.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.236.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.235.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.234.0
+Executing on icpu15: 'ls /dev/sd?'
+Executing on icpu15: 'iscsiadm -m node -p 10.46.65.1 -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -l'
+Logging in to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] (multiple)
+Login to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] successful.
+Executing on icpu15: 'ls /dev/sd?'
+New iscsi tid: 4712
+NEW_DEV:/dev/sdc
+using tmp dev '/dev/sdc'
+Executing on icpu15: 'mkdir -p /vol/infongt-eu4-tmp'
+Executing on icpu15: 'mount /dev/sdc /vol/infongt-eu4-tmp'
+Executing on icpu15: 'for i in {1..3}; do nice -19 ionice -c3 rsync  -aSH --info=STATS  /vol/infongt-eu4/ /vol/infongt-eu4-tmp/ && exit 0; echo RESTARTING $(date); done; exit -1'
+
+sent 1,383,487,124 bytes  received 1,134,559 bytes  14,808,788.05 bytes/sec
+total size is 1,379,761,781  speedup is 1.00
+Executing on icpu15: 'umount /vol/infongt-eu4-tmp/'
+Running hook: hook_disconnect hook_disconnect istore2a icpu15 infongt-eu4-tmp
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -u || echo IGNORE'
+Logging out of session [sid: 64, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260]
+Logout of [sid: 64, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] successful.
+Executing on istore2a: 'ietadm --op delete --tid=4711 || echo IGNORE'
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu4
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'if [[ -e /dev/vg2a/infongt-eu4-copy ]]; then echo "REFUSING to overwrite /dev/vg2a/infongt-eu4-copy on istore2a - First remove it - Do this by hand"; exit -1; fi'
+Executing on istore2a: 'if ! [[ -e /dev/vg2a/infongt-eu4-tmp ]]; then echo "Cannot start hot phase: /dev/vg2a/infongt-eu4-tmp is missing. Run 'prepare' first!"; exit -1; fi'
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu4
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_connect hook_connect istore2a icpu15 infongt-eu4-tmp
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -u || echo IGNORE'
+IGNORE
+iscsiadm: No matching sessions found
+Executing on istore2a: 'ietadm --op delete --tid=4711 || echo IGNORE'
+IGNORE
+No such file or directory.
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'ifconfig eth1'
+using iscsi IP '10.46.65.1'
+Executing on icpu15: 'ping -c1 10.46.65.1'
+PING 10.46.65.1 (10.46.65.1) 56(84) bytes of data.
+64 bytes from 10.46.65.1: icmp_seq=1 ttl=64 time=0.109 ms
+
+--- 10.46.65.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.109/0.109/0.109/0.000 ms
+Executing on istore2a: 'ietadm --op new --tid=4711 --params=Name=iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp'
+Executing on istore2a: 'ietadm --op new --tid=4711 --lun=0 --params=Path=/dev/vg2a/infongt-eu4-tmp'
+Executing on icpu15: 'iscsiadm -m discovery -p 10.46.65.1 --type sendtargets'
+10.46.65.1:3260,1 iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp
+10.46.65.1:3260,1 iqn.2003-11.de.schlund:infongt-eu4.icpu15.schlund.de
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:mywebsite-rolling-1.45.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.237.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.236.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.235.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.234.0
+Executing on icpu15: 'ls /dev/sd?'
+Executing on icpu15: 'iscsiadm -m node -p 10.46.65.1 -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -l'
+Logging in to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] (multiple)
+Login to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] successful.
+Executing on icpu15: 'ls /dev/sd?'
+New iscsi tid: 4712
+NEW_DEV:/dev/sdc
+using tmp dev '/dev/sdc'
+Executing on icpu15: 'mkdir -p /vol/infongt-eu4-tmp'
+Executing on icpu15: 'mount /dev/sdc /vol/infongt-eu4-tmp'
+Executing on icpu15: 'for i in {1..3}; do time rsync  -aSH --info=STATS --delete /vol/infongt-eu4/ /vol/infongt-eu4-tmp/ && exit 0; echo RESTARTING $(date); done; exit -1'
+
+sent 965,320 bytes  received 4,530 bytes  114,100.00 bytes/sec
+total size is 1,379,766,867  speedup is 1,422.66
+
+real	0m7.293s
+user	0m0.356s
+sys	0m0.904s
+Executing on icpu15: 'umount /vol/infongt-eu4-tmp/'
+Running hook: hook_disconnect hook_disconnect istore2a icpu15 infongt-eu4-tmp
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -u || echo IGNORE'
+Logging out of session [sid: 65, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260]
+Logout of [sid: 65, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] successful.
+Executing on istore2a: 'ietadm --op delete --tid=4711 || echo IGNORE'
+Running hook: hook_resource_stop hook_resource_stop istore2a infongt-eu4
+Executing on istore2a: 'cm3 --stop infongt-eu4 || cm3 --stop infongt-eu4 || { mountpoint /vol/infongt-eu4 && umount /vol/infongt-eu4; } || false'
+Shutdown infongt-eu4.
+stop: UPDATE mars_infongt-eu4  ...... OK [0s]
+stop: UPDATE iet_infongt-eu4 ...... OK
+stop: infongt-eu4.schlund.de is updated.
+stop: STOP infongt-eu4.schlund.de  ...(vmstop:120s) (dissemble:120s) (delete) ... OK [14s]
+stop: UPDATE icpu15.schlund.de  ...... OK [0s]
+stop: icpu15.schlund.de is updated.
+stop: Skipped 'update_prev_vmhost' since no previous VMHost is linked with infongt-eu4.schlund.de
+stop: VM infongt-eu4.schlund.de is stopped.
+stop: Clearing VMHost for infongt-eu4.schlund.de, no longer using icpu15.schlund.de
+stop: Stopping storage for infongt-eu4.schlund.de
+stop: DOWN iet_infongt-eu4  ...(remove_tid) ... OK [1s]
+stop: DOWN mars_infongt-eu4  ...(wait-umount:20s) (switch-secondary:120s) ... OK [4s]
+stop: DOWN /dev/vg2a/infongt-eu4  ...... OK [0s]
+stop: infongt-eu4.schlund.de is stopped.
+stop: COMMAND FINISHED in 19 seconds
+Shutdown of infongt-eu4.schlund.de finished.
+Executing on istore2a: 'marsadm primary infongt-eu4'
+---------------------------- check preconditions:
+Current designated primary: (none)
+OK, it seems that sync has finished on host 'istore2a'.
+OK, it seems that sync has finished on host 'icpu5128'.
+OK, it seems that sync has finished on host 'icpu5133'.
+OK, it seems that sync has finished on host 'icpu5138'.
+OK, it seems that sync has finished on host 'icpu5139'.
+OK, it seems that sync has finished on host 'istore2b'.
+OK, '/mars/resource-infongt-eu4/todo-istore2a/attach' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-istore2a/connect' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-istore2a/allow-replay' has acceptable value '1'
+---------------------------- leave primary state:
+all 5 peer(s) seem to be alive
+Using last primary 'istore2a' as a substitute.
+Switching back to last primary.
+---------------------------- wait when necessary:
+---------------------------- switch to primary:
+designated primary changed from '(none)' to 'istore2a'
+---------------------------- wait for device:
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' is present
+Running hook: hook_connect hook_connect istore2a icpu15 infongt-eu4 1
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4.tmp -u || echo IGNORE'
+iscsiadm: No matching sessions found
+IGNORE
+Executing on istore2a: 'ietadm --op delete --tid=4712 || echo IGNORE'
+IGNORE
+No such file or directory.
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'ifconfig eth1'
+using iscsi IP '10.46.65.1'
+Executing on icpu15: 'ping -c1 10.46.65.1'
+PING 10.46.65.1 (10.46.65.1) 56(84) bytes of data.
+64 bytes from 10.46.65.1: icmp_seq=1 ttl=64 time=0.101 ms
+
+--- 10.46.65.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.101/0.101/0.101/0.000 ms
+Executing on istore2a: 'ietadm --op new --tid=4712 --params=Name=iqn.2000-01.info.test:test.infongt-eu4.tmp'
+Executing on istore2a: 'ietadm --op new --tid=4712 --lun=0 --params=Path=/dev/vg2a/infongt-eu4'
+Executing on icpu15: 'iscsiadm -m discovery -p 10.46.65.1 --type sendtargets'
+10.46.65.1:3260,1 iqn.2000-01.info.test:test.infongt-eu4.tmp
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:mywebsite-rolling-1.45.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.237.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.236.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.235.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.234.0
+Executing on icpu15: 'ls /dev/sd?'
+Executing on icpu15: 'iscsiadm -m node -p 10.46.65.1 -T iqn.2000-01.info.test:test.infongt-eu4.tmp -l'
+Logging in to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4.tmp, portal: 10.46.65.1,3260] (multiple)
+Login to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4.tmp, portal: 10.46.65.1,3260] successful.
+Executing on icpu15: 'ls /dev/sd?'
+New iscsi tid: 4713
+NEW_DEV:/dev/sdb
+using tmp mars dev '/dev/sdb'
+Executing on icpu15: 'mount /dev/sdb /vol/infongt-eu4/'
+Running hook: hook_get_mountpoint hook_get_mountpoint infongt-eu4
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_connect hook_connect istore2a icpu15 infongt-eu4-tmp
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -u || echo IGNORE'
+IGNORE
+iscsiadm: No matching sessions found
+Executing on istore2a: 'ietadm --op delete --tid=4711 || echo IGNORE'
+IGNORE
+No such file or directory.
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'ifconfig eth1'
+using iscsi IP '10.46.65.1'
+Executing on icpu15: 'ping -c1 10.46.65.1'
+PING 10.46.65.1 (10.46.65.1) 56(84) bytes of data.
+64 bytes from 10.46.65.1: icmp_seq=1 ttl=64 time=0.116 ms
+
+--- 10.46.65.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.116/0.116/0.116/0.000 ms
+Executing on istore2a: 'ietadm --op new --tid=4711 --params=Name=iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp'
+Executing on istore2a: 'ietadm --op new --tid=4711 --lun=0 --params=Path=/dev/vg2a/infongt-eu4-tmp'
+Executing on icpu15: 'iscsiadm -m discovery -p 10.46.65.1 --type sendtargets'
+10.46.65.1:3260,1 iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp
+10.46.65.1:3260,1 iqn.2000-01.info.test:test.infongt-eu4.tmp
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:mywebsite-rolling-1.45.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.237.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.236.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.235.0
+10.46.65.1:3260,1 iqn.2014-01.de.schlund:cbi:default-stable-0.234.0
+Executing on icpu15: 'ls /dev/sd?'
+Executing on icpu15: 'iscsiadm -m node -p 10.46.65.1 -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -l'
+Logging in to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] (multiple)
+Login to [iface: default, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] successful.
+Executing on icpu15: 'ls /dev/sd?'
+New iscsi tid: 4712
+NEW_DEV:/dev/sdc
+using tmp dev '/dev/sdc'
+Executing on icpu15: 'mkdir -p /vol/infongt-eu4-tmp'
+Executing on icpu15: 'mount /dev/sdc /vol/infongt-eu4-tmp'
+Executing on icpu15: 'for i in {1..3}; do time rsync  -aSH --info=STATS --delete /vol/infongt-eu4/ /vol/infongt-eu4-tmp/ && exit 0; echo RESTARTING $(date); done; exit -1'
+
+sent 973,264 bytes  received 4,603 bytes  47,700.83 bytes/sec
+total size is 1,379,774,685  speedup is 1,411.00
+
+real	0m20.190s
+user	0m0.448s
+sys	0m1.312s
+Executing on icpu15: 'umount /vol/infongt-eu4-tmp/'
+Running hook: hook_disconnect hook_disconnect istore2a icpu15 infongt-eu4-tmp
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp -u || echo IGNORE'
+Logging out of session [sid: 67, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260]
+Logout of [sid: 67, target: iqn.2000-01.info.test:test.infongt-eu4-tmp.tmp, portal: 10.46.65.1,3260] successful.
+Executing on istore2a: 'ietadm --op delete --tid=4711 || echo IGNORE'
+Executing on icpu15: 'umount /vol/infongt-eu4/'
+Executing on icpu15: 'rmdir /vol/infongt-eu4-tmp || echo IGNORE'
+Running hook: hook_disconnect hook_disconnect istore2a icpu15 infongt-eu4 1
+Executing on icpu15: 'iscsiadm -m node -T iqn.2000-01.info.test:test.infongt-eu4.tmp -u || echo IGNORE'
+Logging out of session [sid: 66, target: iqn.2000-01.info.test:test.infongt-eu4.tmp, portal: 10.46.65.1,3260]
+Logout of [sid: 66, target: iqn.2000-01.info.test:test.infongt-eu4.tmp, portal: 10.46.65.1,3260] successful.
+Executing on istore2a: 'ietadm --op delete --tid=4712 || echo IGNORE'
+Executing on istore2a: 'marsadm wait-umount infongt-eu4'
+OK, device for resource 'infongt-eu4' is not in use.
+Executing on istore2a: 'marsadm secondary infongt-eu4'
+---------------------------- check preconditions:
+Current designated primary: istore2a
+all preconditions OK for resource 'infongt-eu4'
+---------------------------- leave primary state:
+designated primary changed from 'istore2a' to '(none)'
+---------------------------- wait for effect:
+WARNING: device '/dev/mars/infongt-eu4' has not yet disappeared
+device '/dev/mars/infongt-eu4' is no longer present
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'marsadm down infongt-eu4 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu4
+successfully started pause-sync-local on resource infongt-eu4
+successfully started pause-fetch on resource infongt-eu4
+successfully started detach on resource infongt-eu4
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu4/actual-istore2a/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu4' is no longer present
+OK, '/mars/resource-infongt-eu4/actual-istore2a/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu4/actual-istore2a/is-syncing' has acceptable value '0'
+Executing on istore2a: 'marsadm leave-resource --force infongt-eu4 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001572764 / 1572815
+waiting for deletions to apply locally....
+deleted: 001572815 / 1572815
+found replay link '/mars/resource-infongt-eu4/replay-icpu5128' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5133' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5128' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5133' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+checking 'version-000020834-icpu5128'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5128'
+checking 'version-000020834-icpu5133'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5133'
+checking 'version-000020834-icpu5138'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5138'
+checking 'version-000020834-icpu5139'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5139'
+checking 'version-000020834-istore2a'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-istore2a'
+checking 'version-000020834-istore2b'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-istore2b'
+checking 'version-000020835-icpu5128'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5128'
+checking 'version-000020835-icpu5133'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5133'
+checking 'version-000020835-icpu5138'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5138'
+checking 'version-000020835-icpu5139'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5139'
+checking 'version-000020835-istore2a'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2a'
+checking 'version-000020835-istore2b'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2b'
+checking 'version-000020836-icpu5128'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5128'
+checking 'version-000020836-icpu5133'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5133'
+checking 'version-000020836-icpu5138'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5138'
+checking 'version-000020836-icpu5139'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5139'
+checking 'version-000020836-istore2a'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2a'
+checking 'version-000020836-istore2b'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2b'
+checking 'log-000020835-istore2a'
+  ok 'log-000020835-istore2a'
+checking 'log-000020836-istore2a'
+  ok 'log-000020836-istore2a'
+info: logfile 'log-000020834-istore2a' is referenced (6), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+deleted: 001572815 / 1572815
+deleted: 001572815 / 1572815
+  or after similar operations.
+Executing on istore2a: 'lvrename vg2a infongt-eu4 infongt-eu4-copy'
+  Renamed "infongt-eu4" to "infongt-eu4-copy" in volume group "vg2a"
+Executing on istore2a: 'lvrename vg2a infongt-eu4-tmp infongt-eu4'
+  Renamed "infongt-eu4-tmp" to "infongt-eu4" in volume group "vg2a"
+Running hook: hook_get_vg hook_get_vg icpu5128
+Executing on icpu5128: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5128: 'marsadm down infongt-eu4 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu4
+successfully started pause-sync-local on resource infongt-eu4
+successfully started pause-fetch on resource infongt-eu4
+successfully started detach on resource infongt-eu4
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu4/actual-icpu5128/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu4' is no longer present
+OK, '/mars/resource-infongt-eu4/actual-icpu5128/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu4/actual-icpu5128/is-syncing' has acceptable value '0'
+Executing on icpu5128: 'marsadm leave-resource --force infongt-eu4 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001572815 / 1572866
+waiting for deletions to apply locally....
+deleted: 001572866 / 1572866
+found replay link '/mars/resource-infongt-eu4/replay-icpu5133' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5133' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+checking 'version-000020834-icpu5128'
+  corresponding logfile is 'log-000020834-istore2a'
+checking 'version-000020834-icpu5133'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5133'
+checking 'version-000020834-icpu5138'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5138'
+checking 'version-000020834-icpu5139'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-icpu5139'
+checking 'version-000020834-istore2a'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-istore2a'
+checking 'version-000020834-istore2b'
+  corresponding logfile is 'log-000020834-istore2a'
+  ok 'version-000020834-istore2b'
+checking 'version-000020835-icpu5128'
+  corresponding logfile is 'log-000020835-istore2a'
+checking 'version-000020835-icpu5133'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5133'
+checking 'version-000020835-icpu5138'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5138'
+checking 'version-000020835-icpu5139'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5139'
+checking 'version-000020835-istore2a'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2a'
+checking 'version-000020835-istore2b'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2b'
+checking 'version-000020836-icpu5128'
+  corresponding logfile is 'log-000020836-istore2a'
+checking 'version-000020836-icpu5133'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5133'
+checking 'version-000020836-icpu5138'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5138'
+checking 'version-000020836-icpu5139'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5139'
+checking 'version-000020836-istore2a'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2a'
+checking 'version-000020836-istore2b'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2b'
+checking 'log-000020835-istore2a'
+  ok 'log-000020835-istore2a'
+checking 'log-000020836-istore2a'
+  ok 'log-000020836-istore2a'
+info: logfile 'log-000020834-istore2a' is referenced (5), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001572866 / 1572869
+waiting for deletions to apply locally....
+deleted: 001572869 / 1572869
+deleted: 001572869 / 1572869
+Executing on icpu5128: 'lvrename vginfong infongt-eu4 infongt-eu4-copy'
+  Renamed "infongt-eu4" to "infongt-eu4-copy" in volume group "vginfong"
+Executing on icpu5128: 'lvrename vginfong infongt-eu4-tmp infongt-eu4'
+  Renamed "infongt-eu4-tmp" to "infongt-eu4" in volume group "vginfong"
+Running hook: hook_get_vg hook_get_vg icpu5133
+Executing on icpu5133: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5133: 'marsadm down infongt-eu4 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu4
+successfully started pause-sync-local on resource infongt-eu4
+successfully started pause-fetch on resource infongt-eu4
+successfully started detach on resource infongt-eu4
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu4/actual-icpu5133/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu4' is no longer present
+OK, '/mars/resource-infongt-eu4/actual-icpu5133/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu4/actual-icpu5133/is-syncing' has acceptable value '0'
+Executing on icpu5133: 'marsadm leave-resource --force infongt-eu4 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001572875 / 1572925
+waiting for deletions to apply locally....
+deleted: 001572925 / 1572925
+found replay link '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+checking 'version-000020835-icpu5133'
+  corresponding logfile is 'log-000020835-istore2a'
+checking 'version-000020835-icpu5138'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5138'
+checking 'version-000020835-icpu5139'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5139'
+checking 'version-000020835-istore2a'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2a'
+checking 'version-000020835-istore2b'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2b'
+checking 'version-000020836-icpu5133'
+  corresponding logfile is 'log-000020836-istore2a'
+checking 'version-000020836-icpu5138'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5138'
+checking 'version-000020836-icpu5139'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5139'
+checking 'version-000020836-istore2a'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2a'
+checking 'version-000020836-istore2b'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2b'
+checking 'log-000020836-istore2a'
+  ok 'log-000020836-istore2a'
+info: logfile 'log-000020835-istore2a' is referenced (4), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001572925 / 1572927
+waiting for deletions to apply locally....
+deleted: 001572927 / 1572927
+deleted: 001572927 / 1572927
+Executing on icpu5133: 'lvrename vginfong infongt-eu4 infongt-eu4-copy'
+  Renamed "infongt-eu4" to "infongt-eu4-copy" in volume group "vginfong"
+Executing on icpu5133: 'lvrename vginfong infongt-eu4-tmp infongt-eu4'
+  Renamed "infongt-eu4-tmp" to "infongt-eu4" in volume group "vginfong"
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'marsadm down infongt-eu4 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu4
+successfully started pause-sync-local on resource infongt-eu4
+successfully started pause-fetch on resource infongt-eu4
+successfully started detach on resource infongt-eu4
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu4/actual-icpu5138/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu4' is no longer present
+OK, '/mars/resource-infongt-eu4/actual-icpu5138/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu4/actual-icpu5138/is-syncing' has acceptable value '0'
+Executing on icpu5138: 'marsadm leave-resource --force infongt-eu4 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001572927 / 1572978
+waiting for deletions to apply locally....
+deleted: 001572927 / 1572978
+waiting for deletions to apply locally....
+deleted: 001572978 / 1572978
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+checking 'version-000020835-icpu5138'
+  corresponding logfile is 'log-000020835-istore2a'
+checking 'version-000020835-icpu5139'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-icpu5139'
+checking 'version-000020835-istore2a'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2a'
+checking 'version-000020835-istore2b'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2b'
+checking 'version-000020836-icpu5138'
+  corresponding logfile is 'log-000020836-istore2a'
+checking 'version-000020836-icpu5139'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-icpu5139'
+checking 'version-000020836-istore2a'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2a'
+checking 'version-000020836-istore2b'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2b'
+checking 'log-000020836-istore2a'
+  ok 'log-000020836-istore2a'
+info: logfile 'log-000020835-istore2a' is referenced (3), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001572978 / 1572980
+waiting for deletions to apply locally....
+deleted: 001572980 / 1572980
+deleted: 001572980 / 1572980
+Executing on icpu5138: 'lvrename vginfong infongt-eu4 infongt-eu4-copy'
+  Renamed "infongt-eu4" to "infongt-eu4-copy" in volume group "vginfong"
+Executing on icpu5138: 'lvrename vginfong infongt-eu4-tmp infongt-eu4'
+  Renamed "infongt-eu4-tmp" to "infongt-eu4" in volume group "vginfong"
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'marsadm down infongt-eu4 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu4
+successfully started pause-sync-local on resource infongt-eu4
+successfully started pause-fetch on resource infongt-eu4
+successfully started detach on resource infongt-eu4
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu4/actual-icpu5139/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu4' is no longer present
+OK, '/mars/resource-infongt-eu4/actual-icpu5139/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu4/actual-icpu5139/is-syncing' has acceptable value '0'
+Executing on icpu5139: 'marsadm leave-resource --force infongt-eu4 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001572980 / 1573030
+waiting for deletions to apply locally....
+deleted: 001573030 / 1573030
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+found replay link '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000020836-istore2a,0,0'
+checking 'version-000020835-icpu5139'
+  corresponding logfile is 'log-000020835-istore2a'
+checking 'version-000020835-istore2a'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2a'
+checking 'version-000020835-istore2b'
+  corresponding logfile is 'log-000020835-istore2a'
+  ok 'version-000020835-istore2b'
+checking 'version-000020836-icpu5139'
+  corresponding logfile is 'log-000020836-istore2a'
+checking 'version-000020836-istore2a'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2a'
+checking 'version-000020836-istore2b'
+  corresponding logfile is 'log-000020836-istore2a'
+  ok 'version-000020836-istore2b'
+checking 'log-000020836-istore2a'
+  ok 'log-000020836-istore2a'
+info: logfile 'log-000020835-istore2a' is referenced (2), but not present.
+  Unreferenced logfiles are not necessarily bad.
+  They can regularly appear after 'leave-resource',
+  or 'invalidate', or after emergency mode,
+  or after similar operations.
+deleted: 001573030 / 1573032
+waiting for deletions to apply locally....
+deleted: 001573032 / 1573032
+deleted: 001573032 / 1573032
+Executing on icpu5139: 'lvrename vginfong infongt-eu4 infongt-eu4-copy'
+  Renamed "infongt-eu4" to "infongt-eu4-copy" in volume group "vginfong"
+Executing on icpu5139: 'lvrename vginfong infongt-eu4-tmp infongt-eu4'
+  Renamed "infongt-eu4-tmp" to "infongt-eu4" in volume group "vginfong"
+Running hook: hook_get_vg hook_get_vg istore2b
+Executing on istore2b: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2b: 'marsadm down infongt-eu4 || echo IGNORE'
+---------------------------- check preconditions:
+---------------------------- switch state:
+successfully started pause-replay-local on resource infongt-eu4
+successfully started pause-sync-local on resource infongt-eu4
+successfully started pause-fetch on resource infongt-eu4
+successfully started detach on resource infongt-eu4
+---------------------------- wait for effect:
+waiting until actual 'is-attached' == '0'...
+OK, '/mars/resource-infongt-eu4/actual-istore2b/is-attached' has acceptable value '0'
+device '/dev/mars/infongt-eu4' is no longer present
+OK, '/mars/resource-infongt-eu4/actual-istore2b/is-replaying' has acceptable value '0'
+OK, '/mars/resource-infongt-eu4/actual-istore2b/is-syncing' has acceptable value '0'
+Executing on istore2b: 'marsadm leave-resource --force infongt-eu4 || echo IGNORE'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+---------------------------- check preconditions:
+---------------------------- switch state:
+---------------------------- wait for deletions:
+deleted: 001573032 / 1573082
+waiting for deletions to apply locally....
+deleted: 001573082 / 1573082
+Resource contains no valid information - there is nothing to purge
+deleted: 001573082 / 1573082
+Executing on istore2b: 'lvrename vg2b infongt-eu4 infongt-eu4-copy'
+  Renamed "infongt-eu4" to "infongt-eu4-copy" in volume group "vg2b"
+Executing on istore2b: 'lvrename vg2b infongt-eu4-tmp infongt-eu4'
+  Renamed "infongt-eu4-tmp" to "infongt-eu4" in volume group "vg2b"
+Executing on istore2a: 'marsadm delete-resource infongt-eu4 || echo IGNORE'
+deleted: 001573082 / 1573236
+waiting for deletions to apply locally....
+deleted: 001573236 / 1573236
+Executing on istore2a: 'marsadm create-resource --force infongt-eu4 /dev/vg2a/infongt-eu4'
+WARNING: Using FORCE option -- hopefully you know what you are doing!
+WARNING: resource directory 'infongt-eu4' already exists
+creating new resource 'infongt-eu4'
+block device '/dev/vg2a/infongt-eu4': determined size = 20480786432 bytes
+using existing device '/dev/vg2a/infongt-eu4'
+resource 'infongt-eu4' will appear as local device '/dev/mars/infongt-eu4'
+successfully created resource 'infongt-eu4'
+Executing on istore2a: 'marsadm primary infongt-eu4'
+---------------------------- check preconditions:
+Current designated primary: istore2a
+OK, '/mars/resource-infongt-eu4/todo-istore2a/attach' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-istore2a/connect' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-istore2a/allow-replay' has acceptable value '1'
+---------------------------- leave primary state:
+---------------------------- wait when necessary:
+---------------------------- switch to primary:
+designated primary changed from 'istore2a' to 'istore2a'
+---------------------------- wait for device:
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' not yet present
+device '/dev/mars/infongt-eu4' is present
+Running hook: hook_resource_start hook_resource_start istore2a infongt-eu4
+Executing on istore2a: 'marsadm wait-cluster'
+all 5 peer(s) seem to be alive
+Executing on istore2a: 'service clustermanager restart'
+Updating Clustermanager config: daemon.conf.
+Restarting Clustermanager: clustermanagerd (quit) (start).
+Executing on istore2a: 'marsadm primary infongt-eu4'
+---------------------------- check preconditions:
+Current designated primary: istore2a
+OK, '/mars/resource-infongt-eu4/todo-istore2a/attach' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-istore2a/connect' has acceptable value '1'
+OK, '/mars/resource-infongt-eu4/todo-istore2a/allow-replay' has acceptable value '1'
+---------------------------- leave primary state:
+---------------------------- wait when necessary:
+---------------------------- switch to primary:
+designated primary changed from 'istore2a' to 'istore2a'
+---------------------------- wait for device:
+device '/dev/mars/infongt-eu4' is present
+Executing on istore2a: 'cm3 --stop infongt-eu4; cm3 --start infongt-eu4 || { cm3 --stop infongt-eu4; cm3 --start infongt-eu4; } || false'
+Shutdown infongt-eu4.
+stop: Delay of 5 seconds. Still reading initial configuration and updating status.
+stop: UPDATE mars_infongt-eu4  ...... OK [0s]
+stop: UPDATE iet_infongt-eu4 ...... OK
+stop: infongt-eu4.schlund.de is updated.
+stop: Skipped 'vmhandler_stop' since no VMHost is linked with infongt-eu4.schlund.de
+stop: Skipped 'update_vmhost' since no VMHost is linked with infongt-eu4.schlund.de
+stop: Skipped 'update_prev_vmhost' since no previous VMHost is linked with infongt-eu4.schlund.de
+stop: VM infongt-eu4.schlund.de is stopped.
+stop: Stopping storage for infongt-eu4.schlund.de
+stop: DOWN iet_infongt-eu4  ...... OK (skipped) [0s]
+stop: DOWN mars_infongt-eu4  ...(wait-umount:20s) (switch-secondary:120s) ... OK [3s]
+stop: DOWN /dev/vg2a/infongt-eu4  ...... OK [0s]
+stop: infongt-eu4.schlund.de is stopped.
+stop: COMMAND FINISHED in 8 seconds
+Shutdown of infongt-eu4.schlund.de finished.
+Startup infongt-eu4.
+start: UPDATE mars_infongt-eu4  ...... OK [0s]
+start: UPDATE iet_infongt-eu4 ...... OK
+start: infongt-eu4.schlund.de is updated.
+start: Using VMHost 'icpu15.schlund.de' (policy: 'free')
+start: Reserving VMHost icpu15.schlund.de
+start: Starting storage for infongt-eu4.schlund.de
+start: UP /dev/vg2a/infongt-eu4  ...... OK (skipped) [0s]
+start: UP mars_infongt-eu4  ...(switch-primary:120s) ... OK [6s]
+start: UP iet_infongt-eu4  ...(create_tid) (create_lun) (config_user) ... OK [3s]
+start: START infongt-eu4.schlund.de  ...(init) (assemble:300s) (vmstart:300s) ... OK [5s]
+start: UPDATE icpu15.schlund.de  ...... OK [1s]
+start: icpu15.schlund.de is updated.
+start: infongt-eu4.schlund.de is started.
+start: COMMAND FINISHED in 16 seconds
+Startup of infongt-eu4.schlund.de finished.
+Running hook: hook_get_vg hook_get_vg icpu5128
+Executing on icpu5128: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_join_resource hook_join_resource istore2a icpu5128 infongt-eu4 /dev/vginfong/infongt-eu4
+Executing on icpu5128: 'marsadm join-resource --ssh-port=24 infongt-eu4 /dev/vginfong/infongt-eu4'
+Using SSH port '24' from command line.
+joining to existing resource 'infongt-eu4'
+block device '/dev/vginfong/infongt-eu4': determined size = 20480786432 bytes
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=64 time=0.080 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.080/0.080/0.080/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+receiving incremental file list
+./
+skip-check-istore2a -> 21835
+actual-icpu5128/
+actual-icpu5133/
+actual-icpu5139/
+actual-istore2a/
+actual-istore2b/
+defaults-icpu5128/
+defaults-icpu5133/
+defaults-icpu5138/
+defaults-icpu5139/
+defaults-istore2a/
+defaults-istore2b/
+local-icpu5128/
+local-icpu5138/
+local-icpu5139/
+local-istore2a/
+local-istore2b/
+todo-icpu5128/
+todo-icpu5133/
+todo-icpu5138/
+todo-icpu5139/
+todo-istore2b/
+userspace/
+
+sent 350 bytes  received 37,937 bytes  76,574.00 bytes/sec
+total size is 2,172,776  speedup is 56.75
+all 5 peer(s) seem to be alive
+using existing device '/dev/vginfong/infongt-eu4'
+resource 'infongt-eu4' will appear as local device '/dev/mars/infongt-eu4'
+creating new replaylink '/mars/resource-infongt-eu4/replay-icpu5128' -> 'log-000021835-istore2a,0,0'
+creating new version symlink '/mars/resource-infongt-eu4/version-000021834-icpu5128' -> '00000000000000000000000000000000,log-000021834-istore2a,0:'
+WARNING: cannot read symlink '/mars/resource-infongt-eu4/version-000021833-istore2a'
+cannot create new version symlink '/mars/resource-infongt-eu4/version-000021833-icpu5128'
+sending incremental file list
+
+sent 72 bytes  received 11 bytes  55.33 bytes/sec
+total size is 25  speedup is 0.30
+successfully joined resource 'infongt-eu4'
+Running hook: hook_get_vg hook_get_vg icpu5133
+Executing on icpu5133: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_join_resource hook_join_resource istore2a icpu5133 infongt-eu4 /dev/vginfong/infongt-eu4
+Executing on icpu5133: 'marsadm join-resource --ssh-port=24 infongt-eu4 /dev/vginfong/infongt-eu4'
+Using SSH port '24' from command line.
+joining to existing resource 'infongt-eu4'
+block device '/dev/vginfong/infongt-eu4': determined size = 20480786432 bytes
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=61 time=1.24 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.241/1.241/1.241/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+receiving incremental file list
+.deleted-1.info.status -> 1
+.deleted-version-000020828-istore2b -> 1
+.deleted-version-000020829-istore2b -> 1
+.deleted-version-000020835-icpu5138 -> 1
+actsize-icpu5128 -> 20480786432
+data-icpu5128 -> /dev/vginfong/infongt-eu4
+device-icpu5128 -> infongt-eu4
+replay-icpu5128 -> log-000021835-istore2a,0,0
+skip-check-istore2a -> 21835
+syncstatus-icpu5128 -> 98529280
+verifystatus-icpu5128 -> 23023,9744
+actual-icpu5128/
+actual-icpu5128/copy-syncstatus-icpu5128 -> 1
+actual-icpu5128/file_rate -> 10
+actual-icpu5128/is-attached -> 0
+actual-icpu5128/is-copying -> 1
+actual-icpu5128/is-primary -> 0
+actual-icpu5128/is-replaying -> 0
+actual-icpu5128/is-syncing -> 1
+actual-icpu5128/logfile-update -> 1
+actual-icpu5128/msg-inf-fetch -> 1499089928.215121499 1499089928.215121499 from = '/mars/resource-infongt-eu4/log-000021835-istore2a@istore2a:7778' to = '/mars/resource-infongt-eu4/log-000021835-istore2a' on = 1 start_pos = 0 end_pos = 2168304 actual_pos = 0 actual_stamp = 1499089928.215121499 rate = 0 read_fly = 0 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5128/msg-inf-sync -> 1499089927.311121033 1499089927.311121033 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5128' on = 1 start_pos = 93601792 end_pos = 20480786432 actual_pos = 98529280 actual_stamp = 1499089928.223121505 rate = 122538 read_fly = 141 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5128/open-count -> 0
+actual-icpu5128/replay_rate -> 0
+actual-icpu5128/sync_rate -> 122535
+actual-icpu5138/
+actual-icpu5139/
+actual-istore2a/
+actual-istore2b/
+defaults-icpu5128/
+defaults-icpu5133/
+defaults-icpu5138/
+defaults-icpu5139/
+defaults-istore2a/
+defaults-istore2b/
+local-icpu5128/
+local-icpu5138/
+local-icpu5139/
+local-istore2a/
+local-istore2b/
+todo-icpu5133/
+todo-icpu5138/
+todo-icpu5139/
+todo-istore2b/
+userspace/
+
+sent 569 bytes  received 39,595 bytes  26,776.00 bytes/sec
+total size is 2,177,723  speedup is 54.22
+all 5 peer(s) seem to be alive
+using existing device '/dev/vginfong/infongt-eu4'
+resource 'infongt-eu4' will appear as local device '/dev/mars/infongt-eu4'
+creating new replaylink '/mars/resource-infongt-eu4/replay-icpu5133' -> 'log-000021835-istore2a,0,0'
+creating new version symlink '/mars/resource-infongt-eu4/version-000021834-icpu5133' -> '00000000000000000000000000000000,log-000021834-istore2a,0:'
+WARNING: cannot read symlink '/mars/resource-infongt-eu4/version-000021833-istore2a'
+cannot create new version symlink '/mars/resource-infongt-eu4/version-000021833-icpu5133'
+sending incremental file list
+data-icpu5133 -> /dev/vginfong/infongt-eu4
+
+sent 75 bytes  received 18 bytes  62.00 bytes/sec
+total size is 25  speedup is 0.27
+successfully joined resource 'infongt-eu4'
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_join_resource hook_join_resource istore2a icpu5138 infongt-eu4 /dev/vginfong/infongt-eu4
+Executing on icpu5138: 'marsadm join-resource --ssh-port=24 infongt-eu4 /dev/vginfong/infongt-eu4'
+Using SSH port '24' from command line.
+joining to existing resource 'infongt-eu4'
+block device '/dev/vginfong/infongt-eu4': determined size = 20480786432 bytes
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=64 time=0.100 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.100/0.100/0.100/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+receiving incremental file list
+./
+.deleted-actsize-icpu5128 -> 1
+.deleted-actsize-icpu5133 -> 1
+.deleted-actsize-icpu5138 -> 1
+.deleted-actsize-icpu5139 -> 1
+.deleted-actsize-istore2a -> 1
+.deleted-actsize-istore2b -> 1
+.deleted-data-icpu5128 -> 1
+.deleted-data-icpu5133 -> 1
+.deleted-data-icpu5138 -> 1
+.deleted-data-icpu5139 -> 1
+.deleted-data-istore2a -> 1
+.deleted-data-istore2b -> 1
+.deleted-device-icpu5128 -> 1
+.deleted-device-icpu5133 -> 1
+.deleted-device-icpu5138 -> 1
+.deleted-device-icpu5139 -> 1
+.deleted-device-istore2a -> 1
+.deleted-device-istore2b -> 1
+.deleted-log-000020830-icpu5128 -> 1
+.deleted-log-000020831-icpu5128 -> 1
+.deleted-log-000020832-icpu5128 -> 1
+.deleted-log-000020833-icpu5138 -> 1
+.deleted-log-000020834-istore2a -> 1
+.deleted-log-000020835-istore2a -> 1
+.deleted-replay-icpu5128 -> 1
+.deleted-replay-icpu5133 -> 1
+.deleted-replay-icpu5138 -> 1
+.deleted-replay-icpu5139 -> 1
+.deleted-replay-istore2a -> 1
+.deleted-replay-istore2b -> 1
+.deleted-skip-check-icpu5128 -> 1
+.deleted-skip-check-icpu5133 -> 1
+.deleted-skip-check-icpu5138 -> 1
+.deleted-skip-check-icpu5139 -> 1
+.deleted-skip-check-istore2a -> 1
+.deleted-skip-check-istore2b -> 1
+.deleted-syncpos-icpu5128 -> 1
+.deleted-syncpos-icpu5133 -> 1
+.deleted-syncpos-icpu5138 -> 1
+.deleted-syncpos-icpu5139 -> 1
+.deleted-syncpos-istore2a -> 1
+.deleted-syncpos-istore2b -> 1
+.deleted-syncstatus-icpu5128 -> 1
+.deleted-syncstatus-icpu5133 -> 1
+.deleted-syncstatus-icpu5138 -> 1
+.deleted-syncstatus-icpu5139 -> 1
+.deleted-syncstatus-istore2a -> 1
+.deleted-syncstatus-istore2b -> 1
+.deleted-verifystatus-icpu5128 -> 1
+.deleted-verifystatus-icpu5133 -> 1
+.deleted-verifystatus-icpu5138 -> 1
+.deleted-verifystatus-icpu5139 -> 1
+.deleted-verifystatus-istore2a -> 1
+.deleted-verifystatus-istore2b -> 1
+.deleted-version-000020829-icpu5128 -> 1
+.deleted-version-000020829-icpu5133 -> 1
+.deleted-version-000020829-icpu5138 -> 1
+.deleted-version-000020829-icpu5139 -> 1
+.deleted-version-000020830-icpu5128 -> 1
+.deleted-version-000020830-icpu5133 -> 1
+.deleted-version-000020830-icpu5138 -> 1
+.deleted-version-000020830-icpu5139 -> 1
+.deleted-version-000020831-icpu5128 -> 1
+.deleted-version-000020831-icpu5133 -> 1
+.deleted-version-000020831-icpu5138 -> 1
+.deleted-version-000020831-icpu5139 -> 1
+.deleted-version-000020831-istore2a -> 1
+.deleted-version-000020831-istore2b -> 1
+.deleted-version-000020832-icpu5128 -> 1
+.deleted-version-000020832-icpu5133 -> 1
+.deleted-version-000020832-icpu5138 -> 1
+.deleted-version-000020832-icpu5139 -> 1
+.deleted-version-000020832-istore2a -> 1
+.deleted-version-000020832-istore2b -> 1
+.deleted-version-000020833-icpu5128 -> 1
+.deleted-version-000020833-icpu5133 -> 1
+.deleted-version-000020833-icpu5138 -> 1
+.deleted-version-000020833-icpu5139 -> 1
+.deleted-version-000020833-istore2a -> 1
+.deleted-version-000020833-istore2b -> 1
+.deleted-version-000020834-icpu5128 -> 1
+.deleted-version-000020834-icpu5133 -> 1
+.deleted-version-000020834-icpu5138 -> 1
+.deleted-version-000020834-icpu5139 -> 1
+.deleted-version-000020834-istore2a -> 1
+.deleted-version-000020834-istore2b -> 1
+.deleted-version-000020835-icpu5128 -> 1
+.deleted-version-000020835-icpu5133 -> 1
+.deleted-version-000020835-icpu5138 -> 1
+.deleted-version-000020835-icpu5139 -> 1
+.deleted-version-000020836-icpu5128 -> 1
+.deleted-version-000020836-icpu5133 -> 1
+.deleted-version-000020836-icpu5138 -> 1
+actsize-icpu5128 -> 20480786432
+actsize-icpu5133 -> 20480786432
+device-icpu5128 -> infongt-eu4
+replay-icpu5128 -> log-000021835-istore2a,0,0
+skip-check-istore2a -> 21835
+syncstatus-icpu5128 -> 2060079104
+verifystatus-icpu5128 -> 499858,13390
+actual-icpu5128/
+actual-icpu5128/.deleted- -> 1
+actual-icpu5128/.deleted-copy-syncstatus-icpu5128 -> 1
+actual-icpu5128/.deleted-device-icpu5128 -> 1
+actual-icpu5128/.deleted-file_rate -> 1
+actual-icpu5128/.deleted-has-emergency -> 1
+actual-icpu5128/.deleted-is-attached -> 1
+actual-icpu5128/.deleted-is-copying -> 1
+actual-icpu5128/.deleted-is-emergency -> 1
+actual-icpu5128/.deleted-is-primary -> 1
+actual-icpu5128/.deleted-is-replaying -> 1
+actual-icpu5128/.deleted-is-syncing -> 1
+actual-icpu5128/.deleted-logfile-update -> 1
+actual-icpu5128/.deleted-open-count -> 1
+actual-icpu5128/.deleted-replay-code -> 1
+actual-icpu5128/.deleted-replay_rate -> 1
+actual-icpu5128/.deleted-sync_rate -> 1
+actual-icpu5128/file_rate -> 72
+actual-icpu5128/msg-inf-fetch -> OK
+actual-icpu5128/msg-inf-sync -> 1499089927.311121033 1499089927.311121033 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5128' on = 1 start_pos = 2060079104 end_pos = 20480786432 actual_pos = 2060079104 actual_stamp = 1499089935.503125257 rate = 300230 read_fly = 8021 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5128/sync_rate -> 300096
+actual-icpu5133/
+actual-icpu5133/.deleted- -> 1
+actual-icpu5133/.deleted-copy-syncstatus-icpu5133 -> 1
+actual-icpu5133/.deleted-file_rate -> 1
+actual-icpu5133/.deleted-has-emergency -> 1
+actual-icpu5133/.deleted-is-attached -> 1
+actual-icpu5133/.deleted-is-copying -> 1
+actual-icpu5133/.deleted-is-emergency -> 1
+actual-icpu5133/.deleted-is-primary -> 1
+actual-icpu5133/.deleted-is-replaying -> 1
+actual-icpu5133/.deleted-is-syncing -> 1
+actual-icpu5133/.deleted-logfile-update -> 1
+actual-icpu5133/.deleted-open-count -> 1
+actual-icpu5133/.deleted-replay-code -> 1
+actual-icpu5133/.deleted-replay_rate -> 1
+actual-icpu5133/.deleted-sync_rate -> 1
+actual-icpu5133/copy-syncstatus-icpu5133 -> 1
+actual-icpu5133/file_rate -> 0
+actual-icpu5133/is-attached -> 0
+actual-icpu5133/is-copying -> 0
+actual-icpu5133/is-primary -> 0
+actual-icpu5133/is-replaying -> 0
+actual-icpu5133/is-syncing -> 1
+actual-icpu5133/msg-inf-sync -> 1499089935.183899612 1499089935.183899612 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5133' on = 1 start_pos = 0 end_pos = 20480786432 actual_pos = 0 actual_stamp = 1499089935.183899612 rate = 0 read_fly = 0 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5133/open-count -> 0
+actual-icpu5133/replay_rate -> 0
+actual-icpu5133/sync_rate -> 0
+actual-icpu5138/
+actual-icpu5138/.deleted- -> 1
+actual-icpu5138/.deleted-copy-syncstatus-icpu5138 -> 1
+actual-icpu5138/.deleted-device-icpu5138 -> 1
+actual-icpu5138/.deleted-file_rate -> 1
+actual-icpu5138/.deleted-has-emergency -> 1
+actual-icpu5138/.deleted-is-attached -> 1
+actual-icpu5138/.deleted-is-copying -> 1
+actual-icpu5138/.deleted-is-emergency -> 1
+actual-icpu5138/.deleted-is-primary -> 1
+actual-icpu5138/.deleted-is-replaying -> 1
+actual-icpu5138/.deleted-is-syncing -> 1
+actual-icpu5138/.deleted-logfile-update -> 1
+actual-icpu5138/.deleted-open-count -> 1
+actual-icpu5138/.deleted-replay-code -> 1
+actual-icpu5138/.deleted-replay_rate -> 1
+actual-icpu5138/.deleted-sync_rate -> 1
+actual-icpu5139/
+actual-icpu5139/.deleted- -> 1
+actual-icpu5139/.deleted-copy-syncstatus-icpu5139 -> 1
+actual-icpu5139/.deleted-file_rate -> 1
+actual-icpu5139/.deleted-has-emergency -> 1
+actual-icpu5139/.deleted-is-attached -> 1
+actual-icpu5139/.deleted-is-copying -> 1
+actual-icpu5139/.deleted-is-emergency -> 1
+actual-icpu5139/.deleted-is-primary -> 1
+actual-icpu5139/.deleted-is-replaying -> 1
+actual-icpu5139/.deleted-is-syncing -> 1
+actual-icpu5139/.deleted-logfile-update -> 1
+actual-icpu5139/.deleted-open-count -> 1
+actual-icpu5139/.deleted-replay-code -> 1
+actual-icpu5139/.deleted-replay_rate -> 1
+actual-icpu5139/.deleted-sync_rate -> 1
+actual-istore2a/
+actual-istore2a/.deleted- -> 1
+actual-istore2a/.deleted-copy-syncstatus-istore2a -> 1
+actual-istore2a/.deleted-device-istore2a -> 1
+actual-istore2a/.deleted-file_rate -> 1
+actual-istore2a/.deleted-has-emergency -> 1
+actual-istore2a/.deleted-is-attached -> 1
+actual-istore2a/.deleted-is-copying -> 1
+actual-istore2a/.deleted-is-emergency -> 1
+actual-istore2a/.deleted-is-primary -> 1
+actual-istore2a/.deleted-is-replaying -> 1
+actual-istore2a/.deleted-is-syncing -> 1
+actual-istore2a/.deleted-logfile-update -> 1
+actual-istore2a/.deleted-open-count -> 1
+actual-istore2a/.deleted-replay-code -> 1
+actual-istore2a/.deleted-replay_rate -> 1
+actual-istore2a/.deleted-sync_rate -> 1
+actual-istore2b/
+actual-istore2b/.deleted- -> 1
+actual-istore2b/.deleted-copy-syncstatus-istore2b -> 1
+actual-istore2b/.deleted-file_rate -> 1
+actual-istore2b/.deleted-has-emergency -> 1
+actual-istore2b/.deleted-is-attached -> 1
+actual-istore2b/.deleted-is-copying -> 1
+actual-istore2b/.deleted-is-emergency -> 1
+actual-istore2b/.deleted-is-primary -> 1
+actual-istore2b/.deleted-is-replaying -> 1
+actual-istore2b/.deleted-is-syncing -> 1
+actual-istore2b/.deleted-logfile-update -> 1
+actual-istore2b/.deleted-open-count -> 1
+actual-istore2b/.deleted-replay-code -> 1
+actual-istore2b/.deleted-replay_rate -> 1
+actual-istore2b/.deleted-sync_rate -> 1
+defaults-icpu5128/
+defaults-icpu5128/.deleted- -> 1
+defaults-icpu5133/
+defaults-icpu5133/.deleted- -> 1
+defaults-icpu5138/
+defaults-icpu5138/.deleted- -> 1
+defaults-icpu5139/
+defaults-icpu5139/.deleted- -> 1
+defaults-istore2a/
+defaults-istore2a/.deleted- -> 1
+defaults-istore2b/
+defaults-istore2b/.deleted- -> 1
+defaults/
+local-icpu5128/
+local-icpu5128/.deleted- -> 1
+local-icpu5138/
+local-icpu5138/.deleted- -> 1
+local-icpu5139/
+local-icpu5139/.deleted- -> 1
+local-istore2a/
+local-istore2a/.deleted- -> 1
+local-istore2b/
+local-istore2b/.deleted- -> 1
+todo-icpu5128/
+todo-icpu5128/.deleted- -> 1
+todo-icpu5128/.deleted-allow-replay -> 1
+todo-icpu5128/.deleted-attach -> 1
+todo-icpu5128/.deleted-connect -> 1
+todo-icpu5128/.deleted-sync -> 1
+todo-icpu5133/
+todo-icpu5133/.deleted- -> 1
+todo-icpu5133/.deleted-allow-replay -> 1
+todo-icpu5133/.deleted-attach -> 1
+todo-icpu5133/.deleted-connect -> 1
+todo-icpu5133/.deleted-sync -> 1
+todo-icpu5138/
+todo-icpu5138/.deleted-allow-replay -> 1
+todo-icpu5138/.deleted-attach -> 1
+todo-icpu5138/.deleted-connect -> 1
+todo-icpu5138/.deleted-sync -> 1
+todo-icpu5139/
+todo-icpu5139/.deleted- -> 1
+todo-icpu5139/.deleted-allow-replay -> 1
+todo-icpu5139/.deleted-attach -> 1
+todo-icpu5139/.deleted-connect -> 1
+todo-icpu5139/.deleted-sync -> 1
+todo-istore2a/
+todo-istore2a/.deleted- -> 1
+todo-istore2a/.deleted-allow-replay -> 1
+todo-istore2a/.deleted-attach -> 1
+todo-istore2a/.deleted-connect -> 1
+todo-istore2a/.deleted-sync -> 1
+todo-istore2b/
+todo-istore2b/.deleted- -> 1
+todo-istore2b/.deleted-allow-replay -> 1
+todo-istore2b/.deleted-attach -> 1
+todo-istore2b/.deleted-connect -> 1
+todo-istore2b/.deleted-sync -> 1
+userspace/
+
+sent 1,226 bytes  received 41,061 bytes  28,191.33 bytes/sec
+total size is 2,177,896  speedup is 51.50
+all 5 peer(s) seem to be alive
+using existing device '/dev/vginfong/infongt-eu4'
+resource 'infongt-eu4' will appear as local device '/dev/mars/infongt-eu4'
+creating new replaylink '/mars/resource-infongt-eu4/replay-icpu5138' -> 'log-000021835-istore2a,0,0'
+creating new version symlink '/mars/resource-infongt-eu4/version-000021834-icpu5138' -> '00000000000000000000000000000000,log-000021834-istore2a,0:'
+WARNING: cannot read symlink '/mars/resource-infongt-eu4/version-000021833-istore2a'
+cannot create new version symlink '/mars/resource-infongt-eu4/version-000021833-icpu5138'
+sending incremental file list
+data-icpu5138 -> /dev/vginfong/infongt-eu4
+
+sent 75 bytes  received 18 bytes  62.00 bytes/sec
+total size is 25  speedup is 0.27
+successfully joined resource 'infongt-eu4'
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_join_resource hook_join_resource istore2a icpu5139 infongt-eu4 /dev/vginfong/infongt-eu4
+Executing on icpu5139: 'marsadm join-resource --ssh-port=24 infongt-eu4 /dev/vginfong/infongt-eu4'
+Using SSH port '24' from command line.
+joining to existing resource 'infongt-eu4'
+block device '/dev/vginfong/infongt-eu4': determined size = 20480786432 bytes
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_seq=1 ttl=61 time=0.820 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.820/0.820/0.820/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+receiving incremental file list
+actsize-icpu5128 -> 20480786432
+data-icpu5138 -> /dev/vginfong/infongt-eu4
+device-icpu5128 -> infongt-eu4
+device-icpu5138 -> infongt-eu4
+replay-icpu5128 -> log-000021835-istore2a,0,0
+replay-icpu5138 -> log-000021835-istore2a,0,0
+skip-check-istore2a -> 21835
+syncstatus-icpu5128 -> 3080118272
+syncstatus-icpu5133 -> 580022272
+syncstatus-icpu5138 -> 0
+verifystatus-icpu5128 -> 738211,16913
+verifystatus-icpu5133 -> 132528,28704
+actual-icpu5128/
+actual-icpu5128/msg-inf-sync -> 1499089927.311121033 1499089927.311121033 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5128' on = 1 start_pos = 3075960832 end_pos = 20480786432 actual_pos = 3080118272 actual_stamp = 1499089941.971128593 rate = 177852 read_fly = 3115 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5128/sync_rate -> 170401
+actual-icpu5133/file_rate -> 102
+actual-icpu5133/msg-inf-sync -> 1499089935.183899612 1499089935.183899612 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5133' on = 1 start_pos = 574074880 end_pos = 20480786432 actual_pos = 580022272 actual_stamp = 1499089941.559897935 rate = 156904 read_fly = 9125 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5133/sync_rate -> 157540
+actual-icpu5139/
+actual-istore2b/
+defaults-icpu5128/
+defaults-icpu5133/
+defaults-icpu5138/
+defaults-icpu5139/
+defaults-istore2a/
+defaults-istore2b/
+local-icpu5128/
+local-icpu5138/
+local-icpu5139/
+local-istore2a/
+local-istore2b/
+todo-icpu5139/
+todo-istore2b/
+userspace/
+
+sent 446 bytes  received 40,959 bytes  27,603.33 bytes/sec
+total size is 2,178,157  speedup is 52.61
+all 5 peer(s) seem to be alive
+using existing device '/dev/vginfong/infongt-eu4'
+resource 'infongt-eu4' will appear as local device '/dev/mars/infongt-eu4'
+creating new replaylink '/mars/resource-infongt-eu4/replay-icpu5139' -> 'log-000021835-istore2a,0,0'
+creating new version symlink '/mars/resource-infongt-eu4/version-000021834-icpu5139' -> '00000000000000000000000000000000,log-000021834-istore2a,0:'
+WARNING: cannot read symlink '/mars/resource-infongt-eu4/version-000021833-istore2a'
+cannot create new version symlink '/mars/resource-infongt-eu4/version-000021833-icpu5139'
+sending incremental file list
+data-icpu5139 -> /dev/vginfong/infongt-eu4
+
+sent 79 bytes  received 18 bytes  194.00 bytes/sec
+total size is 25  speedup is 0.26
+successfully joined resource 'infongt-eu4'
+Running hook: hook_get_vg hook_get_vg istore2b
+Executing on istore2b: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Running hook: hook_join_resource hook_join_resource istore2a istore2b infongt-eu4 /dev/vg2b/infongt-eu4
+Executing on istore2b: 'marsadm join-resource --ssh-port=24 infongt-eu4 /dev/vg2b/infongt-eu4'
+Using SSH port '24' from command line.
+joining to existing resource 'infongt-eu4'
+block device '/dev/vg2b/infongt-eu4': determined size = 20480786432 bytes
+PING istore2a.schlund.de (10.46.98.4) 56(84) bytes of data.
+64 bytes from istore2a.schlund.de (10.46.98.4): icmp_req=1 ttl=61 time=0.958 ms
+
+--- istore2a.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.958/0.958/0.958/0.000 ms
+ssh: connect to host istore2a port 24: Connection refused
+Linux istore2a 3.2.45-istore-20130805 #1 SMP Mon Aug 5 13:36:58 CEST 2013 x86_64 GNU/Linux
+receiving incremental file list
+./
+skip-check-istore2a -> 21835
+syncstatus-icpu5128 -> 4140204032
+verifystatus-icpu5128 -> 1018146,20523
+actual-icpu5128/file_rate -> 11
+actual-icpu5128/msg-inf-fetch -> 1499089949.691132574 1499089949.691132574 from = '/mars/resource-infongt-eu4/log-000021835-istore2a@icpu5133:7778' to = '/mars/resource-infongt-eu4/log-000021835-istore2a' on = 0 start_pos = 2194576 end_pos = 2194576 actual_pos = 2194576 actual_stamp = 1499089949.695132576 rate = 18 read_fly = 0 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5128/msg-inf-sync -> 1499089927.311121033 1499089927.311121033 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5128' on = 1 start_pos = 4136394752 end_pos = 20480786432 actual_pos = 4140204032 actual_stamp = 1499089950.231132852 rate = 181549 read_fly = 3605 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5128/sync_rate -> 181497
+actual-icpu5138/
+actual-icpu5138/msg-inf-sync -> 1499088507.366031986 1499088507.366031986 from = 'data-icpu5128@icpu5128:7779' to = 'data-icpu5138' on = 0 start_pos = 20480786432 end_pos = 20480786432 actual_pos = 20480786432 actual_stamp = 1499088647.128733346 rate = 297432 read_fly = 0 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5139/
+actual-icpu5139/file_rate -> 0
+actual-icpu5139/is-attached -> 0
+actual-icpu5139/msg-inf-fetch -> OK
+actual-icpu5139/msg-inf-replay-start -> OK
+actual-icpu5139/msg-inf-sync -> 1499089950.702593273 1499089950.702593273 from = 'data-istore2a@istore2a:7779' to = 'data-icpu5139' on = 1 start_pos = 0 end_pos = 20480786432 actual_pos = 0 actual_stamp = 1499089950.702593273 rate = 0 read_fly = 0 write_fly = 0 error_code = 0 nr_errors = 0
+actual-icpu5139/sync_rate -> 0
+actual-istore2b/
+defaults-icpu5128/
+defaults-icpu5133/
+defaults-icpu5138/
+defaults-icpu5139/
+defaults-istore2a/
+defaults-istore2b/
+defaults/
+local-icpu5128/
+local-icpu5138/
+local-icpu5139/
+local-istore2a/
+local-istore2b/
+todo-icpu5138/
+todo-icpu5138/.deleted- -> 1
+todo-icpu5139/
+todo-istore2a/
+todo-istore2b/
+userspace/
+
+sent 425 bytes  received 42331 bytes  85512.00 bytes/sec
+total size is 2205176  speedup is 51.58
+all 5 peer(s) seem to be alive
+using existing device '/dev/vg2b/infongt-eu4'
+resource 'infongt-eu4' will appear as local device '/dev/mars/infongt-eu4'
+creating new replaylink '/mars/resource-infongt-eu4/replay-istore2b' -> 'log-000021835-istore2a,0,0'
+creating new version symlink '/mars/resource-infongt-eu4/version-000021834-istore2b' -> '00000000000000000000000000000000,log-000021834-istore2a,0:'
+WARNING: cannot read symlink '/mars/resource-infongt-eu4/version-000021833-istore2a'
+cannot create new version symlink '/mars/resource-infongt-eu4/version-000021833-istore2b'
+sending incremental file list
+data-istore2b -> /dev/vg2b/infongt-eu4
+
+sent 63 bytes  received 15 bytes  52.00 bytes/sec
+total size is 21  speedup is 0.27
+successfully joined resource 'infongt-eu4'
+Running hook: hook_get_vg hook_get_vg istore2a
+Executing on istore2a: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2a: 'lvremove -f /dev/vg2a/infongt-eu4-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on istore2a: 'lvremove -f /dev/vg2a/infongt-eu4-copy || echo IGNORE'
+  Logical volume "infongt-eu4-copy" successfully removed
+Running hook: hook_get_vg hook_get_vg icpu5128
+Executing on icpu5128: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5128: 'lvremove -f /dev/vginfong/infongt-eu4-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5128: 'lvremove -f /dev/vginfong/infongt-eu4-copy || echo IGNORE'
+  Logical volume "infongt-eu4-copy" successfully removed
+Running hook: hook_get_vg hook_get_vg icpu5133
+Executing on icpu5133: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5133: 'lvremove -f /dev/vginfong/infongt-eu4-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5133: 'lvremove -f /dev/vginfong/infongt-eu4-copy || echo IGNORE'
+  Logical volume "infongt-eu4-copy" successfully removed
+Running hook: hook_get_vg hook_get_vg icpu5138
+Executing on icpu5138: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5138: 'lvremove -f /dev/vginfong/infongt-eu4-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on icpu5138: 'lvremove -f /dev/vginfong/infongt-eu4-copy || echo IGNORE'
+  Logical volume "infongt-eu4-copy" successfully removed
+Running hook: hook_get_vg hook_get_vg icpu5139
+Executing on icpu5139: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on icpu5139: 'lvremove -f /dev/vginfong/infongt-eu4-tmp || echo IGNORE'
+IGNORE
+  One or more specified logical volume(s) not found.
+Executing on icpu5139: 'lvremove -f /dev/vginfong/infongt-eu4-copy || echo IGNORE'
+  Logical volume "infongt-eu4-copy" successfully removed
+Running hook: hook_get_vg hook_get_vg istore2b
+Executing on istore2b: 'vgs | awk '{ print $1; }' | grep 'vginfong\|vg[0-9]\+[ab]''
+Executing on istore2b: 'lvremove -f /dev/vg2b/infongt-eu4-tmp || echo IGNORE'
+  One or more specified logical volume(s) not found.
+IGNORE
+Executing on istore2b: 'lvremove -f /dev/vg2b/infongt-eu4-copy || echo IGNORE'
+  Logical volume "infongt-eu4-copy" successfully removed
+DONE Mon Jul  3 15:52:46 CEST 2017

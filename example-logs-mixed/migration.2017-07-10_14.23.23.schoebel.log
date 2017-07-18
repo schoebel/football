@@ -1,0 +1,6 @@
+./migrate-resource.sh --force=1 shrink infongt-eu6
+force=1
+operation=shrink
+res=infongt-eu6
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'

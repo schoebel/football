@@ -1,0 +1,46 @@
+./migrate-resource.sh migrate_config infongt-eu6 icpu5139
+operation=migrate_config
+res=infongt-eu6
+target_primary=icpu5139
+Sourcing hooks in './hooks-cm3.sh'
+Using clustermw username: 'tschoebeltheuer'
+Determined the following CURRENT hypervisor: "icpu5138"
+Determined the following CURRENT primary: "icpu5138"
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.501 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.501/0.501/0.501/0.000 ms
+PING icpu5138.schlund.de (10.46.12.76) 56(84) bytes of data.
+64 bytes from icpu5138.schlund.de (10.46.12.76): icmp_seq=1 ttl=59 time=0.488 ms
+
+--- icpu5138.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.488/0.488/0.488/0.000 ms
+/mars is a mountpoint
+  infongt-eu6 UpToDate Replicating DCASFR Primary icpu5138 
+ERRORS   FILE (2): available with --verbose
+/vol/infongt-eu6 is a mountpoint
+Determined the following secondaries: 'icpu5139'
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.30 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.309/1.309/1.309/0.000 ms
+PING icpu5139.schlund.de (10.46.28.76) 56(84) bytes of data.
+64 bytes from icpu5139.schlund.de (10.46.28.76): icmp_seq=1 ttl=58 time=1.28 ms
+
+--- icpu5139.schlund.de ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.282/1.282/1.282/0.000 ms
+Using the following TARGET primary:   "icpu5139"
+Using the following TARGET secondary: ""
+[CONFIRM: Press Return to continue, ^C to abort] 
+Running hook: hook_resource_migrate hook_resource_migrate icpu5138 icpu5139 infongt-eu6
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5138.schlund.de"
+curl -s  -X "GET" "http://clustermw:3042/nodes/icpu5139.schlund.de"
+Source and target clusters are equal: 'cluster499'
+Nothing to do.
+DONE Fri Jul 14 09:11:10 CEST 2017
