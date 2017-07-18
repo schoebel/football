@@ -258,6 +258,17 @@ function log
     fi
 }
 
+section_nr=1
+
+function section
+{
+    local txt="${1:--}"
+    echo ""
+    echo "==================================================================="
+    echo "$(( section_nr++ )). $txt"
+    echo ""
+}
+
 function exists_hook
 {
     local name="$1"
@@ -392,7 +403,8 @@ function migration_prepare
     local target_primary="$3"
     local target_secondary="$4"
 
-    # Ensure that "marsadm merge-cluster" has been executed.
+    section "Ensure that \"marsadm merge-cluster\" has been executed."
+
     # This is idempotent.
     if exists_hook hook_merge_cluster; then
 	call_hook hook_merge_cluster "$source_primary" "$target_primary"
@@ -403,12 +415,16 @@ function migration_prepare
     fi
 
     remote "$target_primary" "marsadm wait-cluster"
-    # Idempotence: check whether the additional replica has been alread created
+
+    section "Idempotence: check whether the additional replica has been alread created"
+
     local already_present="$(remote "$target_primary" "marsadm view-is-attach $lv_name")"
     if (( already_present )); then
 	echo "Nothing to do: resource '$lv_name' is already present at '$target_primary'"
 	return
     fi
+
+    section "Re-determine and check all resource sizes for safety"
 
     local size="$(( $(remote "$source_primary" "marsadm view-sync-size $lv_name") / 1024 ))" ||\
 	fail "cannot determine resource size"
@@ -421,8 +437,13 @@ function migration_prepare
     local primary_dev="/dev/$primary_vg_name/${lv_name}"
     local secondary_dev="/dev/$secondary_vg_name/${lv_name}"
 
+    section "Create migration spaces"
+
     create_migration_space "$target_primary" "$lv_name" "$size"
     create_migration_space "$target_secondary" "$lv_name" "$size"
+
+    section "Join the resources"
+
     if exists_hook hook_join_resource; then
 	call_hook hook_join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
 	call_hook hook_join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
@@ -437,6 +458,8 @@ function wait_resource_uptodate
 {
     local host_list="$1"
     local res="$2"
+
+    section "Wait for MARS UpToDate"
 
     local host
     for host in $host_list; do
@@ -492,11 +515,23 @@ function migrate_resource
     local res="$4"
 
     wait_resource_uptodate "$target_primary" "$res"
+
     # critical path
+    section "Stopping old primary"
+
     call_hook hook_resource_stop "$source_primary" "$res"
+
+    section "Migrate cluster config"
+
     call_hook hook_resource_migrate "$source_primary" "$target_primary" "$res"
+
+    section "Starting new primary"
+
     call_hook hook_resource_start "$target_primary" "$res"
+
     # non-critical path
+    section "Update new secondary config"
+
     call_hook hook_secondary_migrate "$target_secondary"
 }
 
@@ -504,6 +539,8 @@ function migrate_cleanup
 {
     local host_list="$1"
     local res="$2"
+
+    section "Cleanup migration data at $host_list"
 
     local host
     for host in $host_list; do
@@ -606,11 +643,15 @@ function transfer_quota
 
     (( !do_quota )) && return
 
+    section "Checks for xfs quota transfer"
+
+    remote "$hyper" "mountpoint $mnt1 && mountpoint $mnt2"
+
+    section "Transfer xfs quota"
+
     mkdir -p "$xfs_dump_dir"
     local dumpfile="$xfs_dump_dir/dump.$hyper.$lv_name"
 
-    # checks
-    remote "$hyper" "mountpoint $mnt1 && mountpoint $mnt2"
     # enable quota
     remote "$hyper" "$xfs_quota_enable $m2"
 
@@ -626,11 +667,15 @@ function create_shrink_space
     local size="$3"
 
     # some checks
+    section "Checking shrink space on $host"
+
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-copy ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-copy on $host - Do this by hand\"; exit -1; fi"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
 
     # do it
+    section "Creating shrink space on $host"
+
     remote "$host" "lvcreate -L ${size}k -n ${lv_name}-tmp $vg_name"
     remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}-tmp"
 }
@@ -656,6 +701,8 @@ function make_tmp_mount
     local lv_name="$3"
     local suffix="${4:--tmp}"
 
+    section "Creating temporary mount at $hyper"
+
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
     local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
     local dev_tmp="/dev/$vg_name/$lv_name$suffix"
@@ -677,6 +724,8 @@ function make_tmp_umount
     local lv_name="$3"
     local suffix="${4:--tmp}"
 
+    section "Removing temporary mount from $hyper"
+
     remote "$hyper" "umount $mnt$suffix/"
 
     if [[ "$store" != "$hyper" ]]; then
@@ -692,6 +741,8 @@ function copy_data
     local suffix="${3:--tmp}"
     local nice="${4:-nice -19 ionice -c3}"
     local add_opt="${5:-}"
+
+    section "COPY DATA via rsync"
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
 
@@ -714,6 +765,8 @@ function hot_phase
     local mars_dev="/dev/mars/$lv_name"
 
     # some checks
+    section "Checking some preconditions"
+
     remote "$primary" "if [[ -e ${dev}-copy ]]; then echo \"REFUSING to overwrite ${dev}-copy on $primary - First remove it - Do this by hand\"; exit -1; fi"
     remote "$primary" "if ! [[ -e $dev_tmp ]]; then echo \"Cannot start hot phase: $dev_tmp is missing. Run 'prepare' first!\"; exit -1; fi"
 
@@ -724,6 +777,7 @@ function hot_phase
     copy_data "$hyper" "$lv_name" "$suffix" "time" "--delete"
 
     # go offline
+    section "Go offline"
     if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
 	# retain mountpoints
 	call_hook hook_resource_stop_vm "$hyper" "$lv_name"
@@ -756,8 +810,12 @@ function hot_phase
 	    call_hook hook_disconnect "$primary" "$hyper" "$lv_name" "1"
 	fi
     fi
+
     remote "$primary" "marsadm wait-umount $lv_name"
     remote "$primary" "marsadm secondary $lv_name"
+
+    section "Renaming LVs and re-creating the MARS resource"
+
     local host
     for host in $primary $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
@@ -770,7 +828,11 @@ function hot_phase
     remote "$primary" "marsadm create-resource --force $lv_name $dev"
     remote "$primary" "marsadm primary $lv_name"
 
+    section "Go online again"
+
     call_hook hook_resource_start "$primary" "$lv_name"
+
+    section "Re-create the MARS replicas"
 
     for host in $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
@@ -787,6 +849,8 @@ function cleanup_old_remains
 {
     local host_list="$1"
     local lv_name="$2"
+
+    section "Cleanup any old LVs"
 
     local host
     for host in $host_list; do
@@ -817,6 +881,7 @@ function extend_fs
     local mnt="$(call_hook hook_get_mountpoint "$res")"
 
     # extend the LV first
+    section "Extend the LV"
 
     local host
     for host in $primary $secondary_list; do
@@ -825,14 +890,19 @@ function extend_fs
 	remote "$host" "lvresize -L ${size}k $dev"
     done
 
+    section "Extend the MARS resource"
+
     remote "$primary" "marsadm resize $lv_name"
     sleep 1
 
     # propagate new size over intermediate iSCSI
     if [[ "$hyper" != "$primary" ]]; then
+	section "propagate new size over iSCSI"
 	call_hook hook_extend_iscsi "$hyper"
 	sleep 3
     fi
+
+    section "Resize the filesystem"
 
     remote "$hyper" "$fs_resize_cmd $mnt"
 }
