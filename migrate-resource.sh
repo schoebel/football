@@ -111,6 +111,10 @@ Actions for inplace FS extension:
 
   $0 extend          <resource> <percent>
 
+Global maintenance:
+
+  $0 lv_cleanup      <resource>
+
 General features:
 
   - instead of <percent>, an absolute amount of storage with suffix
@@ -172,7 +176,7 @@ function scan_args
 	    continue
 	fi
 	if (( !index )); then
-	    if [[ "$par" = "migrate_cleanup" ]]; then
+	    if [[ "$par" =~ migrate_cleanup|lv_cleanup ]]; then
 		local -a params=(operation res)	
 	    elif [[ "$par" =~ shrink|extend ]]; then
 		local -a params=(operation res target_percent)
@@ -344,6 +348,52 @@ function get_vg
     fi
     [[ "$vg" = "" ]] && return -1
     echo "$vg"
+}
+
+######################################################################
+
+# LV cleanup over the whole pool (may take some time)
+
+function LV_cleanup
+{
+    local primary="$1"
+    local lv_name="$2"
+    local do_it="${3:-0}"
+
+    local total_count=0
+    local remove_count=0
+    section "Determine hosts and LVs for cleanup"
+
+    local to_check="$(remote "$primary" "marsadm view-cluster-members")"
+    echo "Determined the following cluster members: " $to_check >> /dev/stderr
+
+    section "Run over the host list for cleanup"
+
+    echo "do_remove:host:LV_path"
+    local host
+    for host in $to_check; do
+	local path
+	for path in $(remote "$host" "ls /dev/*/$lv_name*" 2>/dev/null | grep -v "/mars/" ); do
+	    local do_remove=0
+	    local disk="$(remote "$host" "marsadm view-get-disk $lv_name")" 2>/dev/null
+	    if [[ "$disk" = "" ]]; then
+		do_remove=1
+		(( remove_count++ ))
+	    fi
+	    echo "$do_remove:$host:$path"
+	    (( total_count++ ))
+	    if (( do_remove && do_it )); then
+		remote "$host" "lvremove $lvremove_opt $path"
+	    fi
+	done
+    done
+    echo "---------------"
+    echo "Total number of LVs:    $total_count"
+    echo "Total number to remove: $remove_count"
+    if (( !do_it && !total )); then
+	echo "Nothing to do. Exiting."
+	exit 0
+    fi
 }
 
 ######################################################################
@@ -970,6 +1020,13 @@ function extend_stack
     extend_fs "$hyper" "$primary" "$secondary_list" "$res" "$target_space"
 }
 
+### global actions
+
+function lv_clean
+{
+    LV_cleanup "$primary" "$res" 1
+}
+
 ######################################################################
 
 # MAIN: get and check parameters, determine hosts and resources, run actions
@@ -1059,6 +1116,8 @@ if [[ "$operation" = migrate_cleanup ]]; then
     echo "$to_clean_new"
     echo "Stray $res partitions will be removed from:"
     echo "$to_clean_old"
+elif [[ "$operation" = lv_cleanup ]]; then
+    LV_cleanup "$primary" "$res" 0
 fi
 
 # determine sizes and available space (only for extending / shrinking)
@@ -1122,6 +1181,10 @@ shrink)
 
 extend)
   extend_stack
+  ;;
+
+lv_cleanup)
+  lv_clean
   ;;
 
 *)
