@@ -356,7 +356,7 @@ function check_migration
     [[ "$target_primary" = "" ]] && fail "target hostname is not defined"
     [[ "$target_primary" = "$primary" ]] && fail "target host '$target_primary' needs to be distinct from source host"
     for host in $target_primary $target_secondary; do
-	ping -c 1 "$host" || fail "Host '$host' is not pingable"
+	ping -c 1 "$host" > /dev/null || fail "Host '$host' is not pingable"
 	remote "$host" "mountpoint /mars > /dev/null"
 	remote "$host" "[[ -d /mars/ips/ ]]"
     done
@@ -1008,7 +1008,7 @@ primary="$(get_store "$res")" || fail "No current primary hostname can be determ
 echo "Determined the following CURRENT primary: \"$primary\""
 
 for host in $hyper $primary; do
-    ping -c 1 "$host" || fail "Host '$host' is not pingable"
+    ping -c 1 "$host" > /dev/null || fail "Host '$host' is not pingable"
 done
 
 remote "$primary" "mountpoint /mars"
