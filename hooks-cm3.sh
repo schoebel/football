@@ -237,6 +237,34 @@ always_migrate="${always_migrate:-0}" # only enable for testing
 check_segments="${check_segments:-0}" # currently disabled for testing, might be needed for real moves
 backup_dir="${backup_dir:-.}"
 
+function _check_migrate
+{
+    local source="$1"
+    local target="$2"
+    local res="$3"
+    [[ "$source" = "" ]] && return
+    [[ "$target" = "" ]] && return
+    [[ "$res" = "" ]] && return
+
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+
+    if [[ "$source_cluster" != "$target_cluster" ]]; then
+	if (( check_segments )); then
+	    # At the moment, cross-segment migrations won't work.
+	    # TBD.
+	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment"
+	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment"
+	    echo "source_segment='$source_segment'"
+	    echo "target_segment='$target_segment'"
+	    [[ "$source_segment" = "" ]] && fail "cannot determine source segment"
+	    [[ "$target_segment" = "" ]] && fail "cannot determine target segment"
+	    [[ "$source_segment" != "$target_segment" ]] && fail "source_segment '$source_segment' != target_segment '$target_segment'"
+	fi
+    fi
+
+}
+
 function _migrate_cm3_config
 {
     local source="$1"
@@ -250,18 +278,6 @@ function _migrate_cm3_config
     local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
     if (( always_migrate )) || [[ "$source_cluster" != "$target_cluster" ]]; then
 	echo "Moving config from cluster '$source_cluster' to cluster '$target_cluster'"
-
-	if (( check_segments )); then
-	    # At the moment, cross-segment migrations won't work.
-	    # TBD.
-	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment"
-	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment"
-	    echo "source_segment='$source_segment'"
-	    echo "target_segment='$target_segment'"
-	    [[ "$source_segment" = "" ]] && fail "cannot determine source segment"
-	    [[ "$target_segment" = "" ]] && fail "cannot determine target segment"
-	    [[ "$source_segment" != "$target_segment" ]] && fail "source_segment '$source_segment' != target_segment '$target_segment'"
-	fi
 
 	if (( use_rest )); then
 	    local backup=""
@@ -306,6 +322,15 @@ function _migrate_cm3_config
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
     fi
+}
+
+function hook_check_migrate
+{
+    local source="$1"
+    local target="$2"
+    local res="$3"
+
+    _check_migrate "$source" "$target" "$res"
 }
 
 function hook_resource_migrate

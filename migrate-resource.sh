@@ -991,6 +991,11 @@ function migrate_wait
     wait_resource_uptodate "$target_primary $target_secondary" "$res"
 }
 
+function migrate_check
+{
+    call_hook hook_check_migrate "$primary" "$target_primary" "$res"
+}
+
 function migrate_finish
 {
     migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
@@ -1166,14 +1171,17 @@ migrate_wait)
   migrate_wait
   ;;
 migrate_finish)
+  migrate_check
   migrate_finish
   ;;
 migrate)
+  migrate_check
   migrate_prepare
   migrate_wait
   migrate_finish
   ;;
 migrate_config)
+  migrate_check
   migrate_config
   ;;
 migrate_cleanup)
