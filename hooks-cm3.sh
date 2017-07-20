@@ -42,9 +42,18 @@ function hook_get_hyper
 
 function hook_get_store
 {
-    local res="$1"
+    local host="$1"
     
-    remote "$res" "source /lib/ui-config-framework/bash-includes; __config_getConfigVar CLUSTER_STORAGEHOST; echo \$CLUSTER_STORAGEHOST | cut -d. -f1"
+    try="$(remote "$host" "source /lib/ui-config-framework/bash-includes; __config_getConfigVar CLUSTER_STORAGEHOST; echo \$CLUSTER_STORAGEHOST | cut -d. -f1")"
+    if [[ "$try" != "" ]]; then
+	echo "$try"
+	return
+    fi
+    # fallback to indirect retrieval
+    local hyper="$(hook_get_hyper "$host")"
+    if [[ "$hyper" != "" ]] && [[ "$hyper" != "$host" ]]; then
+	hook_get_store "$hyper"
+    fi
 }
 
 function hook_get_vg
