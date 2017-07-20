@@ -324,6 +324,7 @@ function hook_secondary_migrate
     local secondary
     for secondary in $secondary_list; do
 	remote "$secondary" "cm3 --update --force"
+	remote "$secondary" "service clustermanager restart"
     done
 }
 
