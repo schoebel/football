@@ -58,6 +58,8 @@ ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInt
 rsync_opt="${rsync_opt:- -aSH --info=STATS}"
 lvremove_opt="${lvremove_opt:--f}"
 
+commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls cut ping date mkdir rm}"
+
 ######################################################################
 
 # help
@@ -271,6 +273,18 @@ function section
     echo "==================================================================="
     echo "$(( section_nr++ )). $txt"
     echo ""
+}
+
+function commands_installed
+{
+    local cmd_list="$1"
+
+    local cmd
+    for cmd in $cmd_list; do
+	if ! which $cmd; then
+	    fail "shell command '$cmd' is not installed"
+	fi
+    done
 }
 
 function exists_hook
@@ -1030,6 +1044,8 @@ function lv_clean
 ######################################################################
 
 # MAIN: get and check parameters, determine hosts and resources, run actions
+
+commands_installed "$commands_needed"
 
 ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
 

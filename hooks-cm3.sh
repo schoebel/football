@@ -25,6 +25,8 @@
 #
 # This script must be sourced from the main script.
 
+commands_installed "curl json_pp"
+
 function hook_get_mountpoint
 {
     local res="$1"
