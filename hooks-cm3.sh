@@ -181,7 +181,7 @@ function clustertool
     local content="$3"
 
     local cmd="curl -s -u \"$clustertool_user:$clustertool_passwd\" -X \"$op\" \"$clustertool_host$path\""
-    [[ "$content" != "" ]] && cmd+=" -d '$content'"
+    [[ "$content" != "" ]] && cmd+=" -d '${content//\'/\'}'"
     echo "$cmd" >> /dev/stderr
     eval "$cmd" || fail "failed REST command '$cmd'"
 }
