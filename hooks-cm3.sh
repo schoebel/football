@@ -237,6 +237,18 @@ function _get_segment
     fi
 }
 
+function hook_get_flavour
+{
+    local host="$1"
+
+    clustertool GET "/nodes/$host.schlund.de" |\
+	json_pp |\
+	grep flavour |\
+	grep -o '".*"' |\
+	sed 's/"//g' |\
+	sed 's/^.*: *//'
+}
+
 ###########################################
 
 # Migration operation: move cm3 config from old cluster to a new cluster

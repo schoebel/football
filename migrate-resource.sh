@@ -1081,6 +1081,11 @@ hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be deter
 
 echo "Determined the following CURRENT hypervisor: \"$hyper\""
 
+if exists_hook hook_get_flavour; then
+    flavour="$(hook_get_flavour "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor FLAVOUR: \"$flavour\""
+fi
+
 primary="$(get_store "$res")" || fail "No current primary hostname can be determined"
 
 echo "Determined the following CURRENT primary: \"$primary\""
