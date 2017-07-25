@@ -634,6 +634,9 @@ function determine_space
     echo "Determined the following VG name: \"$vg_name\""
     echo "Determined the following LV path: \"$lv_path\""
 
+    local dev="/dev/$vg_name/$lv_name"
+    remote "$primary" "if [[ -e ${dev}-old ]]; then echo \"REFUSING to overwrite ${dev}-old on $primary - First remove it - Do this by hand\"; exit -1; fi"
+
     df="$(remote "$hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
     used_space="$(echo "$df" | awk '{print $3;}')"
     total_space="$(echo "$df" | awk '{print $2;}')"
@@ -832,7 +835,6 @@ function hot_phase
     # some checks
     section "Checking some preconditions"
 
-    remote "$primary" "if [[ -e ${dev}-old ]]; then echo \"REFUSING to overwrite ${dev}-old on $primary - First remove it - Do this by hand\"; exit -1; fi"
     remote "$primary" "if ! [[ -e $dev_tmp ]]; then echo \"Cannot start hot phase: $dev_tmp is missing. Run 'prepare' first!\"; exit -1; fi"
 
     # additional temporary mount
