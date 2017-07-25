@@ -696,6 +696,7 @@ optimize_dentry_cache="${optimize_dentry_cache:-1}"
 
 mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
+reuse_mount="${reuse_mount:-1}"
 do_quota="${do_quota:-1}"
 xfs_dump_dir="${xfs_dump_dir:-xfs-quota-$start_stamp}"
 xfs_quota_enable="${xfs_quota_enable:-xfs_quota -x -c enable}"
@@ -769,9 +770,17 @@ function make_tmp_mount
     local lv_name="$3"
     local suffix="${4:--tmp}"
 
-    section "Creating temporary mount at $hyper"
-
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+    if (( reuse_mount )); then
+	section "Checking mount $mnt$suffix at $hyper"
+	if remote "$hyper" "mountpoint $mnt$suffix" 1; then
+	    echo "Reusing already existing mount $mnt$suffix on $hyper"
+	    return
+	fi
+    fi
+
+    section "Creating mount $mnt$suffix at $hyper"
+
     local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
     local dev_tmp="/dev/$vg_name/$lv_name$suffix"
     if [[ "$store" != "$hyper" ]]; then
