@@ -700,6 +700,7 @@ optimize_dentry_cache="${optimize_dentry_cache:-1}"
 mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
 reuse_mount="${reuse_mount:-1}"
+reuse_lv="${reuse_lv:-1}"
 do_quota="${do_quota:-1}"
 xfs_dump_dir="${xfs_dump_dir:-xfs-quota-$start_stamp}"
 xfs_quota_enable="${xfs_quota_enable:-xfs_quota -x -c enable}"
@@ -743,6 +744,13 @@ function create_shrink_space
 
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-old on $host - Do this by hand\"; exit -1; fi"
+    if (( reuse_lv )); then
+	# check whether LV already exists
+	if remote "$host" "[[ -e /dev/$vg_name/${lv_name}-tmp ]]" 1; then
+	    echo "reusing already exists LV /dev/$vg_name/${lv_name}-tmp on '$host'"
+	    return
+	fi
+    fi
     call_hook hook_disconnect "$host" "" "$lv_name"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
 
