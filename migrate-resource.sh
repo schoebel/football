@@ -224,12 +224,14 @@ function remote
     (( verbose > 0 )) && echo "Executing on $host: '$cmd'" >> /dev/stderr
     [[ "$host" = "" ]] && return
     [[ "${cmd## }" = "" ]] && return
-    if ssh $ssh_opt "root@$host" "$cmd"; then
+    ssh $ssh_opt "root@$host" "$cmd"
+    local rc=$?
+    if (( !rc )); then
 	return 0
     elif (( nofail )); then
-	return $?
+	return $rc
     else
-	fail "ssh to '$host' command '$cmd' failed with status $?"
+	fail "ssh to '$host' command '$cmd' failed with status $rc"
     fi
 }
 
