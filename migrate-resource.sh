@@ -614,6 +614,7 @@ function migrate_cleanup
 	    remote "$host" "marsadm leave-resource $res || echo IGNORE"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-tmp || echo IGNORE"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-old || echo IGNORE"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE"
 	fi
     done
@@ -734,7 +735,7 @@ function create_shrink_space
     section "Checking shrink space on $host"
 
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-copy ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-copy on $host - Do this by hand\"; exit -1; fi"
+    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-old on $host - Do this by hand\"; exit -1; fi"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
 
     # do it
@@ -831,7 +832,7 @@ function hot_phase
     # some checks
     section "Checking some preconditions"
 
-    remote "$primary" "if [[ -e ${dev}-copy ]]; then echo \"REFUSING to overwrite ${dev}-copy on $primary - First remove it - Do this by hand\"; exit -1; fi"
+    remote "$primary" "if [[ -e ${dev}-old ]]; then echo \"REFUSING to overwrite ${dev}-old on $primary - First remove it - Do this by hand\"; exit -1; fi"
     remote "$primary" "if ! [[ -e $dev_tmp ]]; then echo \"Cannot start hot phase: $dev_tmp is missing. Run 'prepare' first!\"; exit -1; fi"
 
     # additional temporary mount
@@ -885,7 +886,7 @@ function hot_phase
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
 	remote "$host" "marsadm down $lv_name || echo IGNORE"
 	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE"
-	remote "$host" "lvrename $vg_name $lv_name ${lv_name}-copy"
+	remote "$host" "lvrename $vg_name $lv_name ${lv_name}-old"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
     remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE"
@@ -921,7 +922,7 @@ function cleanup_old_remains
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp || echo IGNORE"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-copy || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-old || echo IGNORE"
 	else
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi
