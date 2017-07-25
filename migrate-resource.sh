@@ -803,7 +803,7 @@ function make_tmp_umount
 
     section "Removing temporary mount from $hyper"
 
-    remote "$hyper" "umount $mnt$suffix/"
+    remote "$hyper" "if mountpoint $mnt$suffix/; then umount $mnt$suffix/ || umount -f $mnt$suffix/; fi"
 
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
