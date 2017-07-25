@@ -399,6 +399,7 @@ function LV_cleanup
 	    echo "$do_remove:$host:$path"
 	    (( total_count++ ))
 	    if (( do_remove && do_it )); then
+		call_hook hook_disconnect "$host" "" "$lv_name"
 		remote "$host" "lvremove $lvremove_opt $path"
 	    fi
 	done
@@ -742,6 +743,7 @@ function create_shrink_space
 
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-old on $host - Do this by hand\"; exit -1; fi"
+    call_hook hook_disconnect "$host" "" "$lv_name"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
 
     # do it
@@ -867,7 +869,7 @@ function hot_phase
 	remote "$primary" "marsadm primary $lv_name"
 	if [[ "$primary" != "$hyper" ]]; then
 	# create remote devices instead
-	    mars_dev="$(call_hook hook_connect "$primary" "$hyper" "$lv_name" "1" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	    mars_dev="$(call_hook hook_connect "$primary" "$hyper" "$lv_name" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
 	    echo "using tmp mars dev '$mars_dev'"
 	    [[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
 	fi
@@ -885,7 +887,7 @@ function hot_phase
 	if [[ "$primary" != "$hyper" ]]; then
 	    # remove intermediate remote device
 	    sleep 1
-	    call_hook hook_disconnect "$primary" "$hyper" "$lv_name" "1"
+	    call_hook hook_disconnect "$primary" "$hyper" "$lv_name"
 	fi
     fi
 

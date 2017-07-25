@@ -415,23 +415,73 @@ iet_type="${iet_type:-blockio}"
 iscsi_eth="${iscsi_eth:-eth1}"
 iscsi_tid="${iscsi_tid:-4711}"
 declare -g -A tids
+tid_offset=0
+
+function get_tid
+{
+    local iqn="$1"
+
+    declare -g iscsi_tid
+    declare -g -A tids
+
+    local old="${tids[$iqn]}"
+    echo "iSCSI IQN '$iqn' has old tid '$old'" >> /dev/stderr
+    echo "$old"
+}
+
+function new_tid
+{
+    local iqn="$1"
+
+    declare -g iscsi_tid
+    declare -g tid_offset
+    declare -g -A tids
+
+    local old="${tids[$iqn]}"
+    if [[ "$old" != "" ]]; then
+	echo "iSCSI IQN '$iqn' has old tid '$old'" >> /dev/stderr
+	echo "$old"
+	return
+    fi
+    local result="$(( iscsi_tid + tid_offset ))"
+    tids[$iqn]="$result"
+    (( tid_offset++ ))
+    echo "iSCSI IQN '$iqn' has new tid '$result'" >> /dev/stderr
+    echo "$result"
+}
+
+function delete_tid
+{
+    local iqn="$1"
+    declare -g -A tids
+    tids[$iqn]=""
+}
 
 function hook_disconnect
 {
     local store="$1"
     local hyper="$2"
     local res="$3"
-    local tid_offset="${4:-0}"
-
-    declare -g iscsi_tid
-    declare -g -A tids
 
     local iqn="$iqn_base.$res.tmp"
-    local tid="${tids["$iqn"]}"
-    [[ "$tid" = "" ]] && tid=$(( iscsi_tid + tid_offset ))
+    if [[ "$hyper" != "" ]]; then
+	remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE"
+    fi
 
-    remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE"
-    remote "$store" "ietadm --op delete --tid=$tid || echo IGNORE"
+    local tid="$(get_tid "$iqn")"
+    if [[ "$tid" != "" ]]; then
+	remote "$store" "ietadm --op delete --tid=$tid || echo IGNORE"
+	delete_tid "$iqn"
+    fi
+
+    # safeguard: retrieve any tid from runtime session
+    for tid in $(remote "$store" "grep 'name:$iqn' < /proc/net/iet/session | cut -d' ' -f1 | cut -d: -f2"); do
+	echo "KILLING old tid '$tid' on '$store'"
+	for hyper in $(remote "$store" "grep -A1 'name:$iqn' < /proc/net/iet/session | grep 'initiator:' | grep -o 'icpu[0-9]\+'"); do
+	    remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE"
+	done
+	remote "$store" "ietadm --op delete --tid=$tid || echo IGNORE"
+    done
 }
 
 function hook_connect
@@ -439,13 +489,9 @@ function hook_connect
     local store="$1"
     local hyper="$2"
     local res="$3"
-    local tid_offset="${4:-0}"
-
-    declare -g iscsi_tid
-    declare -g -A tids
 
     # for safety, kill any old session
-    hook_disconnect "$store" "$hyper" "$res" "$tid_offset"
+    hook_disconnect "$store" "$hyper" "$res"
 
     local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
     local dev="/dev/$vg_name/$res"
@@ -457,10 +503,9 @@ function hook_connect
     remote "$hyper" "ping -c1 $iscsi_ip"
 
     # step 1: setup stone-aged IET on storage node
-    local tid=$(( iscsi_tid + tid_offset ))
+    local tid="$(new_tid "$iqn")"
     remote "$store" "ietadm --op new --tid=$tid --params=Name=$iqn"
     remote "$store" "ietadm --op new --tid=$tid --lun=0 --params=Path=$dev"
-    tids["$iqn"]="$tid"
     sleep 2
 
     # step2: import iSCSI on hypervisor
@@ -474,8 +519,6 @@ function hook_connect
 	[[ -n "$new_dev" ]] && break
     done
     rm -f $tmp_list
-    declare -g iscsi_tid=$(( tid + 1 ))
-    echo "New iscsi tid: $iscsi_tid"
     echo "NEW_DEV:$new_dev"
 }
 
