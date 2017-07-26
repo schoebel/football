@@ -1248,4 +1248,4 @@ lv_cleanup)
 esac
 
 echo "DONE $(date)"
-} 2>&1 | log "$logdir" "logs.${1:-unkown}.$start_stamp.$LOGNAME.log"
+} 2>&1 | log "$logdir" "logs.${1:-unknown}.${2:-unknown}.$start_stamp.$LOGNAME.log"
