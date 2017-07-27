@@ -153,6 +153,8 @@ function source_hooks
     done
 }
 
+args_info=""
+
 function scan_args
 {
     local -a params
@@ -193,6 +195,7 @@ function scan_args
 	if [[ "$lhs" != "" ]]; then
 	    echo "$lhs=$par"
 	    eval "$lhs=$par"
+	    args_info+=".$par"
 	    (( index++ ))
 	else
 	    helpme
@@ -1078,10 +1081,10 @@ commands_installed "$commands_needed"
 
 ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
 
+scan_args "$@"
+
 {
 echo "$0 $@"
-
-scan_args "$@"
 
 source_hooks
 
@@ -1248,4 +1251,4 @@ lv_cleanup)
 esac
 
 echo "DONE $(date)"
-} 2>&1 | log "$logdir" "logs.${1:-unknown}.${2:-unknown}.$start_stamp.$LOGNAME.log"
+} 2>&1 | log "$logdir" "logs$args_info.$start_stamp.$LOGNAME.log"
