@@ -700,7 +700,7 @@ function check_extending
 
 optimize_dentry_cache="${optimize_dentry_cache:-1}"
 
-mkfs_cmd="${mkfs_cmd:-mkfs.xfs -dagcount=1024}"
+mkfs_cmd="${mkfs_cmd:-mkfs.xfs -s size=4096 -d agcount=1024}"
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
 reuse_mount="${reuse_mount:-1}"
 reuse_lv="${reuse_lv:-1}"
