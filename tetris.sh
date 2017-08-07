@@ -616,12 +616,12 @@ function migrate_cleanup
     for host in $host_list; do
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
-	    remote "$host" "marsadm down $res || echo IGNORE"
-	    remote "$host" "marsadm leave-resource $res || echo IGNORE"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-tmp || echo IGNORE"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-old || echo IGNORE"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE"
+	    remote "$host" "marsadm down $res || echo IGNORE cleanup"
+	    remote "$host" "marsadm leave-resource $res || echo IGNORE cleanup"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-tmp || echo IGNORE cleanup"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE cleanup"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-old || echo IGNORE cleanup"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE cleanup"
 	fi
     done
 }
@@ -890,7 +890,7 @@ function hot_phase
     copy_data "$hyper" "$lv_name" "$suffix" "time" "--delete"
 
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
-    remote "$hyper" "rmdir $mnt$suffix || echo IGNORE"
+    remote "$hyper" "rmdir $mnt$suffix || true"
     if (( optimize_dentry_cache )); then
 	call_hook hook_resource_stop_rest "$hyper" "$primary" "$lv_name"
     else
@@ -910,12 +910,12 @@ function hot_phase
     local host
     for host in $primary $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-	remote "$host" "marsadm down $lv_name || echo IGNORE"
-	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE"
+	remote "$host" "marsadm down $lv_name || echo IGNORE resource removal"
+	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE resource removal"
 	remote "$host" "lvrename $vg_name $lv_name ${lv_name}-old"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
-    remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE"
+    remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE resource removal"
     remote "$primary" "marsadm create-resource --force $lv_name $dev"
     remote "$primary" "marsadm primary $lv_name"
 
@@ -947,8 +947,8 @@ function cleanup_old_remains
     for host in $host_list; do
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp || echo IGNORE"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-old || echo IGNORE"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp || echo IGNORE LV removal"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-old || echo IGNORE LV removal"
 	else
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi
