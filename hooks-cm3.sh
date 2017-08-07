@@ -417,18 +417,6 @@ iscsi_tid="${iscsi_tid:-4711}"
 declare -g -A tids
 tid_offset=0
 
-function get_tid
-{
-    local iqn="$1"
-
-    declare -g iscsi_tid
-    declare -g -A tids
-
-    local old="${tids[$iqn]}"
-    echo "iSCSI IQN '$iqn' has old tid '$old'" >> /dev/stderr
-    echo "$old"
-}
-
 function new_tid
 {
     local iqn="$1"
