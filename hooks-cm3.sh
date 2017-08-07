@@ -438,13 +438,6 @@ function new_tid
     echo "$result"
 }
 
-function delete_tid
-{
-    local iqn="$1"
-    declare -g -A tids
-    tids[$iqn]=""
-}
-
 function hook_disconnect
 {
     local store="$1"
