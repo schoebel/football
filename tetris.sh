@@ -402,7 +402,7 @@ function LV_cleanup
 	    echo "$do_remove:$host:$path"
 	    (( total_count++ ))
 	    if (( do_remove && do_it )); then
-		call_hook hook_disconnect "$host" "" "$lv_name"
+		call_hook hook_disconnect "$host" "$lv_name"
 		remote "$host" "lvremove $lvremove_opt $path"
 	    fi
 	done
@@ -754,7 +754,7 @@ function create_shrink_space
 	    return
 	fi
     fi
-    call_hook hook_disconnect "$host" "" "$lv_name"
+    call_hook hook_disconnect "$host" "$lv_name"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
 
     # do it
@@ -822,7 +822,7 @@ function make_tmp_umount
 
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
-	call_hook hook_disconnect "$store" "$hyper" "$lv_name$suffix"
+	call_hook hook_disconnect "$store" "$lv_name$suffix"
     fi
 }
 
@@ -898,7 +898,7 @@ function hot_phase
 	if [[ "$primary" != "$hyper" ]]; then
 	    # remove intermediate remote device
 	    sleep 1
-	    call_hook hook_disconnect "$primary" "$hyper" "$lv_name"
+	    call_hook hook_disconnect "$primary" "$lv_name"
 	fi
     fi
 

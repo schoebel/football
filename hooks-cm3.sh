@@ -414,44 +414,39 @@ iqn_base="${iqn_base:-iqn.2000-01.info.test:test}"
 iet_type="${iet_type:-blockio}"
 iscsi_eth="${iscsi_eth:-eth1}"
 iscsi_tid="${iscsi_tid:-4711}"
-declare -g -A tids
-tid_offset=0
 
 function new_tid
 {
     local iqn="$1"
+    local store="$2"
 
     declare -g iscsi_tid
-    declare -g tid_offset
-    declare -g -A tids
 
-    local old="${tids[$iqn]}"
-    if [[ "$old" != "" ]]; then
-	echo "iSCSI IQN '$iqn' has old tid '$old'" >> /dev/stderr
-	echo "$old"
-	return
-    fi
-    local result="$(( iscsi_tid + tid_offset ))"
-    tids[$iqn]="$result"
-    (( tid_offset++ ))
-    echo "iSCSI IQN '$iqn' has new tid '$result'" >> /dev/stderr
-    echo "$result"
+    local old_tids="$(remote "$store" "cat /proc/net/iet/volume /proc/net/iet/session" | grep -o 'tid:[0-9]\+' | cut -d: -f2 | sort -u)"
+    echo "old tids: " $old_tids >> /dev/stderr
+    while echo $old_tids | grep "$iscsi_tid" 1>&2; do
+	(( iscsi_tid++ ))
+    done
+    echo "iSCSI IQN '$iqn' has new tid '$iscsi_tid'" >> /dev/stderr
+    echo "$iscsi_tid"
 }
 
 function hook_disconnect
 {
     local store="$1"
-    local hyper="$2"
-    local res="$3"
+    local res="$2"
 
     local iqn="$iqn_base.$res.tmp"
 
-    # safeguarding: retrieve any tid from any runtime session
-    for tid in $(remote "$store" "grep 'name:$iqn' < /proc/net/iet/session | cut -d' ' -f1 | cut -d: -f2"); do
-	echo "KILLING old tid '$tid' on '$store'"
-	for hyper in $(remote "$store" "grep -A1 'name:$iqn' < /proc/net/iet/session | grep 'initiator:' | grep -o 'icpu[0-9]\+'"); do
-	    remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE iSCSI initiator logout"
-	done
+    # safeguarding: retrieve any matching runtime session
+    local hyper
+    for hyper in $(remote "$store" "grep -A1 'name:$iqn' < /proc/net/iet/session | grep 'initiator:' | grep -o 'icpu[0-9]\+'"); do
+	remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE iSCSI initiator logout"
+    done
+    # safeguarding: retrieve any matching tid
+    local tid
+    for tid in $(remote "$store" "grep 'name:$iqn' < /proc/net/iet/volume | cut -d' ' -f1 | cut -d: -f2"); do
+	echo "KILLING old tid '$tid' for iqn '$iqn' on '$store'"
 	remote "$store" "ietadm --op delete --tid=$tid || echo IGNORE iSCSI target deletion"
     done
 }
@@ -463,7 +458,7 @@ function hook_connect
     local res="$3"
 
     # for safety, kill any old session
-    hook_disconnect "$store" "$hyper" "$res"
+    hook_disconnect "$store" "$res"
 
     local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
     local dev="/dev/$vg_name/$res"
@@ -475,7 +470,7 @@ function hook_connect
     remote "$hyper" "ping -c1 $iscsi_ip"
 
     # step 1: setup stone-aged IET on storage node
-    local tid="$(new_tid "$iqn")"
+    local tid="$(new_tid "$iqn" "$store")"
     remote "$store" "ietadm --op new --tid=$tid --params=Name=$iqn"
     remote "$store" "ietadm --op new --tid=$tid --lun=0 --params=Path=$dev"
     sleep 2
