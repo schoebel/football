@@ -464,17 +464,8 @@ function hook_disconnect
     local res="$3"
 
     local iqn="$iqn_base.$res.tmp"
-    if [[ "$hyper" != "" ]]; then
-	remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE iSCSI initiator logout"
-    fi
 
-    local tid="$(get_tid "$iqn")"
-    if [[ "$tid" != "" ]]; then
-	remote "$store" "ietadm --op delete --tid=$tid || echo IGNORE iSCSI target deletion"
-	delete_tid "$iqn"
-    fi
-
-    # safeguard: retrieve any tid from runtime session
+    # safeguarding: retrieve any tid from any runtime session
     for tid in $(remote "$store" "grep 'name:$iqn' < /proc/net/iet/session | cut -d' ' -f1 | cut -d: -f2"); do
 	echo "KILLING old tid '$tid' on '$store'"
 	for hyper in $(remote "$store" "grep -A1 'name:$iqn' < /proc/net/iet/session | grep 'initiator:' | grep -o 'icpu[0-9]\+'"); do
