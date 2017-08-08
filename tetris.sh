@@ -59,6 +59,7 @@ rsync_opt="${rsync_opt:- -aSH --info=STATS}"
 lvremove_opt="${lvremove_opt:--f}"
 
 # some constants
+tmp_suffix="${tmp_suffix:--tmp}"
 shrink_suffix_old="${shrink_suffix_old:--preshrink}"
 commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls cut ping date mkdir rm}"
 
@@ -131,6 +132,7 @@ General features:
         <resource>:<hypervisor>:<primary_storage>
 
   - the following LV suffixes are used (naming convention):
+    $tmp_suffix = currently emerging version for shrinking
     $shrink_suffix_old = old version before shrinking took place
 EOF
 }
@@ -623,7 +625,7 @@ function migrate_cleanup
 	if [[ "$vg_name" != "" ]]; then
 	    remote "$host" "marsadm down $res || echo IGNORE cleanup"
 	    remote "$host" "marsadm leave-resource $res || echo IGNORE cleanup"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-tmp || echo IGNORE cleanup"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$tmp_suffix || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$shrink_suffix_old || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE cleanup"
@@ -754,19 +756,19 @@ function create_shrink_space
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}$shrink_suffix_old on $host - Do this by hand\"; exit -1; fi"
     if (( reuse_lv )); then
 	# check whether LV already exists
-	if remote "$host" "[[ -e /dev/$vg_name/${lv_name}-tmp ]]" 1; then
-	    echo "reusing already exists LV /dev/$vg_name/${lv_name}-tmp on '$host'"
+	if remote "$host" "[[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]" 1; then
+	    echo "reusing already exists LV /dev/$vg_name/${lv_name}$tmp_suffix on '$host'"
 	    return
 	fi
     fi
     call_hook hook_disconnect "$host" "$lv_name"
-    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-tmp ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp; fi"
+    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix; fi"
 
     # do it
     section "Creating shrink space on $host"
 
-    remote "$host" "lvcreate -L ${size}k -n ${lv_name}-tmp $vg_name"
-    remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}-tmp"
+    remote "$host" "lvcreate -L ${size}k -n ${lv_name}$tmp_suffix $vg_name"
+    remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}$tmp_suffix"
 }
 
 function create_shrink_space_all
@@ -788,7 +790,7 @@ function make_tmp_mount
     local hyper="$1"
     local store="$2"
     local lv_name="$3"
-    local suffix="${4:--tmp}"
+    local suffix="${4:-$tmp_suffix}"
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
     if (( reuse_mount )); then
@@ -819,7 +821,7 @@ function make_tmp_umount
     local hyper="$1"
     local store="$2"
     local lv_name="$3"
-    local suffix="${4:--tmp}"
+    local suffix="${4:-$tmp_suffix}"
 
     section "Removing temporary mount from $hyper"
 
@@ -835,7 +837,7 @@ function copy_data
 {
     local hyper="$1"
     local lv_name="$2"
-    local suffix="${3:--tmp}"
+    local suffix="${3:-$tmp_suffix}"
     local nice="${4:-nice -19 ionice -c3}"
     local add_opt="${5:-}"
 
@@ -853,7 +855,7 @@ function hot_phase
     local primary="$2"
     local secondary_list="$3"
     local lv_name="$4"
-    local suffix="${5:--tmp}"
+    local suffix="${5:-$tmp_suffix}"
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
     local vg_name="$(get_vg "$primary")" || fail "cannot determine VG for host '$host'"
@@ -952,7 +954,7 @@ function cleanup_old_remains
     for host in $host_list; do
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp || echo IGNORE LV removal"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix || echo IGNORE LV removal"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$shrink_suffix_old || echo IGNORE LV removal"
 	else
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
