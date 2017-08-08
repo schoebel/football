@@ -58,6 +58,8 @@ ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInt
 rsync_opt="${rsync_opt:- -aSH --info=STATS}"
 lvremove_opt="${lvremove_opt:--f}"
 
+# some constants
+shrink_suffix_old="${shrink_suffix_old:--preshrink}"
 commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls cut ping date mkdir rm}"
 
 ######################################################################
@@ -127,6 +129,9 @@ General features:
     cannot be automatically determined. In such a case, the missing
     nodes can be specified via the syntax
         <resource>:<hypervisor>:<primary_storage>
+
+  - the following LV suffixes are used (naming convention):
+    $shrink_suffix_old = old version before shrinking took place
 EOF
 }
 
@@ -620,7 +625,7 @@ function migrate_cleanup
 	    remote "$host" "marsadm leave-resource $res || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-tmp || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE cleanup"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-old || echo IGNORE cleanup"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$shrink_suffix_old || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE cleanup"
 	fi
     done
@@ -641,7 +646,7 @@ function determine_space
     echo "Determined the following LV path: \"$lv_path\""
 
     local dev="/dev/$vg_name/$lv_name"
-    remote "$primary" "if [[ -e ${dev}-old ]]; then echo \"REFUSING to overwrite ${dev}-old on $primary - First remove it - Do this by hand\"; exit -1; fi"
+    remote "$primary" "if [[ -e ${dev}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite ${dev}$shrink_suffix_old on $primary - First remove it - Do this by hand\"; exit -1; fi"
 
     df="$(remote "$hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
     used_space="$(echo "$df" | awk '{print $3;}')"
@@ -746,7 +751,7 @@ function create_shrink_space
     section "Checking shrink space on $host"
 
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}-old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}-old on $host - Do this by hand\"; exit -1; fi"
+    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}$shrink_suffix_old on $host - Do this by hand\"; exit -1; fi"
     if (( reuse_lv )); then
 	# check whether LV already exists
 	if remote "$host" "[[ -e /dev/$vg_name/${lv_name}-tmp ]]" 1; then
@@ -912,7 +917,7 @@ function hot_phase
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
 	remote "$host" "marsadm down $lv_name || echo IGNORE resource removal"
 	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE resource removal"
-	remote "$host" "lvrename $vg_name $lv_name ${lv_name}-old"
+	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
     remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE resource removal"
@@ -948,7 +953,7 @@ function cleanup_old_remains
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-tmp || echo IGNORE LV removal"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}-old || echo IGNORE LV removal"
+	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$shrink_suffix_old || echo IGNORE LV removal"
 	else
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi
