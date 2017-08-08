@@ -867,6 +867,12 @@ function hot_phase
     section "Checking some preconditions"
 
     remote "$primary" "if ! [[ -e $dev_tmp ]]; then echo \"Cannot start hot phase: $dev_tmp is missing. Run 'prepare' first!\"; exit -1; fi"
+    local host
+    for host in $primary $secondary_list; do
+	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+	remote "$host" "blkid /dev/$vg_name/$lv_name || true"
+	remote "$host" "blkid /dev/$vg_name/$lv_name$suffix || true"
+    done
 
     # additional temporary mount
     make_tmp_mount "$hyper" "$primary" "$lv_name" "$suffix"
