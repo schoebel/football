@@ -918,21 +918,31 @@ function hot_phase
     remote "$primary" "marsadm wait-umount $lv_name"
     remote "$primary" "marsadm secondary $lv_name"
 
-    section "Renaming LVs and re-creating the MARS resource"
+    section "IMPORTANT: destroying the MARS resource"
+    echo "In case of failure, you can re-establish MARS resources by hand."
+    echo ""
 
-    local host
+    for host in $secondary_list $primary; do
+	remote "$host" "marsadm down $lv_name"
+	remote "$host" "marsadm leave-resource $lv_name"
+    done
+    remote "$primary" "marsadm delete-resource $lv_name"
+
+    section "CRITICAL: Renaming LVs and re-creating the MARS resource"
+    echo "In case of failure, you need to CHECK the correct version by hand."
+    echo ""
+
     for host in $primary $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-	remote "$host" "marsadm down $lv_name || echo IGNORE resource removal"
-	remote "$host" "marsadm leave-resource --force $lv_name || echo IGNORE resource removal"
 	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
-    remote "$primary" "marsadm delete-resource $lv_name || echo IGNORE resource removal"
     remote "$primary" "marsadm create-resource --force $lv_name $dev"
     remote "$primary" "marsadm primary $lv_name"
 
-    section "Go online again"
+    section "IMPORTANT: go online again"
+    echo "In case of failure, you can re-establish cm3 and MARS resources by hand."
+    echo ""
 
     call_hook hook_resource_start "$primary" "$lv_name"
 
