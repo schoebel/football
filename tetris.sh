@@ -825,7 +825,7 @@ function make_tmp_umount
 
     section "Removing temporary mount from $hyper"
 
-    remote "$hyper" "if mountpoint $mnt$suffix/; then umount $mnt$suffix/ || umount -f $mnt$suffix/; fi"
+    remote "$hyper" "if mountpoint $mnt$suffix/; then sync; umount $mnt$suffix/ || umount -f $mnt$suffix/; fi"
 
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
@@ -907,7 +907,7 @@ function hot_phase
     if (( optimize_dentry_cache )); then
 	call_hook hook_resource_stop_rest "$hyper" "$primary" "$lv_name"
     else
-	remote "$hyper" "umount $mnt/"
+	remote "$hyper" "sync; umount $mnt/"
 	if [[ "$primary" != "$hyper" ]]; then
 	    # remove intermediate remote device
 	    sleep 1
