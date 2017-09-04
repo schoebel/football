@@ -195,26 +195,14 @@ function clustertool
     eval "$cmd" || fail "failed REST command '$cmd'"
 }
 
-###########################################
-
-# Attention: this is provisionary.
-# Later versions should not need this anymore.
-
-use_rest="${use_rest:-1}"
-sasoap="${sasoap:-sasoap-eu1}"
-
 function _get_cluster_name
 {
     local host="$1"
 
-    if (( use_rest )); then
-	local url="/vms/$host.schlund.de"
-	[[ "$host" =~ icpu ]] && url="/nodes/$host.schlund.de"
-	[[ "$host" =~ istore ]] && url="/storagehosts/$host.schlund.de"
-	clustertool GET "$url"
-    else
-	remote "$sasoap" " ui-clustertool property_show --hostname $host.schlund.de"
-    fi |\
+    local url="/vms/$host.schlund.de"
+    [[ "$host" =~ icpu ]] && url="/nodes/$host.schlund.de"
+    [[ "$host" =~ istore ]] && url="/storagehosts/$host.schlund.de"
+    clustertool GET "$url" |\
 	grep -o "cluster[0-9]\+" |\
 	sort -u
 }
@@ -223,18 +211,12 @@ function _get_segment
 {
     local cluster="$1"
 
-    if (( use_rest )); then
-	local url="/clusters/$cluster"
-	clustertool GET "$url" |\
-	    json_pp |\
-	    grep '"segment"' |\
-	    cut -d: -f2 |\
-	    sed 's/[ ",]//g'
-    else
-	remote "$sasoap" " ui-clustertool cluster_show --clustername $cluster" |\
-	    grep NETWORK_SEGMENT |\
-	    awk '{ print $2; }'
-    fi
+    local url="/clusters/$cluster"
+    clustertool GET "$url" |\
+	json_pp |\
+	grep '"segment"' |\
+	cut -d: -f2 |\
+	sed 's/[ ",]//g'
 }
 
 function hook_get_flavour
@@ -300,45 +282,40 @@ function _migrate_cm3_config
     if (( always_migrate )) || [[ "$source_cluster" != "$target_cluster" ]]; then
 	echo "Moving config from cluster '$source_cluster' to cluster '$target_cluster'"
 
-	if (( use_rest )); then
-	    local backup=""
-	    if [[ "$backup_dir" != "" ]]; then
-		local backup="$backup_dir/json-backup.$start_stamp"
-		mkdir -p $backup
-	    fi
-
-	    local status_url="/vms/$res.schlund.de"
-	    clustertool GET "$status_url" 2>&1 |\
-		log "$backup" "$res.old.raw.json" |\
-		json_pp 2>&1 |\
-		log "$backup" "$res.old.pp.json"
-
-	    local old_url="/clusters/$source_cluster/vms/$res.schlund.de"
-	    local new_url="/clusters/$target_cluster/vms/$res.schlund.de"
-	    echo clustertool DELETE "$old_url"
-	    (( do_migrate )) && clustertool DELETE "$old_url"
-	    echo clustertool PUT    "$new_url"
-	    (( do_migrate )) && clustertool PUT    "$new_url"
-
-	    clustertool GET "$status_url" 2>&1 |\
-		log "$backup" "$res.new.raw.json" |\
-		json_pp 2>&1 |\
-		log "$backup" "$res.new.pp.json"
-
-	    diff -ui $backup/$res.pp.old.json $backup/$res.pp.new.json
-	    clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
-	    clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
-	    sleep 3
-	    remote "$source" "cm3 --update --force"
-	    remote "$target" "cm3 --update --force"
-	    sleep 3
-	    remote "$source" "service clustermanager restart"
-	    remote "$target" "service clustermanager restart"
-	    sleep 3
-	else
-	    remote "$sasoap" "ui-clustertool export_infongconf --infongname $res.schlund.de"
-	    echo "NYI... hopefully this variant is never needed - otherwise remove this stub"
+	local backup=""
+	if [[ "$backup_dir" != "" ]]; then
+	    local backup="$backup_dir/json-backup.$start_stamp"
+	    mkdir -p $backup
 	fi
+
+	local status_url="/vms/$res.schlund.de"
+	clustertool GET "$status_url" 2>&1 |\
+	    log "$backup" "$res.old.raw.json" |\
+	    json_pp 2>&1 |\
+	    log "$backup" "$res.old.pp.json"
+
+	local old_url="/clusters/$source_cluster/vms/$res.schlund.de"
+	local new_url="/clusters/$target_cluster/vms/$res.schlund.de"
+	echo clustertool DELETE "$old_url"
+	(( do_migrate )) && clustertool DELETE "$old_url"
+	echo clustertool PUT    "$new_url"
+	(( do_migrate )) && clustertool PUT    "$new_url"
+
+	clustertool GET "$status_url" 2>&1 |\
+	    log "$backup" "$res.new.raw.json" |\
+	    json_pp 2>&1 |\
+	    log "$backup" "$res.new.pp.json"
+
+	diff -ui $backup/$res.pp.old.json $backup/$res.pp.new.json
+	clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
+	clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
+	sleep 3
+	remote "$source" "cm3 --update --force"
+	remote "$target" "cm3 --update --force"
+	sleep 3
+	remote "$source" "service clustermanager restart"
+	remote "$target" "service clustermanager restart"
+	sleep 3
     else
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
