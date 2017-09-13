@@ -103,6 +103,7 @@ function hook_resource_start
     remote "$host" "service clustermanager restart"
     remote "$host" "marsadm primary $res"
     remote "$host" "cm3 --stop $res; cm3 --start $res || { cm3 --stop $res; cm3 --start $res; } || false"
+    remote "$host" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
 }
 
 ###########################################
