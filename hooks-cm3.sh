@@ -316,6 +316,8 @@ function _migrate_cm3_config
 	remote "$source" "service clustermanager restart"
 	remote "$target" "service clustermanager restart"
 	sleep 3
+	remote "$source" "update-motd || echo IGNORE"
+	remote "$target" "update-motd || echo IGNORE"
     else
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
