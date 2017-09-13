@@ -309,7 +309,7 @@ function _migrate_cm3_config
 	diff -ui $backup/$res.pp.old.json $backup/$res.pp.new.json
 	clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
 	clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
-	sleep 3
+	sleep 10
 	remote "$source" "cm3 --update --force"
 	remote "$target" "cm3 --update --force"
 	sleep 3
