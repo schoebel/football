@@ -135,6 +135,7 @@ General features:
     $tmp_suffix = currently emerging version for shrinking
     $shrink_suffix_old = old version before shrinking took place
 EOF
+   source_hooks
    verbose=0 call_hook hook_describe_plugin
 }
 
@@ -153,10 +154,14 @@ function source_hooks
 {
     local dir
     local path
+
+    declare -g -A sourced_hook
     for dir in /etc/mars/hooks ./hooks .; do
 	for path in $dir/hooks-*.sh; do
+	    [[ "${sourced_hook[$path]}" != "" ]] && continue
 	    echo "Sourcing hooks in '$path'"
 	    source $path || fail "cannot source '$path'"
+	    sourced_hook[$path]=1
 	done
     done
 }
