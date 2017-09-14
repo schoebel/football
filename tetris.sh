@@ -458,6 +458,18 @@ function check_vg_space
 
 # actions for LV migration
 
+function get_stripe_extra
+{
+    # compute LVM stripe number
+    local stripes="$(remote "$host" "vgs" | grep '$vg_name ' | awk '{ print $2; }')"
+    local extra=""
+    if (( stripes > 1 )); then
+	echo "Using $stripes LVM stripes" >> /dev/stderr
+	extra="-i $stripes"
+    fi
+    echo "$extra"
+}
+
 function create_migration_space
 {
     local host="$1"
@@ -468,9 +480,10 @@ function create_migration_space
     [[ "$host" = "" ]] && return
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name} ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name} on $host - Do this by hand\"; exit -1; fi"
+    local extra="$(get_stripe_extra "$host" "$vg_name")"
 
     # do it
-    remote "$host" "lvcreate -L ${size}k -n $lv_name $vg_name"
+    remote "$host" "lvcreate -L ${size}k $etxra -n $lv_name $vg_name"
 }
 
 function migration_prepare
@@ -767,7 +780,8 @@ function create_shrink_space
     # do it
     section "Creating shrink space on $host"
 
-    remote "$host" "lvcreate -L ${size}k -n ${lv_name}$tmp_suffix $vg_name"
+    local extra="$(get_stripe_extra "$host" "$vg_name")"
+    remote "$host" "lvcreate -L ${size}k $extra -n ${lv_name}$tmp_suffix $vg_name"
     remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}$tmp_suffix"
 }
 
