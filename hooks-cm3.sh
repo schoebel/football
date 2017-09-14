@@ -176,6 +176,81 @@ function hook_join_resource
 
 ###########################################
 
+# General checks
+
+needed_marsadm="${needed_marsadm:-2.1 1.1}"
+needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0}"
+
+function check_needed
+{
+    local type="$1"
+    local skip_prefix="$2"
+    local actual="$3"
+    local needed_list="$4"
+
+    echo "$type actual version : $actual"
+    echo "$type needed versions: $needed_list"
+    local needed
+    for needed in $needed_list; do
+	local pa="$(echo "$actual" | grep -o "^$skip_prefix")"
+	local pb="$(echo "$needed" | grep -o "^$skip_prefix")"
+	#echo "pa='$pa' pb='$pb'"
+	if [[ "$pa" != "$pb" ]]; then
+	    #echo "prefix '$pa' != '$pb'"
+	    continue
+	fi
+	local a="$(echo "$actual" | sed "s:^$skip_prefix::" | grep -o '[0-9.]\+' | head -1)"
+	local b="$(echo "$needed" | sed "s:^$skip_prefix::" | grep -o '[0-9.]\+' | head -1)"
+	#echo "needed='$needed' a='$a' b='$b'"
+	if [[ "$a" = "" ]] || [[ "$b" = "" ]]; then
+	    continue
+	fi
+	if [[ "$b" =~ \. ]] && [[ "${a##*.}" != "${b##*.}" ]]; then
+	    continue
+	fi
+	if (( $(echo "$a >= $b" | bc) )); then
+	    echo "$type actual version '$actual' matches '$needed'"
+	    return
+	fi
+    done
+    fail "$type actual version '$actual' does not match one of '$needed_list'"
+}
+
+function hook_check_host
+{
+    local host_list="$1"
+
+    local host
+    for host in $host_list; do
+	local marsadm_version="$(remote "$host" "marsadm --version" | grep -o 'Version: [0-9.]*' | awk '{ print $2; }')"
+	echo "Installed marsadm version at $host: '$marsadm_version'"
+	check_needed "marsadm" "" "$marsadm_version" "$needed_marsadm"
+
+	local mars_version="$(remote "$host" "cat /sys/module/mars/version" | awk '{ print $1; }')"
+	if [[ "$mars_version" = "" ]]; then
+	    fail "MARS kernel module is not loaded at $host"
+	fi
+	check_needed "mars kernel module" "[a-z]*[0-9.]*[a-z]*" "$mars_version" "$needed_mars"
+    done
+}
+
+function hook_describe_plugin
+{
+    cat <<EOF
+
+PLUGIN hooks-cm3
+
+   1&1 specfic plugin for dealing with the cm3 cluster manager
+   and its concrete operating enviroment (singleton instance).
+
+   Following marsadm --version must be installed: $needed_marsadm
+
+   Following mars kernel modules must be loaded: $needed_mars
+EOF
+}
+
+###########################################
+
 # Mini infrastucture for access to clustermw
 
 clustertool_host="${clustertool_host:-http://clustermw:3042}"

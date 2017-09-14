@@ -61,7 +61,7 @@ lvremove_opt="${lvremove_opt:--f}"
 # some constants
 tmp_suffix="${tmp_suffix:--tmp}"
 shrink_suffix_old="${shrink_suffix_old:--preshrink}"
-commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls cut ping date mkdir rm}"
+commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls cut ping date mkdir rm bc}"
 
 ######################################################################
 
@@ -135,6 +135,7 @@ General features:
     $tmp_suffix = currently emerging version for shrinking
     $shrink_suffix_old = old version before shrinking took place
 EOF
+   verbose=0 call_hook hook_describe_plugin
 }
 
 ######################################################################
@@ -436,6 +437,7 @@ function check_migration
 	ping -c 1 "$host" > /dev/null || fail "Host '$host' is not pingable"
 	remote "$host" "mountpoint /mars > /dev/null"
 	remote "$host" "[[ -d /mars/ips/ ]]"
+	call_hook hook_check_host "$host"
     done
 }
 
