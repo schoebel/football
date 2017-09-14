@@ -1202,9 +1202,9 @@ if [[ "$operation" = migrate_cleanup ]]; then
 	exit 0
     fi
     echo "-------------"
-    echo "Temporary $res partitions will be removed from:"
+    echo "Temporary ${res}${tmp_suffix} partitions + LVs will be removed from:"
     echo "$to_clean_new"
-    echo "Stray $res partitions will be removed from:"
+    echo "Stray ${res}${shrink_suffix_old} backup partitions + LVs (old versions before shrinking) will be removed from:"
     echo "$to_clean_old"
 elif [[ "$operation" = lv_cleanup ]]; then
     LV_cleanup "$primary" "$res" 0
