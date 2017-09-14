@@ -192,7 +192,7 @@ function clustertool
 
     local cmd="curl -s -u \"$clustertool_user:$clustertool_passwd\" -X \"$op\" \"$clustertool_host$path\""
     [[ "$content" != "" ]] && cmd+=" -d '${content//\'/\'}'"
-    echo "$cmd" >> /dev/stderr
+    echo "$cmd" | sed -u 's/\(curl .*\)-u *[^ ]*/\1/' >> /dev/stderr
     eval "$cmd" || fail "failed REST command '$cmd'"
 }
 
