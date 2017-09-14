@@ -106,6 +106,25 @@ function hook_resource_start
     remote "$host" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
 }
 
+function hook_resource_check
+{
+    local res="$1"
+    local timeout="${2:-10}"
+
+    local host="$res"
+    echo "Checking whether $host is running...."
+    while ! ping -c1 $host; do
+	if (( timeout-- <= 0 )); then
+	    echo "HOST $host DOES NOT PING!"
+	    return
+	fi
+	sleep 3
+    done
+    echo "Checking $host via check_progs ...."
+    sleep 10
+    remote "$host" "check_progs -cvi" 1 || echo "ATTENTION SOMETHING DOES NOT WORK AT $host"
+}
+
 ###########################################
 
 # Workarounds for firewalling (transitional => TBD)

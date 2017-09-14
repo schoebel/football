@@ -626,6 +626,10 @@ function migrate_resource
 
     call_hook hook_resource_start "$target_primary" "$res"
 
+    section "Checking new primary"
+
+    call_hook hook_resource_check "$res"
+
     # non-critical path
     section "Update new secondary config"
 
