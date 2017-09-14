@@ -637,7 +637,7 @@ function migrate_cleanup
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
 	    remote "$host" "marsadm down $res || echo IGNORE cleanup"
-	    remote "$host" "marsadm leave-resource $res || echo IGNORE cleanup"
+	    remote "$host" "marsadm leave-resource $res || marsadm leave-resource --force $res || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$tmp_suffix || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$shrink_suffix_old || echo IGNORE cleanup"
@@ -938,7 +938,7 @@ function hot_phase
 
     for host in $secondary_list $primary; do
 	remote "$host" "marsadm down $lv_name"
-	remote "$host" "marsadm leave-resource $lv_name"
+	remote "$host" "marsadm leave-resource $lv_name || marsadm leave-resource --force $lv_name"
     done
     remote "$primary" "marsadm delete-resource $lv_name"
 
