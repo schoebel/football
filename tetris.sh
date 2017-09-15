@@ -647,12 +647,14 @@ function migrate_cleanup
     for host in $host_list; do
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
+	    remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
 	    remote "$host" "marsadm down $res || echo IGNORE cleanup"
 	    remote "$host" "marsadm leave-resource $res || marsadm leave-resource --force $res || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$tmp_suffix || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$shrink_suffix_old || echo IGNORE cleanup"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE cleanup"
+	    sleep 3
 	fi
     done
 }
@@ -948,8 +950,10 @@ function hot_phase
     echo ""
 
     for host in $secondary_list $primary; do
+	remote "$host" "marsadm wait-cluster || echo IGNORE"
 	remote "$host" "marsadm down $lv_name"
 	remote "$host" "marsadm leave-resource $lv_name || marsadm leave-resource --force $lv_name"
+	sleep 3
     done
     remote "$primary" "marsadm delete-resource $lv_name"
 
