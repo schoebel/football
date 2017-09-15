@@ -199,6 +199,7 @@ function hook_join_resource
 
 needed_marsadm="${needed_marsadm:-2.1 1.1}"
 needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0}"
+max_cluster_size="${max_cluster_size:-4}"
 
 function check_needed
 {
@@ -251,6 +252,20 @@ function hook_check_host
 	fi
 	check_needed "mars kernel module" "[a-z]*[0-9.]*[a-z]*" "$mars_version" "$needed_mars"
     done
+
+    echo "Checking that max_cluster_size=$max_cluster_size will not be exceeded at $host_list"
+    local new_cluster_size="$(
+        for host in $host_list; do
+            remote "$host" "marsadm lowlevel-ls-host-ips" 2>/dev/null
+        done | sort -u | wc -l)"
+    if (( new_cluster_size < 2 )); then
+	fail "Implausible new cluster size $new_cluster_size"
+    fi
+    echo "New cluster size: $new_cluster_size"
+    if (( new_cluster_size > max_cluster_size )); then
+	fail "Cluster size limit $max_cluster_size will be exceeded, aborting."
+    fi
+
 }
 
 function hook_describe_plugin
@@ -261,6 +276,8 @@ PLUGIN hooks-cm3
 
    1&1 specfic plugin for dealing with the cm3 cluster manager
    and its concrete operating enviroment (singleton instance).
+
+   Current maximum cluster size limit: $max_cluster_size
 
    Following marsadm --version must be installed: $needed_marsadm
 

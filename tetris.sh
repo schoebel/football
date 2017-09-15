@@ -442,8 +442,8 @@ function check_migration
 	ping -c 1 "$host" > /dev/null || fail "Host '$host' is not pingable"
 	remote "$host" "mountpoint /mars > /dev/null"
 	remote "$host" "[[ -d /mars/ips/ ]]"
-	call_hook hook_check_host "$host"
     done
+    call_hook hook_check_host "$primary $secondary_list $target_primary $target_secondary"
 }
 
 function check_vg_space
