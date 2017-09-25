@@ -168,6 +168,7 @@ function hook_finish_hosts
 # Workarounds for ssh between different clusters
 
 ip_magic="${ip_magic:-1}"
+do_split_cluster="${do_split_cluster:-1}"
 
 function hook_merge_cluster
 {
@@ -186,6 +187,15 @@ function hook_merge_cluster
 	source="$source_ip"
     fi
     remote "$target" "marsadm merge-cluster --ssh-port=24 $source"
+}
+
+function hook_split_cluster
+{
+    local host="$1"
+
+    if (( do_split_cluster )); then
+	remote "$host" "marsadm split-cluster --ssh-port=24"
+    fi
 }
 
 function hook_join_resource

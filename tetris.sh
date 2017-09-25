@@ -657,6 +657,15 @@ function migrate_cleanup
 	    sleep 3
 	fi
     done
+    for host in $host_list; do
+	remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
+    done
+    call_hook hook_prepare_hosts "$host_list"
+    for host in $host_list; do
+	call_hook hook_split_cluster "$host"
+	break
+    done
+    call_hook hook_finish_hosts "$host_list"
 }
 
 ######################################################################
