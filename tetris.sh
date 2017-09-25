@@ -1062,7 +1062,7 @@ function migrate_prepare
 
     migration_prepare "$primary" "$res" "$target_primary" "$target_secondary"
 
-    #call_hook hook_finish_hosts "$primary $secondary_list $target_primary $target_secondary"
+    call_hook hook_finish_hosts "$primary $secondary_list $target_primary $target_secondary"
 }
 
 function migrate_wait
