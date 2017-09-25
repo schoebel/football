@@ -68,6 +68,8 @@ function hook_resource_stop
     local host="$1"
     local res="$2"
 
+    declare -g  downtime_begin="$(date +%s)"
+    echo "DOWNTIME BEGIN $(date)"
     # stop the whole stack
     remote "$host" "cm3 --stop $res || cm3 --stop $res || { mountpoint /vol/$res && umount /vol/$res; } || false"
 }
@@ -77,6 +79,8 @@ function hook_resource_stop_vm
     local hyper="$1"
     local res="$2"
 
+    declare -g  downtime_begin="$(date +%s)"
+    echo "DOWNTIME BEGIN $(date)"
     # stop only the vm, keep intermediate mounts etc
     remote "$hyper" "nodeagent vmstop $res"
 }
@@ -103,6 +107,10 @@ function hook_resource_start
     remote "$host" "service clustermanager restart"
     remote "$host" "marsadm primary $res"
     remote "$host" "cm3 --stop $res; cm3 --start $res || { cm3 --stop $res; cm3 --start $res; } || false"
+    echo "DOWNTIME END   $(date)"
+    declare -g  downtime_begin
+    declare -g  downtime_end="$(date +%s)"
+    echo "DOWNTIME END $(date) ($(( downtime_end - downtime_begin )) s)"
     remote "$host" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
 }
 

@@ -1246,6 +1246,7 @@ do_confirm
 (( verbose < 1 )) && verbose=1
 
 # main: start the internal actions
+echo "START $(date)"
 
 case "${operation//-/_}" in
 migrate_prepare)
