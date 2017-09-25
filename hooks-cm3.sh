@@ -349,7 +349,10 @@ function hook_get_flavour
 
 do_migrate="${do_migrate:-1}" # must be enabled; disable for dry-run testing
 always_migrate="${always_migrate:-0}" # only enable for testing
-check_segments="${check_segments:-0}" # currently disabled for testing, might be needed for real moves
+# 0 = disabled
+# 1 = only display the segment names
+# 2 = check for equality
+check_segments="${check_segments:-1}"
 backup_dir="${backup_dir:-.}"
 
 function _check_migrate
@@ -364,6 +367,9 @@ function _check_migrate
     local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
     local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
 
+    echo "source_cluster='$source_cluster'"
+    echo "target_cluster='$target_cluster'"
+
     if [[ "$source_cluster" != "$target_cluster" ]]; then
 	if (( check_segments )); then
 	    # At the moment, cross-segment migrations won't work.
@@ -372,9 +378,11 @@ function _check_migrate
 	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment"
 	    echo "source_segment='$source_segment'"
 	    echo "target_segment='$target_segment'"
-	    [[ "$source_segment" = "" ]] && fail "cannot determine source segment"
-	    [[ "$target_segment" = "" ]] && fail "cannot determine target segment"
-	    [[ "$source_segment" != "$target_segment" ]] && fail "source_segment '$source_segment' != target_segment '$target_segment'"
+	    if (( check_segments > 1 )); then
+		[[ "$source_segment" = "" ]] && fail "cannot determine source segment"
+		[[ "$target_segment" = "" ]] && fail "cannot determine target segment"
+		[[ "$source_segment" != "$target_segment" ]] && fail "source_segment '$source_segment' != target_segment '$target_segment'"
+	    fi
 	fi
     fi
 
