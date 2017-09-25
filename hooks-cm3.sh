@@ -239,7 +239,7 @@ function check_needed
 	fi
 	local a="$(echo "$actual" | sed "s:^$skip_prefix::" | grep -o '[0-9.]\+' | head -1)"
 	local b="$(echo "$needed" | sed "s:^$skip_prefix::" | grep -o '[0-9.]\+' | head -1)"
-	#echo "needed='$needed' a='$a' b='$b'"
+	#echo "skip_prefix='$skip_prefix' needed='$needed' a='$a' b='$b'"
 	if [[ "$a" = "" ]] || [[ "$b" = "" ]]; then
 	    continue
 	fi
@@ -262,7 +262,7 @@ function hook_check_host
     for host in $host_list; do
 	local marsadm_version="$(remote "$host" "marsadm --version" | grep -o 'Version: [0-9.]*' | awk '{ print $2; }')"
 	echo "Installed marsadm version at $host: '$marsadm_version'"
-	check_needed "marsadm" "" "$marsadm_version" "$needed_marsadm"
+	check_needed "marsadm" "[0-9]\." "$marsadm_version" "$needed_marsadm"
 
 	local mars_version="$(remote "$host" "cat /sys/module/mars/version" | awk '{ print $1; }')"
 	if [[ "$mars_version" = "" ]]; then
