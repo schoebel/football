@@ -218,6 +218,7 @@ function hook_join_resource
 needed_marsadm="${needed_marsadm:-2.1 1.1}"
 needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0}"
 max_cluster_size="${max_cluster_size:-4}"
+max_syncs="${max_syncs:-2}"
 
 function check_needed
 {
@@ -284,6 +285,18 @@ function hook_check_host
 	fail "Cluster size limit $max_cluster_size will be exceeded, aborting."
     fi
 
+    # Check that not too much syncs are already running
+    local actual_syncs=0
+    for host in $host_list; do
+	local count="$(remote "$host" "marsadm view-sync-rest all" | grep '^[0-9]' | grep -v '^0' | wc -l)"
+	echo "There are $count syncs running at $host"
+	(( actual_syncs += count ))
+    done
+    echo "Total number of syncs: $actual_syncs"
+    echo "Max   number of syncs: $max_syncs"
+    if (( max_syncs >= 0 && actual_syncs > max_syncs )); then
+	fail "There are more than $max_syncs syncs running."
+    fi
 }
 
 function hook_describe_plugin
@@ -296,6 +309,8 @@ PLUGIN hooks-cm3
    and its concrete operating enviroment (singleton instance).
 
    Current maximum cluster size limit: $max_cluster_size
+
+   Maximum #syncs running before migration can start: $max_syncs
 
    Following marsadm --version must be installed: $needed_marsadm
 
