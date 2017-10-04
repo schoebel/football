@@ -146,6 +146,7 @@ function hook_prepare_hosts
     if (( workaround_firewall )); then
 	local host
 	for host in $host_list; do
+	    remote "$host" "systemctl disable ui-firewalling.service || echo IGNORE"
 	    remote "$host" "service ui-firewalling stop || /etc/init.d/firewalling stop"
 	done
     fi
@@ -158,6 +159,7 @@ function hook_finish_hosts
     if (( workaround_firewall )); then
 	local host
 	for host in $host_list; do
+	    remote "$host" "systemctl enable ui-firewalling.service || echo IGNORE"
 	    remote "$host" "service ui-firewalling restart || /etc/init.d/firewalling restart"
 	done
     fi
