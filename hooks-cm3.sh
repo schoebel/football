@@ -129,7 +129,7 @@ function hook_resource_check
 	sleep 3
     done
     echo "Checking $host via check_progs ...."
-    sleep 10
+    sleep 15
     remote "$host" "check_progs -cvi" 1 || echo "ATTENTION SOMETHING DOES NOT WORK AT $host"
 }
 
