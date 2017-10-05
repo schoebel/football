@@ -444,9 +444,9 @@ function _migrate_cm3_config
 	fi
 
 	local status_url="/vms/$res.schlund.de"
-	clustertool GET "$status_url" 2>&1 |\
+	clustertool GET "$status_url" |\
 	    log "$backup" "$res.old.raw.json" |\
-	    json_pp 2>&1 |\
+	    json_pp |\
 	    log "$backup" "$res.old.pp.json"
 
 	local old_url="/clusters/$source_cluster/vms/$res.schlund.de"
@@ -456,9 +456,9 @@ function _migrate_cm3_config
 	echo clustertool PUT    "$new_url"
 	(( do_migrate )) && clustertool PUT    "$new_url"
 
-	clustertool GET "$status_url" 2>&1 |\
+	clustertool GET "$status_url" |\
 	    log "$backup" "$res.new.raw.json" |\
-	    json_pp 2>&1 |\
+	    json_pp |\
 	    log "$backup" "$res.new.pp.json"
 
 	diff -ui $backup/$res.pp.old.json $backup/$res.pp.new.json
