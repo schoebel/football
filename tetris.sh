@@ -563,7 +563,7 @@ function wait_resource_uptodate
 	remote "$host" "marsadm wait-cluster"
     done
     (( verbose )) && echo "$(date) sync rests for '$host_list':"
-    local max_wait=60
+    local max_wait=15
     while true; do
 	(( verbose )) && echo -n "$(date) sync rests:"
 	local syncing=0
@@ -597,8 +597,8 @@ function wait_resource_uptodate
 	if (( total_rest > 0 )); then
 	    sleep 60
 	else
-	    sleep 3
 	    (( max_wait-- < 0 )) && break
+	    sleep 1
 	fi
     done
     (( verbose )) && echo "$(date) sync appears to have finished at '$host_list'"
