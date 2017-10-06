@@ -193,10 +193,22 @@ function hook_merge_cluster
 
 function hook_split_cluster
 {
-    local host="$1"
+    local host_list="$1"
 
     if (( do_split_cluster )); then
-	remote "$host" "marsadm split-cluster --ssh-port=24"
+	local ok=0
+	local host
+	for host in $host_list; do
+	    sleep 5
+	    if remote "$host" "marsadm split-cluster --ssh-port=24" 1; then
+		ok=1
+		break
+	    fi
+	    remote "$host" "marsadm wait-cluster" 1
+	done
+	if (( !ok )); then
+	    fail "Please run 'marsadm split-cluster --ssh-port=24' by hand"
+	fi
     fi
 }
 
