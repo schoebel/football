@@ -208,7 +208,7 @@ function scan_args
 	if [[ "$lhs" != "" ]]; then
 	    echo "$lhs=$par"
 	    eval "$lhs=$par"
-	    args_info+=".$par"
+	    args_info+=".${par//:/_}"
 	    (( index++ ))
 	else
 	    helpme
