@@ -473,7 +473,8 @@ function _migrate_cm3_config
 	    json_pp |\
 	    log "$backup" "$res.new.pp.json"
 
-	diff -ui $backup/$res.pp.old.json $backup/$res.pp.new.json
+	echo "--------------------- diff old => new ------------------"
+	diff -ui $backup/$res.old.pp.json $backup/$res.new.pp.json
 	clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
 	clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
 	sleep 10
