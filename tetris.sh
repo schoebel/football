@@ -639,7 +639,8 @@ function migrate_resource
 function migrate_cleanup
 {
     local host_list="$1"
-    local res="$2"
+    local host_list2="$2"
+    local res="$3"
 
     section "Cleanup migration data at $host_list"
 
@@ -657,6 +658,19 @@ function migrate_cleanup
 	    sleep 3
 	fi
     done
+
+    section "Recompute host list"
+
+    local new_host_list="$(echo $(
+	for host in $host_list $host_list2; do
+	    echo "$host"
+	    remote "$host" "marsadm lowlevel-ls-host-ips" 2>/dev/null
+	done |\
+	    awk '{ print $1; }' |\
+	    sort -u ))"
+    echo "Augmented host list: $new_host_list"
+    host_list="$new_host_list"
+
     for host in $host_list; do
 	remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
     done
@@ -1097,7 +1111,7 @@ function migrate_config
 
 function migrate_clean
 {
-    migrate_cleanup "$to_clean_old" "$res"
+    migrate_cleanup "$to_clean_old" "$to_clean_new" "$res"
     cleanup_old_remains "$to_clean_new" "$res"
 }
 
