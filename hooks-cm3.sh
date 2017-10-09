@@ -435,7 +435,45 @@ function _check_migrate
 
 }
 
-function _migrate_cm3_config
+function hook_update_cm3_config
+{
+    local host_list="$1"
+
+    echo "UPDATE cm3 config on " $host_list
+    echo ""
+
+    local update_host_list="$host_list"
+    local host
+    local i
+    for (( i = 0; i < 3; i++ )); do
+	local new_host_list=""
+	local status=0
+	sleep 10
+	for host in $update_host_list; do
+	    remote "$host" "service clustermanager restart"
+	done
+	sleep 5
+	for host in $update_host_list; do
+	    timeout_cmd "remote '$host' 'cm3 --update --force'"
+	    local rc=$?
+	    (( status |= rc ))
+	    (( rc )) && new_host_list+=" $host"
+	done
+	(( !status )) && break
+	echo "RESTARTING cm3 update on $new_host_list"
+	update_host_list="$new_host_list"
+    done
+    sleep 5
+    for host in $host_list; do
+	remote "$host" "service clustermanager restart"
+    done
+    sleep 3
+    for host in $host_list; do
+	remote "$host" "update-motd || echo IGNORE"
+    done
+}
+
+function hook_migrate_cm3_config
 {
     local source="$1"
     local target="$2"
@@ -477,15 +515,8 @@ function _migrate_cm3_config
 	diff -ui $backup/$res.old.pp.json $backup/$res.new.pp.json
 	clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
 	clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
-	sleep 10
-	remote "$source" "cm3 --update --force"
-	remote "$target" "cm3 --update --force"
-	sleep 3
-	remote "$source" "service clustermanager restart"
-	remote "$target" "service clustermanager restart"
-	sleep 3
-	remote "$source" "update-motd || echo IGNORE"
-	remote "$target" "update-motd || echo IGNORE"
+
+	hook_update_cm3_config "$source $target"
     else
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
@@ -499,15 +530,6 @@ function hook_check_migrate
     local res="$3"
 
     _check_migrate "$source" "$target" "$res"
-}
-
-function hook_resource_migrate
-{
-    local source="$1"
-    local target="$2"
-    local res="$3"
-
-    _migrate_cm3_config "$source" "$target" "$res"
 }
 
 function hook_secondary_migrate

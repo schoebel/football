@@ -90,13 +90,18 @@ Actions for resource migration:
   $0 migrate         <resource> <target_primary> [<target_secondary>]
      Run the sequence migrate_prepare ; migrate_wait ; migrate_finish.
 
-  $0 migrate_config  <resource> <target_primary>
+  $0 migrate_cleanup <resource>
+     Remove old / currently unused LV replicas from MARS and deallocate from LVM.
+
+  $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
      Transfer only the cluster config, without changing the MARS replicas.
      This does no resource stopping / restarting.
      Useful for reverting a failed migration.
 
-  $0 migrate_cleanup <resource>
-     Remove old / currently unused LV replicas from MARS and deallocate from LVM.
+  $0 manual_config_update <hostname>
+     Only update the cluster config, without changing anything else.
+     Useful for manual repair of failed migration.
+
 
 Actions for inplace FS shrinking:
 
@@ -150,6 +155,58 @@ function fail
     exit -1
 }
 
+# Unfortunately, the bash has no primitive for running an arbitrary
+# (complex) command until some timeout is exceeded.
+#
+# Workaround by disjoint waiting for an additional background sleep process.
+#
+function timeout_cmd
+{
+    local cmd="$1"
+    local limit="${2:-30}"
+    local do_fail="${3:-0}"
+
+    if (( limit <= 0 )); then # timeout is disabled
+        bash -c "$cmd"
+        local rc=$?
+        #echo "RC=$rc" >> /dev/stderr
+        return $rc
+    fi
+
+    set +m
+    eval "$cmd" &
+    local cmd_pid=$!
+
+    sleep $limit &
+    local sleep_pid=$!
+
+    # disjoint waiting
+    wait -n $cmd_pid $sleep_pid
+    local rc1=$?
+    #echo "RC1=$rc1" >> /dev/stderr
+
+    kill $sleep_pid > /dev/null 2>&1
+    kill $cmd_pid > /dev/null 2>&1
+    wait $cmd_pid > /dev/null 2>&1
+    local rc2=$?
+    #echo "RC2=$rc2" >> /dev/stderr
+
+    # ensure to eat the background status, +m alone is not enough
+    wait $sleep_pid > /dev/null 2>&1
+
+    if (( rc2 == 143 )); then
+	if (( do_fail )); then
+	    fail "TIMEOUT $limit seconds for '$cmd' reached"
+	else
+	    echo "TIMEOUT $limit seconds for '$cmd' reached" >> /dev/stderr
+	fi
+    fi
+
+    local rc=$(( rc1 | rc2 ))
+    #echo "RC=$rc" >> /dev/stderr
+    return $rc
+}
+
 function source_hooks
 {
     local dir
@@ -199,6 +256,8 @@ function scan_args
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ migrate ]]; then
 		local -a params=(operation res target_primary target_secondary)
+	    elif [[ "$par" =~ manual_config_update ]]; then
+		local -a params=(operation host)
 	    else
 		helpme
 		fail "unknown operation '$1'"
@@ -620,7 +679,7 @@ function migrate_resource
 
     section "Migrate cluster config"
 
-    call_hook hook_resource_migrate "$source_primary" "$target_primary" "$res"
+    call_hook hook_migrate_cm3_config "$source_primary" "$target_primary" "$res"
 
     section "Starting new primary"
 
@@ -1104,9 +1163,9 @@ function migrate_finish
     migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
 }
 
-function migrate_config
+function manual_migrate_config
 {
-    call_hook hook_resource_migrate "$primary" "$target_primary" "$res"
+    call_hook hook_migrate_cm3_config "$primary" "$target_primary" "$res"
 }
 
 function migrate_clean
@@ -1163,6 +1222,14 @@ scan_args "$@"
 echo "$0 $@"
 
 source_hooks
+
+# special (manual) operations
+case "${operation//-/_}" in
+manual_config_update)
+  call_hook hook_update_cm3_config "$host"
+  exit $?
+  ;;
+esac
 
 # optional: allow syntax "resource:hypervisor:storage"
 if [[ "$res" =~ : ]]; then
@@ -1289,13 +1356,15 @@ migrate)
   migrate_wait
   migrate_finish
   ;;
-migrate_config)
-  migrate_check
-  migrate_config
-  ;;
 migrate_cleanup)
   migrate_clean
   ;;
+
+manual_migrate_config)
+  migrate_check
+  manual_migrate_config
+  ;;
+
 
 shrink_prepare)
   shrink_prepare
