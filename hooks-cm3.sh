@@ -378,6 +378,19 @@ function _get_segment
 	sed 's/[ ",]//g'
 }
 
+function _get_members
+{
+    local cluster="$1"
+
+    local url="/clusters/$cluster"
+    clustertool GET "$url" |\
+	json_pp |\
+	grep -o '[-a-z0-9]\+.schlund.de' |\
+	cut -d. -f1 |\
+	sort -u |\
+	grep -v infong
+}
+
 function hook_get_flavour
 {
     local host="$1"
@@ -513,10 +526,28 @@ function hook_migrate_cm3_config
 
 	echo "--------------------- diff old => new ------------------"
 	diff -ui $backup/$res.old.pp.json $backup/$res.new.pp.json
+	echo ""
 	clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
 	clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
+	echo ""
 
-	hook_update_cm3_config "$source $target"
+	section "Update cm3 configs"
+
+	# Determine all hosts where a clustermanagerd _should_ be running.
+	# Unfortunately, parsing the "storagehost" part will not work for standalone icpus.
+	# Use a provisionary heuristics here, based on naming conventions.
+	local total_list="$(
+	{
+	    echo "$source"
+	    echo "$target"
+	    for cluster in $source_cluster $target_cluster; do
+		if ! _get_members $cluster | grep istore; then
+		    _get_members $cluster
+		fi
+	    done
+	} |\
+		sort -u)"
+	hook_update_cm3_config "$total_list"
     else
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
@@ -530,17 +561,6 @@ function hook_check_migrate
     local res="$3"
 
     _check_migrate "$source" "$target" "$res"
-}
-
-function hook_secondary_migrate
-{
-    local secondary_list="$1"
-
-    local secondary
-    for secondary in $secondary_list; do
-	remote "$secondary" "cm3 --update --force"
-	remote "$secondary" "service clustermanager restart"
-    done
 }
 
 function hook_determine_old_replicas

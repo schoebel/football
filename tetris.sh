@@ -688,11 +688,6 @@ function migrate_resource
     section "Checking new primary"
 
     call_hook hook_resource_check "$res"
-
-    # non-critical path
-    section "Update new secondary config"
-
-    call_hook hook_secondary_migrate "$target_secondary"
 }
 
 function migrate_cleanup
