@@ -1216,6 +1216,8 @@ scan_args "$@"
 {
 echo "$0 $@"
 
+git describe --tags
+
 source_hooks
 
 # special (manual) operations
