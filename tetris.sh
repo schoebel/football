@@ -848,6 +848,8 @@ function transfer_quota
 
     # transfer quota
     remote "$hyper" "$xfs_dump $mnt1" > $dumpfile
+    ls -l $dumpfile
+    wc -l $dumpfile
     remote "$hyper" "$xfs_restore $mnt2" < $dumpfile
 }
 
