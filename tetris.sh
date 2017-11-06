@@ -56,6 +56,9 @@ min_space="${min_space:-20000000}"
 # more complex options
 ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInteractiveAuthentication=no -o VerifyHostKeyDNS=no}"
 rsync_opt="${rsync_opt:- -aSH --info=STATS}"
+rsync_opt_prepare="${rsync_opt_prepare:---delete}"
+rsync_opt_hot="${rsync_opt_hot:---delete}"
+
 lvremove_opt="${lvremove_opt:--f}"
 
 # some constants
@@ -944,7 +947,7 @@ function copy_data
     local lv_name="$2"
     local suffix="${3:-$tmp_suffix}"
     local nice="${4:-nice -19 ionice -c3}"
-    local add_opt="${5:-}"
+    local add_opt="${5:-$rsync_opt_prepare}"
 
     local time_cmd="/usr/bin/time -f 'rss=%M elapsed=%e'"
 
@@ -984,8 +987,8 @@ function hot_phase
     # additional temporary mount
     make_tmp_mount "$hyper" "$primary" "$lv_name" "$suffix"
 
-    # last online incremental rsync
-    copy_data "$hyper" "$lv_name" "$suffix" "time" "--delete"
+    section "Last online incremental rsync"
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare"
 
     # go offline
     section "Go offline"
@@ -1007,7 +1010,9 @@ function hot_phase
 	remote "$hyper" "mount $mount_opts $mars_dev $mnt/"
     fi
 
-    copy_data "$hyper" "$lv_name" "$suffix" "time" "--delete"
+    section "Final rsync"
+
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_hot"
 
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
     remote "$hyper" "rmdir $mnt$suffix || true"
