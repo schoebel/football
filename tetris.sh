@@ -108,13 +108,14 @@ Actions for resource migration:
 
 Actions for inplace FS shrinking:
 
-  $0 shrink_prepare  <resource> <percent>
+  $0 shrink_prepare  <resource> [<percent>]
      Allocate temporary LVM space (when possible) and create initial raw FS copy.
+     Default percent value(when left out) is $target_percent.
 
-  $0 shrink_finish   <resource> <percent>
+  $0 shrink_finish   <resource>
      Incrementally update the FS copy, swap old <=> new copy with small downtime.
 
-  $0 shrink_cleanup  <resource> <percent>
+  $0 shrink_cleanup  <resource>
      Remove old FS copy from LVM.
 
   $0 shrink          <resource> <percent>
