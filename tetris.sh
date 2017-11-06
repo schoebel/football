@@ -56,7 +56,7 @@ min_space="${min_space:-20000000}"
 # more complex options
 ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInteractiveAuthentication=no -o VerifyHostKeyDNS=no}"
 rsync_opt="${rsync_opt:- -aSH --info=STATS}"
-rsync_opt_prepare="${rsync_opt_prepare:---delete}"
+rsync_opt_prepare="${rsync_opt_prepare:---exclude='.filemon2' --delete}"
 rsync_opt_hot="${rsync_opt_hot:---delete}"
 
 lvremove_opt="${lvremove_opt:--f}"
