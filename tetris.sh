@@ -946,11 +946,13 @@ function copy_data
     local nice="${4:-nice -19 ionice -c3}"
     local add_opt="${5:-}"
 
+    local time_cmd="/usr/bin/time -f 'rss=%M elapsed=%e'"
+
     section "COPY DATA via rsync"
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
 
-    remote "$hyper" "for i in {1..3}; do $nice rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
+    remote "$hyper" "for i in {1..3}; do $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
 }
 
