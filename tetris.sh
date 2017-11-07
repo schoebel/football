@@ -1097,6 +1097,8 @@ function cleanup_old_remains
     for host in $host_list; do
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
+	    make_tmp_umount "$host" "$host" "$lv_name" "$tmp_suffix"
+	    section "Removing LVs from $host"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix || echo IGNORE LV removal"
 	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$shrink_suffix_old || echo IGNORE LV removal"
 	else
