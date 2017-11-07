@@ -1198,7 +1198,9 @@ function shrink_prepare
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
     copy_data "$hyper" "$res"
-    make_tmp_umount "$hyper" "$primary" "$res"
+    if (( !reuse_mount )); then
+	make_tmp_umount "$hyper" "$primary" "$res"
+    fi
 }
 
 function shrink_finish
