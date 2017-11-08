@@ -596,6 +596,96 @@ function hook_determine_new_replicas
 }
 
 ###########################################
+# Local quota transfer for LXC containers.
+# Problem: kuid_t implies that dump and restore is USER_NS specific,
+# at least with currently used kernel + userspace tool versions.
+
+function _get_kunden_dev
+{
+    local lv_name="$1"
+
+    remote "$lv_name" "df /kunden/homepages/ | grep '^/dev' | head -1 | awk '{ print \$1; }'"
+}
+
+function hook_save_local_quota
+{
+    local hyper="$1"
+    local lv_name="$2"
+
+    if (( do_quota >= 2 )); then
+	section "Local xfs quota dump"
+
+	local dumpfile="$xfs_dump_dir/xfs_dump.local.$hyper.$lv_name"
+	local local_dev="/dev/mars/$lv_name"
+	local store="$(get_store "$lv_name")"
+	echo "store='$store'"
+	if [[ "$store" != "$hyper" ]]; then
+	    local_dev="$(_get_kunden_dev "$lv_name")"
+	    if ! [[ "$local_dev" =~ /dev/ ]]; then
+		# last resort fallback, try to preserve the data for hand repair
+		echo "WARNING: local device is '$local_dev'" >> /dev/stderr
+		echo "WARNING: cannot determine local device for /kunden/homepages on $lv_name" >> /dev/stderr
+		local_dev="/kunden/homepages"
+	    fi
+	fi
+	echo "local_dev='$local_dev'"
+
+	remote "$lv_name" "$xfs_dump $local_dev" > $dumpfile
+	ls -l $dumpfile
+	wc -l $dumpfile
+    fi
+}
+
+function hook_restore_local_quota
+{
+    local hyper="$1"
+    local lv_name="$2"
+
+    if (( do_quota >= 2 )); then
+	local dumpfile="$xfs_dump_dir/xfs_dump.local.$hyper.$lv_name"
+
+	section "Local xfs quota restore"
+
+	if [[ -s "$dumpfile" ]]; then
+	    local max_rounds=10
+	    while ! ping -c 1 "$lv_name"; do
+		(( max_rounds-- < 0 )) && fail "host $lv_name does not ping"
+		sleep 10
+	    done
+	    sleep 10
+
+	    local local_dev="/dev/mars/$lv_name"
+	    local store="$(get_store "$lv_name")"
+	    echo "store='$store'"
+	    if [[ "$store" != "$hyper" ]]; then
+		local_dev="$(_get_kunden_dev "$lv_name")"
+		if ! [[ "$local_dev" =~ /dev/ ]]; then
+		    echo "Sorry, cannot determine local device for /kunden/homepages on $lv_name" >> /dev/stderr
+		    return 0
+		fi
+	    fi
+	    echo "local_dev='$local_dev'"
+
+	    {
+		echo "fs = $local_dev"
+		grep -v "^fs =" < $dumpfile
+	    } > $dumpfile.new
+	    ls -l $dumpfile.new
+	    wc -l $dumpfile.new
+
+	    local max_rounds=10
+	    while ! remote "$lv_name" "$xfs_restore $local_dev" 1 < $dumpfile.new; do
+		(( max_rounds-- < 0 )) && fail "host $lv_name does not ping"
+		sleep 10
+	    done
+	else
+	    echo "LOCAL $lv_name QUOTA IS EMPTY"
+	fi
+    fi
+}
+
+
+###########################################
 
 # Hooks for shrinking
 

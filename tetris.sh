@@ -820,7 +820,7 @@ mkfs_cmd="${mkfs_cmd:-mkfs.xfs -s size=4096 -d agcount=1024}"
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
 reuse_mount="${reuse_mount:-1}"
 reuse_lv="${reuse_lv:-1}"
-do_quota="${do_quota:-1}"
+do_quota="${do_quota:-2}" # 1 = global xfs quota transfer, 2 = additionally local one
 xfs_dump_dir="${xfs_dump_dir:-xfs-quota-$start_stamp}"
 xfs_quota_enable="${xfs_quota_enable:-xfs_quota -x -c enable}"
 xfs_dump="${xfs_dump:-xfs_quota -x -c dump}"
@@ -842,7 +842,7 @@ function transfer_quota
     section "Transfer xfs quota"
 
     mkdir -p "$xfs_dump_dir"
-    local dumpfile="$xfs_dump_dir/dump.$hyper.$lv_name"
+    local dumpfile="$xfs_dump_dir/xfs_dump.global.$hyper.$lv_name"
 
     # enable quota
     remote "$hyper" "$xfs_quota_enable $m2"
@@ -1007,6 +1007,8 @@ function hot_phase
     # repeat for better dentry caching
     copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare"
 
+    call_hook hook_save_local_quota "$hyper" "$lv_name"
+
     # go offline
     section "Go offline"
     if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
@@ -1088,6 +1090,8 @@ function hot_phase
 	    remote "$host" "marsadm join-resource $lv_name $dev"
 	fi
     done
+
+    call_hook hook_restore_local_quota "$hyper" "$lv_name"
 }
 
 function cleanup_old_remains
@@ -1202,6 +1206,7 @@ function shrink_prepare
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
     copy_data "$hyper" "$res"
+    call_hook hook_save_local_quota "$hyper" "$res"
     if (( !reuse_mount )); then
 	make_tmp_umount "$hyper" "$primary" "$res"
     fi
