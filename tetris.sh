@@ -58,6 +58,7 @@ ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInt
 rsync_opt="${rsync_opt:- -aSH --info=STATS}"
 rsync_opt_prepare="${rsync_opt_prepare:---exclude='.filemon2' --delete}"
 rsync_opt_hot="${rsync_opt_hot:---delete}"
+rsync_nice="${rsync_nice:-nice -19}"
 
 lvremove_opt="${lvremove_opt:--f}"
 
@@ -959,7 +960,7 @@ function copy_data
     local hyper="$1"
     local lv_name="$2"
     local suffix="${3:-$tmp_suffix}"
-    local nice="${4:-nice -19 ionice -c3}"
+    local nice="${4:-$rsync_nice}"
     local add_opt="${5:-$rsync_opt_prepare}"
 
     local time_cmd="/usr/bin/time -f 'rss=%M elapsed=%e'"
