@@ -1002,6 +1002,9 @@ function hot_phase
     make_tmp_mount "$hyper" "$primary" "$lv_name" "$suffix"
 
     section "Last online incremental rsync"
+
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare"
+    # repeat for better dentry caching
     copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare"
 
     # go offline
