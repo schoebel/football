@@ -971,6 +971,7 @@ function copy_data
 
     remote "$hyper" "for i in {1..3}; do $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
+    remote "$hyper" "sync"
 }
 
 function hot_phase
