@@ -68,7 +68,8 @@ function hook_resource_stop
     local host="$1"
     local res="$2"
 
-    declare -g  downtime_begin="$(date +%s)"
+    declare -g  downtime_begin
+    [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
     # stop the whole stack
     remote "$host" "cm3 --stop $res || cm3 --stop $res || { mountpoint /vol/$res && umount /vol/$res; } || false"
@@ -79,7 +80,8 @@ function hook_resource_stop_vm
     local hyper="$1"
     local res="$2"
 
-    declare -g  downtime_begin="$(date +%s)"
+    declare -g  downtime_begin
+    [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
     # stop only the vm, keep intermediate mounts etc
     remote "$hyper" "nodeagent vmstop $res"
