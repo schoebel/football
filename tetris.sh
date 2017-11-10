@@ -1093,6 +1093,10 @@ function hot_phase
     done
 
     call_hook hook_restore_local_quota "$hyper" "$lv_name"
+
+    section "Checking new container"
+
+    call_hook hook_resource_check "$lv_name"
 }
 
 function cleanup_old_remains
