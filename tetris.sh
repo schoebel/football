@@ -59,6 +59,8 @@ rsync_opt="${rsync_opt:- -aSH --info=STATS}"
 rsync_opt_prepare="${rsync_opt_prepare:---exclude='.filemon2' --delete}"
 rsync_opt_hot="${rsync_opt_hot:---delete}"
 rsync_nice="${rsync_nice:-nice -19}"
+rsync_repeat_prepare="${rsync_repeat_prepare:-5}"
+rsync_repeat_hot="${rsync_repeat_hot:-3}"
 
 lvremove_opt="${lvremove_opt:--f}"
 
@@ -962,6 +964,7 @@ function copy_data
     local suffix="${3:-$tmp_suffix}"
     local nice="${4:-$rsync_nice}"
     local add_opt="${5:-$rsync_opt_prepare}"
+    local repeat_count="${6:-$rsync_repeat_prepare}"
 
     local time_cmd="/usr/bin/time -f 'rss=%M elapsed=%e'"
 
@@ -969,7 +972,7 @@ function copy_data
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
 
-    remote "$hyper" "for i in {1..3}; do $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
+    remote "$hyper" "for i in {1..$repeat_count}; do $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
     remote "$hyper" "sync"
 }
@@ -1004,9 +1007,9 @@ function hot_phase
 
     section "Last online incremental rsync"
 
-    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare"
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
     # repeat for better dentry caching
-    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare"
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
 
     call_hook hook_save_local_quota "$hyper" "$lv_name"
 
@@ -1032,7 +1035,7 @@ function hot_phase
 
     section "Final rsync"
 
-    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_hot"
+    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_hot" "$rsync_repeat_hot"
 
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
     remote "$hyper" "rmdir $mnt$suffix || true"
@@ -1210,7 +1213,7 @@ function shrink_prepare
 {
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
-    copy_data "$hyper" "$res"
+    copy_data "$hyper" "$res" "$tmp_suffix" "$rsync_nice" "$rsync_opt_prepare" "$rsync_repeat_prepare"
     call_hook hook_save_local_quota "$hyper" "$res"
     if (( !reuse_mount )); then
 	make_tmp_umount "$hyper" "$primary" "$res"
