@@ -972,7 +972,7 @@ function copy_data
 
     local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
 
-    remote "$hyper" "for i in {1..$repeat_count}; do $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ && exit 0; echo RESTARTING \$(date); done; exit -1"
+    remote "$hyper" "for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
     remote "$hyper" "sync"
 }
