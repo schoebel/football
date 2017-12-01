@@ -1334,7 +1334,7 @@ for host in $secondary_list; do
 done
 
 # check connections (only for migration)
-if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup ]]; then
+if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup|wait ]]; then
     check_migration
 fi
 
