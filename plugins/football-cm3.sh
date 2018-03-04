@@ -25,6 +25,9 @@
 #
 # This script must be sourced from the main script.
 
+# Guard agains multiple sourcing
+[[ "${files[cm3]}" != "" ]] && return
+
 commands_installed "curl json_pp bc"
 
 function hook_get_mountpoint
@@ -786,3 +789,5 @@ function hook_extend_iscsi
 
     remote "$hyper" "iscsiadm -m session -R"
 }
+
+register_module "cm3"
