@@ -297,7 +297,7 @@ General features:
     $tmp_suffix = currently emerging version for shrinking
     $shrink_suffix_old = old version before shrinking took place
 EOF
-   verbose=0 call_hook hook_describe_plugin
+   verbose=0 call_hook describe_plugin
 }
 
 ######################################################################
@@ -570,7 +570,7 @@ function get_hyper
     declare -g hypervisor_host
     local hyper="${hypervisor_host[$res]}"
     if [[ "$hyper" = "" ]]; then
-	hyper="$(call_hook hook_get_hyper "$res")" ||\
+	hyper="$(call_hook get_hyper "$res")" ||\
 	    fail "Cannot determine hypervisor hostname for resource '$res'"
 	hypervisor_host[$res]="$hyper"
     fi
@@ -587,7 +587,7 @@ function get_store
     declare -g storage_host
     local store="${storage_host[$res]}"
     if [[ "$store" = "" ]]; then
-	store="$(call_hook hook_get_store "$res")" ||\
+	store="$(call_hook get_store "$res")" ||\
 	    fail "Cannot determine storage hostname for resource '$res'"
 	if [[ "$store" = "" ]]; then
 	    # assume local storage
@@ -608,7 +608,7 @@ function get_vg
     declare -g vgs
     local vg="${vgs[$host]}"
     if [[ "$vg" = "" ]]; then
-	vg="$(call_hook hook_get_vg "$host")" ||\
+	vg="$(call_hook get_vg "$host")" ||\
 	    fail "Cannot determine volume group for host '$host'"
 	vgs[$host]="$vg"
     fi
@@ -649,7 +649,7 @@ function LV_cleanup
 	    echo "$do_remove:$host:$path"
 	    (( total_count++ ))
 	    if (( do_remove && do_it )); then
-		call_hook hook_disconnect "$host" "$lv_name"
+		call_hook disconnect "$host" "$lv_name"
 		remote "$host" "lvremove $lvremove_opt $path"
 	    fi
 	done
@@ -677,7 +677,7 @@ function check_migration
 	remote "$host" "mountpoint /mars > /dev/null"
 	remote "$host" "[[ -d /mars/ips/ ]]"
     done
-    call_hook hook_check_host "$primary $secondary_list $target_primary $target_secondary"
+    call_hook check_host "$primary $secondary_list $target_primary $target_secondary"
 }
 
 function check_vg_space
@@ -737,9 +737,9 @@ function migration_prepare
     section "Ensure that \"marsadm merge-cluster\" has been executed."
 
     # This is idempotent.
-    if exists_hook hook_merge_cluster; then
-	call_hook hook_merge_cluster "$source_primary" "$target_primary"
-	call_hook hook_merge_cluster "$source_primary" "$target_secondary"
+    if exists_hook merge_cluster; then
+	call_hook merge_cluster "$source_primary" "$target_primary"
+	call_hook merge_cluster "$source_primary" "$target_secondary"
     else
 	remote "$target_primary" "marsadm merge-cluster $source_primary"
 	remote "$target_secondary" "marsadm merge-cluster $source_primary"
@@ -775,9 +775,9 @@ function migration_prepare
 
     section "Join the resources"
 
-    if exists_hook hook_join_resource; then
-	call_hook hook_join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
-	call_hook hook_join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
+    if exists_hook join_resource; then
+	call_hook join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
+	call_hook join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
     else
 	remote "$target_primary" "marsadm join-resource $lv_name $primary_dev"
 	remote "$target_secondary" "marsadm join-resource $lv_name $secondary_dev"
@@ -850,19 +850,19 @@ function migrate_resource
     # critical path
     section "Stopping old primary"
 
-    call_hook hook_resource_stop "$source_primary" "$res"
+    call_hook resource_stop "$source_primary" "$res"
 
     section "Migrate cluster config"
 
-    call_hook hook_migrate_cm3_config "$source_primary" "$target_primary" "$res"
+    call_hook migrate_cm3_config "$source_primary" "$target_primary" "$res"
 
     section "Starting new primary"
 
-    call_hook hook_resource_start "$target_primary" "$res"
+    call_hook resource_start "$target_primary" "$res"
 
     section "Checking new primary"
 
-    call_hook hook_resource_check "$res"
+    call_hook resource_check "$res"
 }
 
 function migrate_cleanup
@@ -907,9 +907,9 @@ function migrate_cleanup
     section "Split cluster at $host_list"
 
     sleep 10
-    call_hook hook_prepare_hosts "$host_list"
-    call_hook hook_split_cluster "$host_list"
-    call_hook hook_finish_hosts "$host_list"
+    call_hook prepare_hosts "$host_list"
+    call_hook split_cluster "$host_list"
+    call_hook finish_hosts "$host_list"
 }
 
 ######################################################################
@@ -1052,7 +1052,7 @@ function create_shrink_space
 	    return
 	fi
     fi
-    call_hook hook_disconnect "$host" "$lv_name"
+    call_hook disconnect "$host" "$lv_name"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix; fi"
 
     # do it
@@ -1084,7 +1084,7 @@ function make_tmp_mount
     local lv_name="$3"
     local suffix="${4:-$tmp_suffix}"
 
-    local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+    local mnt="$(call_hook get_mountpoint "$lv_name")"
     if (( reuse_mount )); then
 	section "Checking mount $mnt$suffix at $hyper"
 	if remote "$hyper" "mountpoint $mnt$suffix" 1; then
@@ -1100,7 +1100,7 @@ function make_tmp_mount
     if [[ "$store" != "$hyper" ]]; then
 	# create remote devices instead
 	local old_dev="$dev_tmp"
-	dev_tmp="$(call_hook hook_connect "$store" "$hyper" "$lv_name$suffix" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	dev_tmp="$(call_hook connect "$store" "$hyper" "$lv_name$suffix" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
 	echo "using tmp dev '$dev_tmp'"
 	[[ "$dev_tmp" = "" ]] && fail "cannot setup remote device between hosts '$store' => '$hyper'"
     fi
@@ -1121,7 +1121,7 @@ function make_tmp_umount
 
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
-	call_hook hook_disconnect "$store" "$lv_name$suffix"
+	call_hook disconnect "$store" "$lv_name$suffix"
     fi
 }
 
@@ -1138,7 +1138,7 @@ function copy_data
 
     section "COPY DATA via rsync"
 
-    local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+    local mnt="$(call_hook get_mountpoint "$lv_name")"
 
     remote "$hyper" "for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
@@ -1153,7 +1153,7 @@ function hot_phase
     local lv_name="$4"
     local suffix="${5:-$tmp_suffix}"
 
-    local mnt="$(call_hook hook_get_mountpoint "$lv_name")"
+    local mnt="$(call_hook get_mountpoint "$lv_name")"
     local vg_name="$(get_vg "$primary")" || fail "cannot determine VG for host '$host'"
     local dev="/dev/$vg_name/$lv_name"
     local dev_tmp="$dev$suffix"
@@ -1179,22 +1179,22 @@ function hot_phase
     # repeat for better dentry caching
     copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
 
-    call_hook hook_save_local_quota "$hyper" "$lv_name"
+    call_hook save_local_quota "$hyper" "$lv_name"
 
     # go offline
     section "Go offline"
-    if (( optimize_dentry_cache )) && exists_hook hook_resource_stop_vm ; then
+    if (( optimize_dentry_cache )) && exists_hook resource_stop_vm ; then
 	# retain mountpoints
-	call_hook hook_resource_stop_vm "$hyper" "$lv_name"
+	call_hook resource_stop_vm "$hyper" "$lv_name"
     else
 	optimize_dentry_cache=0
 	# stop completely
-	call_hook hook_resource_stop "$primary" "$lv_name"
+	call_hook resource_stop "$primary" "$lv_name"
 
 	remote "$primary" "marsadm primary $lv_name"
 	if [[ "$primary" != "$hyper" ]]; then
 	# create remote devices instead
-	    mars_dev="$(call_hook hook_connect "$primary" "$hyper" "$lv_name" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	    mars_dev="$(call_hook connect "$primary" "$hyper" "$lv_name" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
 	    echo "using tmp mars dev '$mars_dev'"
 	    [[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
 	fi
@@ -1208,13 +1208,13 @@ function hot_phase
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
     remote "$hyper" "rmdir $mnt$suffix || true"
     if (( optimize_dentry_cache )); then
-	call_hook hook_resource_stop_rest "$hyper" "$primary" "$lv_name"
+	call_hook resource_stop_rest "$hyper" "$primary" "$lv_name"
     else
 	remote "$hyper" "sync; umount $mnt/"
 	if [[ "$primary" != "$hyper" ]]; then
 	    # remove intermediate remote device
 	    sleep 1
-	    call_hook hook_disconnect "$primary" "$lv_name"
+	    call_hook disconnect "$primary" "$lv_name"
 	fi
     fi
 
@@ -1246,28 +1246,28 @@ function hot_phase
     remote "$primary" "marsadm primary $lv_name"
 
     section "IMPORTANT: go online again"
-    echo "In case of failure, you can re-establish cm3 and MARS resources by hand."
+    echo "In case of failure, you can re-establish MARS resources by hand."
     echo ""
 
-    call_hook hook_resource_start "$primary" "$lv_name"
+    call_hook resource_start "$primary" "$lv_name"
 
     section "Re-create the MARS replicas"
 
     for host in $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
 	dev="/dev/$vg_name/${lv_name}"
-	if exists_hook hook_join_resource; then
-	    call_hook hook_join_resource "$primary" "$host" "$lv_name" "$dev"
+	if exists_hook join_resource; then
+	    call_hook join_resource "$primary" "$host" "$lv_name" "$dev"
 	else
 	    remote "$host" "marsadm join-resource $lv_name $dev"
 	fi
     done
 
-    call_hook hook_restore_local_quota "$hyper" "$lv_name"
+    call_hook restore_local_quota "$hyper" "$lv_name"
 
     section "Checking new container"
 
-    call_hook hook_resource_check "$lv_name"
+    call_hook resource_check "$lv_name"
 }
 
 function cleanup_old_remains
@@ -1305,7 +1305,7 @@ function extend_fs
     local lv_name="$4"
     local size="$5"
 
-    local mnt="$(call_hook hook_get_mountpoint "$res")"
+    local mnt="$(call_hook get_mountpoint "$res")"
 
     # extend the LV first
     section "Extend the LV"
@@ -1325,7 +1325,7 @@ function extend_fs
     # propagate new size over intermediate iSCSI
     if [[ "$hyper" != "$primary" ]]; then
 	section "propagate new size over iSCSI"
-	call_hook hook_extend_iscsi "$hyper"
+	call_hook extend_iscsi "$hyper"
 	sleep 3
     fi
 
@@ -1342,11 +1342,11 @@ function extend_fs
 
 function migrate_prepare
 {
-    call_hook hook_prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
+    call_hook prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
 
     migration_prepare "$primary" "$res" "$target_primary" "$target_secondary"
 
-    call_hook hook_finish_hosts "$primary $secondary_list $target_primary $target_secondary"
+    call_hook finish_hosts "$primary $secondary_list $target_primary $target_secondary"
 }
 
 function migrate_wait
@@ -1356,7 +1356,7 @@ function migrate_wait
 
 function migrate_check
 {
-    call_hook hook_check_migrate "$primary" "$target_primary" "$res"
+    call_hook check_migrate "$primary" "$target_primary" "$res"
 }
 
 function migrate_finish
@@ -1366,7 +1366,7 @@ function migrate_finish
 
 function manual_migrate_config
 {
-    call_hook hook_migrate_cm3_config "$primary" "$target_primary" "$res"
+    call_hook migrate_cm3_config "$primary" "$target_primary" "$res"
 }
 
 function migrate_clean
@@ -1382,7 +1382,7 @@ function shrink_prepare
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
     copy_data "$hyper" "$res" "$tmp_suffix" "$rsync_nice" "$rsync_opt_prepare" "$rsync_repeat_prepare"
-    call_hook hook_save_local_quota "$hyper" "$res"
+    call_hook save_local_quota "$hyper" "$res"
     if (( !reuse_mount )); then
 	make_tmp_umount "$hyper" "$primary" "$res"
     fi
@@ -1430,7 +1430,7 @@ git describe --tags
 # special (manual) operations
 case "${operation//-/_}" in
 manual_config_update)
-  call_hook hook_update_cm3_config "$host"
+  call_hook update_cm3_config "$host"
   exit $?
   ;;
 esac
@@ -1455,8 +1455,8 @@ hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be deter
 
 echo "Determined the following CURRENT hypervisor: \"$hyper\""
 
-if exists_hook hook_get_flavour; then
-    flavour="$(hook_get_flavour "$hyper" 2>/dev/null)"
+if exists_hook get_flavour; then
+    flavour="$(call_hook get_flavour "$hyper" 2>/dev/null)"
     echo "Determined the following hypervisor FLAVOUR: \"$flavour\""
 fi
 
@@ -1476,7 +1476,7 @@ if (( $(remote "$primary" "marsadm view-is-primary $res") <= 0 )); then
     fail "Resource '$res' on host '$primary' is not in PRIMARY role"
 fi
 
-mnt="$(call_hook hook_get_mountpoint "$res")"
+mnt="$(call_hook get_mountpoint "$res")"
 if [[ "$mnt" != "" ]]; then
     remote "$hyper" "mountpoint $mnt"
 fi
@@ -1505,8 +1505,8 @@ if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup|wait ]]; then
 fi
 
 if [[ "$operation" = migrate_cleanup ]]; then
-    to_clean_old="$(hook_determine_old_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
-    to_clean_new="$(hook_determine_new_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
+    to_clean_old="$(call_hook determine_old_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
+    to_clean_new="$(call_hook determine_new_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
     if [[ "$to_clean_old$to_clean_new" = "" ]]; then
 	echo "NOTHING TO DO"
 	exit 0

@@ -30,20 +30,20 @@
 
 commands_installed "curl json_pp bc"
 
-function hook_get_mountpoint
+function cm3_get_mountpoint
 {
     local res="$1"
     echo "/vol/$res"
 }
 
-function hook_get_hyper
+function cm3_get_hyper
 {
     local res="$1"
 
     remote "$res" "source /lib/ui-config-framework/bash-includes; __config_getConfigVar HWNODE_NAME; echo \$HWNODE_NAME | cut -d. -f1"
 }
 
-function hook_get_store
+function cm3_get_store
 {
     local host="$1"
     
@@ -59,20 +59,20 @@ function hook_get_store
 	return
     fi
     # fallback to indirect retrieval
-    local hyper="$(hook_get_hyper "$host")"
+    local hyper="$(cm3_get_hyper "$host")"
     if [[ "$hyper" != "" ]] && [[ "$hyper" != "$host" ]]; then
-	hook_get_store "$hyper"
+	cm3_get_store "$hyper"
     fi
 }
 
-function hook_get_vg
+function cm3_get_vg
 {
     local host="$1"
     
     remote "$host" "vgs | awk '{ print \$1; }' | grep 'vginfong\|vg[0-9]\+[ab]'"
 }
 
-function hook_resource_stop
+function cm3_resource_stop
 {
     local host="$1"
     local res="$2"
@@ -84,7 +84,7 @@ function hook_resource_stop
     remote "$host" "cm3 --stop $res || cm3 --stop $res || { mountpoint /vol/$res && umount /vol/$res; } || false"
 }
 
-function hook_resource_stop_vm
+function cm3_resource_stop_vm
 {
     local hyper="$1"
     local res="$2"
@@ -96,7 +96,7 @@ function hook_resource_stop_vm
     remote "$hyper" "nodeagent vmstop $res"
 }
 
-function hook_resource_stop_rest
+function cm3_resource_stop_rest
 {
     local hyper="$1"
     local primary="$2"
@@ -104,12 +104,12 @@ function hook_resource_stop_rest
 
     # stop the rest of the stack
     remote "$hyper" "nodeagent stop $res"
-    local mnt="$(hook_get_mountpoint "$res")"
+    local mnt="$(cm3_get_mountpoint "$res")"
     remote "$hyper" "mountpoint $mnt && { umount -f $mnt ; exit \$?; } || true"
-    hook_resource_stop "$primary" "$res"
+    cm3_resource_stop "$primary" "$res"
 }
 
-function hook_resource_start
+function cm3_resource_start
 {
     local host="$1"
     local res="$2"
@@ -125,7 +125,7 @@ function hook_resource_start
     remote "$host" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
 }
 
-function hook_resource_check
+function cm3_resource_check
 {
     local res="$1"
     local timeout="${2:-10}"
@@ -150,7 +150,7 @@ function hook_resource_check
 
 workaround_firewall="${workaround_firewall:-1}"
 
-function hook_prepare_hosts
+function cm3_prepare_hosts
 {
     local host_list="$1"
 
@@ -163,7 +163,7 @@ function hook_prepare_hosts
     fi
 }
 
-function hook_finish_hosts
+function cm3_finish_hosts
 {
     local host_list="$1"
 
@@ -183,7 +183,7 @@ function hook_finish_hosts
 ip_magic="${ip_magic:-1}"
 do_split_cluster="${do_split_cluster:-1}"
 
-function hook_merge_cluster
+function cm3_merge_cluster
 {
     local source="$1"
     local target="$2"
@@ -202,7 +202,7 @@ function hook_merge_cluster
     remote "$target" "marsadm merge-cluster --ssh-port=24 $source"
 }
 
-function hook_split_cluster
+function cm3_split_cluster
 {
     local host_list="$1"
 
@@ -223,7 +223,7 @@ function hook_split_cluster
     fi
 }
 
-function hook_join_resource
+function cm3_join_resource
 {
     local source="$1"
     local target="$2"
@@ -280,7 +280,7 @@ function check_needed
     fail "$type actual version '$actual' does not match one of '$needed_list'"
 }
 
-function hook_check_host
+function cm3_check_host
 {
     local host_list="$1"
 
@@ -324,11 +324,11 @@ function hook_check_host
     fi
 }
 
-function hook_describe_plugin
+function cm3_describe_plugin
 {
     cat <<EOF
 
-PLUGIN hooks-cm3
+PLUGIN football-cm3
 
    1&1 specfic plugin for dealing with the cm3 cluster manager
    and its concrete operating enviroment (singleton instance).
@@ -402,7 +402,7 @@ function _get_members
 	grep -v infong
 }
 
-function hook_get_flavour
+function cm3_get_flavour
 {
     local host="$1"
 
@@ -459,7 +459,7 @@ function _check_migrate
 
 }
 
-function hook_update_cm3_config
+function cm3_update_cm3_config
 {
     local host_list="$1"
 
@@ -497,7 +497,7 @@ function hook_update_cm3_config
     done
 }
 
-function hook_migrate_cm3_config
+function cm3_migrate_cm3_config
 {
     local source="$1"
     local target="$2"
@@ -558,14 +558,14 @@ function hook_migrate_cm3_config
 	    done
 	} |\
 		sort -u)"
-	hook_update_cm3_config "$total_list"
+	cm3_update_cm3_config "$total_list"
     else
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
     fi
 }
 
-function hook_check_migrate
+function cm3_check_migrate
 {
     local source="$1"
     local target="$2"
@@ -574,7 +574,7 @@ function hook_check_migrate
     _check_migrate "$source" "$target" "$res"
 }
 
-function hook_determine_old_replicas
+function cm3_determine_old_replicas
 {
     local primary="$1"
     local res="$2"
@@ -590,7 +590,7 @@ function hook_determine_old_replicas
     done
 }
 
-function hook_determine_new_replicas
+function cm3_determine_new_replicas
 {
     local primary="$1"
     local res="$2"
@@ -618,7 +618,7 @@ function _get_kunden_dev
     remote "$lv_name" "df /kunden/homepages/ | grep '^/dev' | head -1 | awk '{ print \$1; }'"
 }
 
-function hook_save_local_quota
+function cm3_save_local_quota
 {
     local hyper="$1"
     local lv_name="$2"
@@ -647,7 +647,7 @@ function hook_save_local_quota
     fi
 }
 
-function hook_restore_local_quota
+function cm3_restore_local_quota
 {
     local hyper="$1"
     local lv_name="$2"
@@ -721,7 +721,7 @@ function new_tid
     echo "$iscsi_tid"
 }
 
-function hook_disconnect
+function cm3_disconnect
 {
     local store="$1"
     local res="$2"
@@ -741,14 +741,14 @@ function hook_disconnect
     done
 }
 
-function hook_connect
+function cm3_connect
 {
     local store="$1"
     local hyper="$2"
     local res="$3"
 
     # for safety, kill any old session
-    hook_disconnect "$store" "$res"
+    cm3_disconnect "$store" "$res"
 
     local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
     local dev="/dev/$vg_name/$res"
@@ -783,7 +783,7 @@ function hook_connect
 
 # Hooks for extending of XFS
 
-function hook_extend_iscsi
+function cm3_extend_iscsi
 {
     local hyper="$1"
 
