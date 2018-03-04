@@ -409,6 +409,9 @@ function fail
 {
     local txt="${1:-Unkown failure}"
     echo "FAILURE: $txt" >> /dev/stderr
+    if (( critical_section && critical_status )); then
+	exit $critical_status
+    fi
     exit -1
 }
 
@@ -961,6 +964,7 @@ function migrate_resource
 	sleep 60
     done
 
+    call_hook report_downtime "$res" 1
     call_hook resource_stop "$source_primary" "$res"
 
     section "Migrate cluster config"
@@ -974,6 +978,7 @@ function migrate_resource
     section "Checking new primary"
 
     call_hook resource_check "$res"
+    call_hook report_downtime "$res" 0
 }
 
 function migrate_cleanup
@@ -1327,6 +1332,8 @@ function hot_phase
     # go offline
     section "Go offline"
 
+    call_hook want_downtime "$res" 1
+
     # wait for screener
     local hot_round=0
     call_hook start_critical "$res" "shrink $hyper $lv_name"
@@ -1339,6 +1346,7 @@ function hot_phase
 	fi
     done
 
+    call_hook report_downtime "$res" 1
     if (( optimize_dentry_cache )) && exists_hook resource_stop_vm ; then
 	# retain mountpoints
 	call_hook resource_stop_vm "$hyper" "$lv_name"
@@ -1424,6 +1432,8 @@ function hot_phase
     section "Checking new container"
 
     call_hook resource_check "$lv_name"
+    call_hook report_downtime "$res" 0
+    call_hook want_downtime "$res" 0
 }
 
 function cleanup_old_remains
