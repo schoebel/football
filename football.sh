@@ -944,6 +944,12 @@ function migrate_resource
     # critical path
     section "Stopping old primary"
 
+    # wait for screener
+    call_hook start_critical "$res" "migrate $res => $target_primary"
+    while (( $(call_hook poll_critical "$res") )); do
+	sleep 60
+    done
+
     call_hook resource_stop "$source_primary" "$res"
 
     section "Migrate cluster config"
@@ -1309,6 +1315,19 @@ function hot_phase
 
     # go offline
     section "Go offline"
+
+    # wait for screener
+    local hot_round=0
+    call_hook start_critical "$res" "shrink $hyper $lv_name"
+    while (( $(call_hook poll_critical "$res") )); do
+	sleep 60
+	if (( ++hot_round >= 60 )); then
+	    hot_round=0
+            # repeat for better dentry caching
+	    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
+	fi
+    done
+
     if (( optimize_dentry_cache )) && exists_hook resource_stop_vm ; then
 	# retain mountpoints
 	call_hook resource_stop_vm "$hyper" "$lv_name"
