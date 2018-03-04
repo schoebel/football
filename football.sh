@@ -228,6 +228,11 @@ force=${force:-0}
 # Set this to your convenience.
 logdir="${logdir:-.}"
 
+## screener
+# When enabled, handover execution to the screener.
+# Very useful for running Football in masses.
+screener="${screener:-0}"
+
 ## min_space
 # When testing / debugging with extremely small LVs, it may happen
 # that mkfs refuses to create extemely small filesystems.
@@ -372,18 +377,24 @@ Global maintenance:
 
 General features:
 
-  - instead of <percent>, an absolute amount of storage with suffix
+  - Instead of <percent>, an absolute amount of storage with suffix
     'k' or 'm' or 'g' can be given.
 
-  - when <resource> is currently stopped, login to the container is
+  - When <resource> is currently stopped, login to the container is
     not possible, and in turn the hypervisor node and primary storage node
     cannot be automatically determined. In such a case, the missing
     nodes can be specified via the syntax
         <resource>:<hypervisor>:<primary_storage>
 
-  - the following LV suffixes are used (naming convention):
+  - The following LV suffixes are used (naming convention):
     $tmp_suffix = currently emerging version for shrinking
     $shrink_suffix_old = old version before shrinking took place
+
+  - By adding the option --screener, you can handover football execution
+    to $(dirname "$0")/screener.sh .
+    When --enable_critical_waiting is also added, then the critical
+    sections involving customer downtime are temporarily halted until
+    some sysadmins says "screener.sh continue \$resource".
 
 EOF
    show_vars "$0"
@@ -1568,6 +1579,15 @@ commands_installed "$commands_needed"
 scan_args "$@"
 
 ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
+
+if (( screener )); then
+    [[ "$res" = "" ]] && fail "cannot start screener on empty resource"
+    # disallow endless recursion
+    export screener=0
+    export title="$operation"
+    shopt -s extglob
+    exec $(dirname "$0")/screener.sh start "${res:-$1}" "$0" "${*//--screener?(=*)/}" --confirm=0
+fi
 
 {
 echo "$0 $@"
