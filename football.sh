@@ -1680,13 +1680,14 @@ remote "$primary" "mountpoint /mars"
 remote "$primary" "[[ -d /mars/ips/ ]]"
 remote "$primary" "marsadm view $res"
 
-if (( $(remote "$primary" "marsadm view-is-primary $res") <= 0 )); then
-    fail "Resource '$res' on host '$primary' is not in PRIMARY role"
-fi
-
-mnt="$(call_hook get_mountpoint "$res")"
-if [[ "$mnt" != "" ]]; then
-    remote "$hyper" "mountpoint $mnt"
+if ! [[ "$operation" =~ manual ]]; then
+    if (( $(remote "$primary" "marsadm view-is-primary $res") <= 0 )); then
+	fail "Resource '$res' on host '$primary' is not in PRIMARY role"
+    fi
+    mnt="$(call_hook get_mountpoint "$res")"
+    if [[ "$mnt" != "" ]]; then
+	remote "$hyper" "mountpoint $mnt"
+    fi
 fi
 
 secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list"
