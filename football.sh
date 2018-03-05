@@ -324,6 +324,12 @@ Usage:
 
 Actions for resource migration:
 
+  $0 migrate         <resource> <target_primary> [<target_secondary>]
+     Run the sequence
+     migrate_prepare ; migrate_wait ; migrate_finish; migrate_cleanup.
+
+Dto for testing (do not rely on it):
+
   $0 migrate_prepare <resource> <target_primary> [<target_secondary>]
      Allocate LVM space at the targets and start MARS replication.
 
@@ -332,9 +338,6 @@ Actions for resource migration:
 
   $0 migrate_finish  <resource> <target_primary> [<target_secondary>]
      Call hooks for handover to the targets.
-
-  $0 migrate         <resource> <target_primary> [<target_secondary>]
-     Run the sequence migrate_prepare ; migrate_wait ; migrate_finish.
 
   $0 migrate_cleanup <resource>
      Remove old / currently unused LV replicas from MARS and deallocate
@@ -352,6 +355,11 @@ Actions for resource migration:
 
 Actions for inplace FS shrinking:
 
+  $0 shrink          <resource> <percent>
+     Run the sequence shrink_prepare ; shrink_finish ; shrink_cleanup.
+
+Dto for testing (do not rely on it):
+
   $0 shrink_prepare  <resource> [<percent>]
      Allocate temporary LVM space (when possible) and create initial
      raw FS copy.
@@ -363,9 +371,6 @@ Actions for inplace FS shrinking:
 
   $0 shrink_cleanup  <resource>
      Remove old FS copy from LVM.
-
-  $0 shrink          <resource> <percent>
-     Run the sequence shrink_prepare ; shrink_finish ; shrink_cleanup.
 
 Actions for inplace FS extension:
 
@@ -1736,6 +1741,8 @@ migrate)
   migrate_prepare
   migrate_wait
   migrate_finish
+  migrate_cleanup "$primary $secondary_list" "$target_primary $target_secondary" "$res"
+  cleanup_old_remains "$primary $secondary_list" "$res"
   ;;
 migrate_cleanup)
   migrate_clean
