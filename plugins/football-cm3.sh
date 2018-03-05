@@ -276,7 +276,7 @@ function cm3_join_resource
     [[ "$target" = "" ]] && return
     [[ "$res" = "" ]] && return
 
-    remote "$target" "marsadm join-resource --ssh-port=24 $res $dev"
+    remote "$target" "marsadm join-resource --force --ssh-port=24 $res $dev"
 }
 
 ###########################################
