@@ -731,6 +731,24 @@ function get_vg
 
 ######################################################################
 
+# further helpers
+
+function get_full_list
+{
+    local host_list="$1"
+    local with_hyper="${2:-0}"
+
+    local full_list=""
+    while true; do
+	full_list="$(echo $(for host in $host_list; do echo $host; if (( with_hyper )); then call_hook get_hyper $host; get_store $host; fi; remote "$host" "marsadm view-cluster-members" 1; done | sort -u) )"
+	[[ "$full_list" = "$host_list" ]] && break
+	host_list="$full_list"
+    done
+    echo $full_list
+}
+
+######################################################################
+
 # LV cleanup over the whole pool (may take some time)
 
 function LV_cleanup
@@ -1396,11 +1414,13 @@ function hot_phase
     remote "$primary" "marsadm wait-umount $lv_name"
     remote "$primary" "marsadm secondary $lv_name"
 
-    section "IMPORTANT: destroying the MARS resource"
+    local full_list="$(get_full_list "$primary $secondary_list")"
+
+    section "IMPORTANT: destroying the MARS resources at $full_list"
     echo "In case of failure, you can re-establish MARS resources by hand."
     echo ""
 
-    for host in $secondary_list $primary; do
+    for host in $full_list; do
 	remote "$host" "marsadm wait-cluster || echo IGNORE"
 	remote "$host" "marsadm down $lv_name"
 	remote "$host" "marsadm leave-resource $lv_name || marsadm leave-resource --force $lv_name"
