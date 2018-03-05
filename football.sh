@@ -1690,7 +1690,8 @@ if ! [[ "$operation" =~ manual ]]; then
     fi
 fi
 
-secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list"
+secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" | grep -v "^$target_primary$"  | grep -v "^$target_secondary$"|| true; })" || fail "cannot determine secondary_list"
+secondary_list="$(echo $secondary_list)"
 
 echo "Determined the following secondaries: '$secondary_list'"
 
