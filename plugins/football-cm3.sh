@@ -30,6 +30,12 @@
 # Guard agains multiple sourcing
 [[ "${files[cm3]}" != "" ]] && return
 
+## skip_resource_ping
+# Enable this only for testing. Normally, a resource name denotes a
+# container name == machine name which must be runnuing as a precondition,
+# und thus must be pingable over network.
+skip_resource_ping="${skip_resource_ping:-0}"
+
 commands_installed "curl json_pp bc"
 
 function cm3_get_mountpoint
@@ -731,7 +737,12 @@ function cm3_restore_local_quota
 	if [[ -s "$dumpfile" ]]; then
 	    local max_rounds=10
 	    while ! ping -c 1 "$lv_name"; do
-		(( max_rounds-- < 0 )) && fail "host $lv_name does not ping"
+		if (( max_rounds-- < 0 )); then
+		    (( !skip_resource_ping )) && fail "host $lv_name does not ping"
+		    warn "You allowed skipping of resource ping."
+		    warn "cannot restore the quota at $lv_name"
+		    return
+		fi
 		sleep 10
 	    done
 	    sleep 10
