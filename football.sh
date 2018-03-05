@@ -989,13 +989,19 @@ function migrate_resource
 function migrate_cleanup
 {
     local host_list="$1"
-    local host_list2="$2"
+    local host_list2="$(echo $2)"
     local res="$3"
 
     section "Cleanup migration data at $host_list"
 
     local host
     for host in $host_list; do
+	# safety: don't kill any targets
+	if [[ "$host_list2" != "" ]] && [[ "$host" =~ ${host_list2/ /|/} ]]; then
+	    echo "Skipping target $host"
+	    continue
+	fi
+	echo "CLEANUP $host"
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
 	    remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
