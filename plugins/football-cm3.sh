@@ -88,6 +88,7 @@ function cm3_resource_stop
     declare -g  downtime_begin
     [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
+    ssh_hyper[$host]=""
     # stop the whole stack
     remote "$host" "cm3 --stop $res || cm3 --stop $res || { mountpoint /vol/$res && umount /vol/$res; } || false"
 }
@@ -100,6 +101,7 @@ function cm3_resource_stop_vm
     declare -g  downtime_begin
     [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
+    ssh_hyper[$hyper]=""
     # stop only the vm, keep intermediate mounts etc
     remote "$hyper" "nodeagent vmstop $res"
 }
@@ -140,7 +142,7 @@ function cm3_resource_check
 
     local host="$res"
     echo "Checking whether $host is running...."
-    while ! ping -c1 $host; do
+    while ! ping $ping_opts $host; do
 	if (( timeout-- <= 0 )); then
 	    echo "HOST $host DOES NOT PING!"
 	    return
@@ -207,6 +209,81 @@ function cm3_finish_hosts
 	    remote "$host" "service ui-firewalling restart || /etc/init.d/firewalling restart"
 	done
     fi
+}
+
+###########################################
+
+# Workarounds for ssh
+
+function cm3_ssh_port
+{
+    local host="$1"
+    local for_marsadm="${2:-0}"
+
+    # ShaHoLin specific convention
+    # trivially hard coded here => change here when necessary
+    if [[ "$host" =~ icpu|infong ]]; then
+	if (( for_marsadm )); then
+	    echo "--ssh-port=24"
+	else
+	    echo "-p 24"
+	fi
+    fi
+}
+
+# Indirect ssh to containers only reachable via hypervisors
+
+function cm3_check_port
+{
+    local host="$1"
+    local port="${2:-22}"
+
+    nc -z -w 3 $host $port
+}
+
+declare -g -A ssh_hyper=()
+
+function cm3_ssh_indirect
+{
+    local host="$1"
+    local cmd="$2"
+
+    # these should be reachable directly
+    if ! [[ "$host" =~ infong ]]; then
+	return
+    fi
+
+    # already known?
+    declare -g -A ssh_hyper
+    local known="${ssh_hyper[$host]}"
+    if [[ "$known" != "" ]]; then
+	if [[ "$known" != "NONE" ]]; then
+	    echo "$known:lxc-attach -n $host -- bash -c '${cmd//'/\\'}'"
+	fi
+	return
+    fi
+
+    # probe for direct reachability
+    local port="$(cm3_ssh_port "$host" 2>/dev/null)"
+    if cm3_check_port "$host" "${port##* }" 1>&2; then
+	return
+    fi
+
+    # try to guess the right hypervisor
+    local cluster="$(_get_cluster_name "$host" 2>/dev/null)"
+    local hyper
+    for hyper in $(_get_members "$cluster" 2>/dev/null); do
+	local hyper_port="$(cm3_ssh_port "$hyper" 2>/dev/null)"
+	if cm3_check_port "$hyper" "${hyper_port##* }" 1>&2; then
+	    local found="$(ssh $hyper_port $ssh_opt "root@$hyper" "lxc-ls -1" | grep "^$host$")"
+	    if [[ "$found" = "$host" ]]; then
+		ssh_hyper[$host]="$hyper"
+		echo "$hyper:lxc-attach -n $host -- bash -c '${cmd//'/\\'}'"
+		return
+	    fi
+	fi
+    done
+    ssh_hyper[$host]="NONE"
 }
 
 ###########################################
@@ -736,7 +813,7 @@ function cm3_restore_local_quota
 
 	if [[ -s "$dumpfile" ]]; then
 	    local max_rounds=10
-	    while ! ping -c 1 "$lv_name"; do
+	    while ! ping $ping_opts "$lv_name"; do
 		if (( max_rounds-- < 0 )); then
 		    (( !skip_resource_ping )) && fail "host $lv_name does not ping"
 		    warn "You allowed skipping of resource ping."
@@ -845,7 +922,7 @@ function cm3_connect
     echo "using iscsi IP '$iscsi_ip'"
 
     # saftey check
-    remote "$hyper" "ping -c1 $iscsi_ip"
+    remote "$hyper" "ping $ping_opts $iscsi_ip"
 
     # step 1: setup stone-aged IET on storage node
     local tid="$(new_tid "$iqn" "$store")"

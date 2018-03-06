@@ -241,6 +241,15 @@ min_space="${min_space:-20000000}"
 
 # more complex options
 
+## remote_ping
+# Before using ssh, ping the target.
+# This is only useful in special cases.
+remote_ping="${remote_ping:-0}"
+
+## ping_opts
+# Options for ping checks.
+ping_opts="${ping_opts:--W 1 -c 1}"
+
 ## ssh_opt
 # Useful for customization to your ssh environment.
 ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInteractiveAuthentication=no -o VerifyHostKeyDNS=no}"
@@ -545,40 +554,59 @@ function do_confirm
 
 function remote
 {
-    local host="$1"
+    local login="$1" # syntax username@hostname is allowed
     local cmd="$2"
     local nofail="${3:-0}"
 
-    (( verbose > 0 )) && echo "Executing on $host: '$cmd'" >> /dev/stderr
+    local host="${login##*@}"
+    local port="$(call_hook ssh_port "$host" 2>/dev/null)"
+    if (( verbose > 0 )); then
+	echo "Executing on $host $port: '$cmd'" >> /dev/stderr
+    fi
+
+    call_hook ssh_indirect "$host" "$cmd" </dev/null >/dev/null 2>&1
+    local indirect="$(call_hook ssh_indirect "$host" "$cmd" </dev/null)"
+    if [[ "$indirect" != "" ]]; then
+	host="${indirect%%:*}"
+	login="root@$host"
+	cmd="${indirect#*:}"
+	port="$(call_hook ssh_port "$host" 2>/dev/null)"
+	if (( verbose > 0 )); then
+	    echo "Indirection to $host $port: '$cmd'" >> /dev/stderr
+	fi
+    fi
+
     [[ "$host" = "" ]] && return
     [[ "${cmd## }" = "" ]] && return
-    ssh $ssh_opt "root@$host" "$cmd"
-    local rc=$?
+
+    if ! [[ "$login" =~ @ ]]; then
+	login="root@$host"
+    fi
+
+    # Avoid long ssh timeouts by pinging first
+    local rc=0
+    local retry="$remote_ping"
+    while (( retry > 0 )); do
+	if ping $ping_opts "${login##*@}" > /dev/null; then
+	    rc=0
+	    break
+	fi
+	echo "Host '${login##*@}' does not ping (retry=$retry)" >> /dev/stderr
+	rc=1
+	sleep 1
+	(( retry-- ))
+    done
+
+    if (( !rc )); then
+	ssh $port $ssh_opt "$login" "$cmd"
+	rc=$?
+    fi
     if (( !rc )); then
 	return 0
     elif (( nofail )); then
 	return $rc
     else
 	fail "ssh to '$host' command '$cmd' failed with status $rc"
-    fi
-}
-
-function remote_action
-{
-    local host="$1"
-    local cmd="$2"
-
-    if (( dry_run )); then
-	echo "DRY_RUN REMOTE $host ACTION '$cmd'"
-    elif (( confirm )); then
-	echo "REMOTE $host ACTION '$cmd'"
-	if do_confirm 1; then
-	    remote "$host" "$cmd"
-	else
-	    echo "SKIPPING $host ACTION '$cmd'"
-	fi
-    else
-	remote "$host" "$cmd"
     fi
 }
 
@@ -804,7 +832,7 @@ function check_migration
     [[ "$target_primary" = "" ]] && fail "target hostname is not defined"
     [[ "$target_primary" = "$primary" ]] && fail "target host '$target_primary' needs to be distinct from source host"
     for host in $target_primary $target_secondary; do
-	ping -c 1 "$host" > /dev/null || fail "Host '$host' is not pingable"
+	ping $ping_opts "$host" > /dev/null || fail "Host '$host' is not pingable"
 	remote "$host" "mountpoint /mars > /dev/null"
 	remote "$host" "[[ -d /mars/ips/ ]]"
     done
@@ -872,8 +900,8 @@ function migration_prepare
 	call_hook merge_cluster "$source_primary" "$target_primary"
 	call_hook merge_cluster "$source_primary" "$target_secondary"
     else
-	remote "$target_primary" "marsadm merge-cluster $source_primary"
-	remote "$target_secondary" "marsadm merge-cluster $source_primary"
+	remote "$target_primary" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
+	remote "$target_secondary" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
     fi
 
     remote "$target_primary" "marsadm wait-cluster"
@@ -910,8 +938,8 @@ function migration_prepare
 	call_hook join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
 	call_hook join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
     else
-	remote "$target_primary" "marsadm join-resource $lv_name $primary_dev"
-	remote "$target_secondary" "marsadm join-resource $lv_name $secondary_dev"
+	remote "$target_primary" "marsadm $(call_hook ssh_port "$target_primary" 1) join-resource $lv_name $primary_dev"
+	remote "$target_secondary" "marsadm $(call_hook ssh_port "$target_secondary" 1) join-resource $lv_name $secondary_dev"
     fi
     remote "$target_primary" "marsadm wait-cluster"
 }
@@ -1465,7 +1493,7 @@ function hot_phase
 	if exists_hook join_resource; then
 	    call_hook join_resource "$primary" "$host" "$lv_name" "$dev"
 	else
-	    remote "$host" "marsadm join-resource $lv_name $dev"
+	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) join-resource $lv_name $dev"
 	fi
     done
 
@@ -1684,7 +1712,7 @@ primary="$(get_store "$res")" || fail "No current primary hostname can be determ
 echo "Determined the following CURRENT primary: \"$primary\""
 
 for host in $hyper $primary; do
-    ping -c 1 "$host" > /dev/null || fail "Host '$host' is not pingable"
+    ping $ping_opts "$host" > /dev/null || fail "Host '$host' is not pingable"
 done
 
 remote "$primary" "mountpoint /mars"
@@ -1707,7 +1735,7 @@ secondary_list="$(echo $secondary_list)"
 echo "Determined the following secondaries: '$secondary_list'"
 
 for host in $secondary_list; do
-    ping -c 1 "$host" || fail "Host '$host' is not pingable"
+    ping $ping_opts "$host" || fail "Host '$host' is not pingable"
     remote "$host" "mountpoint /mars > /dev/null"
     remote "$host" "[[ -d /mars/ips/ ]]"
 #    if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ finish ]]; then
