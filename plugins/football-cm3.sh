@@ -329,13 +329,29 @@ function cm3_split_cluster
     if (( do_split_cluster )); then
 	local ok=0
 	local host
-	for host in $host_list; do
-	    sleep 5
-	    if remote "$host" "marsadm split-cluster --ssh-port=24" 1; then
-		ok=1
-		break
-	    fi
-	    remote "$host" "marsadm wait-cluster" 1
+	local old_host
+	local retry
+	for (( retry=0; retry < 3; retry++ )); do
+	    for host in $host_list; do
+		sleep 5
+		if remote "$host" "marsadm split-cluster --ssh-port=24" 1; then
+		    ok=1
+		    break
+		fi
+		old_host="$host"
+		remote "$host" "marsadm wait-cluster" 1
+	    done
+	    (( ok )) && break
+	    # try to fix asymmetric clusters by mutual re-merging
+	    for host in $host_list; do
+		sleep 5
+		if remote "$host" "marsadm merge-cluster --ssh-port=24 $old_host" 1; then
+		    ok=1
+		    break
+		fi
+		old_host="$host"
+		remote "$host" "marsadm wait-cluster" 1
+	    done
 	done
 	if (( !ok )); then
 	    fail "Please run 'marsadm split-cluster --ssh-port=24' by hand"
