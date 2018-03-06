@@ -1063,20 +1063,28 @@ function migrate_cleanup
 
 function determine_space
 {
-    # works on global variables
-    lv_path="$(remote "$primary" "lvs --noheadings --separator ':' -o \"vg_name,lv_name\"" | grep ":$res$" | sed 's/ //g' | awk -F':' '{ printf("/dev/%s/%s", $1, $2); }')" || fail "cannot determine lv_path"
+    local src_hyper="${1:-$hyper}"
+    local src_primary="${2:-$primary}"
+    local dst_primary="${3:-${target_primary:-$2}}"
+
+    lv_path="$(remote "$src_primary" "lvs --noheadings --separator ':' -o \"vg_name,lv_name\"" |\
+       grep ":$res$" | sed 's/ //g' |\
+       awk -F':' '{ printf("/dev/%s/%s", $1, $2); }')" ||\
+	fail "cannot determine lv_path"
 
     vg_name="$(echo "$lv_path" | cut -d/ -f3)" || fail "cannot determine vg_name"
 
     echo "Determined the following VG name: \"$vg_name\""
     echo "Determined the following LV path: \"$lv_path\""
 
+    # Assumption: device pathnames should be _uniform_ everywhere.
     local dev="/dev/$vg_name/$lv_name"
-    remote "$primary" "if [[ -e ${dev}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite ${dev}$shrink_suffix_old on $primary - First remove it - Do this by hand\"; exit -1; fi"
+    remote "$dst_primary" "if [[ -e ${dev}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite ${dev}$shrink_suffix_old on $src_primary - First remove it - Do this by hand\"; exit -1; fi"
 
-    df="$(remote "$hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
-    used_space="$(echo "$df" | awk '{print $3;}')"
-    total_space="$(echo "$df" | awk '{print $2;}')"
+    df="$(remote "$src_hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
+    declare -g used_space="$(echo "$df" | awk '{print $3;}')"
+    declare -g total_space="$(echo "$df" | awk '{print $2;}')"
+    declare -g target_space
     # absolute or relative space computation
     case "$target_percent" in
     *k)
@@ -1088,15 +1096,18 @@ function determine_space
     *g)
 	target_space="$(( ${target_percent%g} * 1024 * 1024 ))"
 	;;
-    *)
+    [0-9]*)
 	target_space="${target_space:-$(( used_space * 100 / target_percent + 1 ))}" || fail "cannot compute target_space"
+	;;
+    *)
+	fail "illegal syntax \$target_percent='$target_percent'"
 	;;
     esac
     (( target_space < min_space )) && target_space=$min_space
 
-    echo "Determined USED  space: $used_space"
-    echo "Determined TOTAL space: $total_space"
-    echo "Computed TARGET  space: $target_space"
+    echo "Determined USED  filesystem space at $src_hyper: $used_space"
+    echo "Determined TOTAL filesystem space at $src_hyper: $total_space"
+    echo "Computed TARGET  filesystem space at $dst_primary: $target_space"
 }
 
 function check_shrinking
@@ -1106,7 +1117,7 @@ function check_shrinking
 	echo "No need for shrinking the LV space of $res"
 	(( !force )) && exit 0
     fi
-    for host in $primary $secondary_list; do
+    for host in $src_primary $secondary_list; do
 	check_vg_space "$host" "$target_space"
     done
 }
