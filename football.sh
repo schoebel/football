@@ -263,7 +263,10 @@ ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInt
 
 ## rsync_opt
 # The rsync options in general.
-rsync_opt="${rsync_opt:- -aSH --info=STATS}"
+# IMPORTANT: some intermediate progress report is absolutely needed,
+# because otherwise a false-positive TIMEOUT may be assumed when
+# no output is generated for several hours.
+rsync_opt="${rsync_opt:- -aSH --info=progress2,STATS}"
 
 ## rsync_opt_prepare
 # Additional rsync options for preparation and updating
@@ -396,6 +399,12 @@ Actions for inplace FS extension:
 
   $0 extend          <resource> <percent>
 
+Combined actions:
+
+  $0 migrate+shrink <resource> <target_primary> [<target_secondary>] [<percent>]
+     Similar to migrate ; shrink but produces less network traffic.
+     Default percent value (when left out) is $target_percent.
+
 Global maintenance:
 
   $0 lv_cleanup      <resource>
@@ -522,16 +531,22 @@ function scan_args
 	if (( !index )); then
 	    if [[ "$par" =~ migrate_cleanup|lv_cleanup ]]; then
 		local -a params=(operation res)	
-	    elif [[ "$par" =~ shrink|extend ]]; then
-		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ migrate ]]; then
 		local -a params=(operation res target_primary target_secondary)
+	    elif [[ "$par" =~ shrink|extend ]]; then
+		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
 	    else
 		helpme
 		fail "unknown operation '$1'"
 	    fi
+	fi
+	# Treat a single number always as target_percent
+	if [[ "$par" =~ ^[0-9]+$ ]]; then
+	    echo "Setting target_percent from $target_percent to $par"
+	    target_percent="$par"
+	    continue
 	fi
 	local lhs="${params[index]}"
 	if [[ "$lhs" != "" ]]; then
@@ -714,7 +729,7 @@ function call_hook
 
 # helper functions for determining hosts / relationships
 
-declare -A hypervisor_host
+declare -g -A hypervisor_host=()
 
 function get_hyper
 {
@@ -731,7 +746,7 @@ function get_hyper
     echo "$hyper"
 }
 
-declare -A storage_host
+declare -g -A storage_host=()
 
 function get_store
 {
@@ -1071,7 +1086,7 @@ function create_migration_space
     remote "$host" "lvcreate -L ${size}k $etxra -n $lv_name $vg_name"
 }
 
-function migration_prepare
+function merge_cluster
 {
     local source_primary="$1"
     local lv_name="$2"
@@ -1091,6 +1106,17 @@ function migration_prepare
 
     remote "$target_primary" "marsadm wait-cluster"
 
+}
+
+function migration_prepare
+{
+    local source_primary="$1"
+    local lv_name="$2"
+    local target_primary="$3"
+    local target_secondary="$4"
+
+    merge_cluster "$@"
+
     section "Idempotence: check whether the additional replica has been alread created"
 
     local already_present="$(remote "$target_primary" "marsadm view-is-attach $lv_name")"
@@ -1103,9 +1129,14 @@ function migration_prepare
 
     local size="$(( $(remote "$source_primary" "marsadm view-sync-size $lv_name") / 1024 ))" ||\
 	fail "cannot determine resource size"
+    local needed_size="$size"
+    if [[ "$operation" = "migrate+shrink" ]]; then
+	(( needed_size += target_space ))
+	echo "Combined migrate+shrink needs $size + $target_space = $needed_size"
+    fi
 
-    check_vg_space "$target_primary" "$size"
-    check_vg_space "$target_secondary" "$size"
+    check_vg_space "$target_primary" "$needed_size"
+    check_vg_space "$target_secondary" "$needed_size"
 
     local primary_vg_name="$(get_vg "$target_primary")"
     local secondary_vg_name="$(get_vg "$target_secondary")"
@@ -1655,7 +1686,7 @@ function hot_phase
 
     for host in $primary $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old"
+	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old || echo IGNORE backup creation"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
 
@@ -1828,6 +1859,43 @@ function extend_stack
     extend_fs "$hyper" "$primary" "$secondary_list" "$res" "$target_space"
 }
 
+### combined operations
+
+function migrate_plus_shrink
+{
+    local old_hyper="$hyper"
+    local old_primary="$primary"
+    local old_secondary="$secondary_list"
+    local old_target_secondary="$target_secondary"
+    migrate_check
+    merge_cluster "$primary" "$res" "$target_primary" "$target_secondary"
+    if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
+	# Less network traffic:
+	# Migrate to only one target => new secondary will be created
+	# again at shrink 
+	target_secondary=""
+	migrate_prepare
+	migrate_wait
+	migrate_finish
+	target_secondary="$old_target_secondary"
+	declare -g -A hypervisor_host=()
+	declare -g -A storage_host=()
+	call_hook invalidate_caches
+    else
+	echo "Skipping the 'migrate' part, continue with 'shrink'"
+    fi
+    target_hyper="$(get_hyper "$res")" || fail "New hypervisor hostname canot be determined"
+    echo "SWAP $old_primary[$old_hyper] $old_secondary => $target_primary[$target_hyper] $target_secondary"
+    hyper="$target_hyper"
+    primary="$target_primary"
+    secondary_list="$target_secondary"
+    shrink_prepare
+    shrink_finish
+    migrate_wait
+    migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res"
+    cleanup_old_remains "$old_primary $old_secondary $target_primary $target_secondary" "$res"
+}
+
 ### global actions
 
 function lv_clean
@@ -1934,7 +2002,7 @@ for host in $secondary_list; do
 done
 
 # check connections (only for migration)
-if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup|wait ]]; then
+if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup|wait|manual|shrink ]]; then
     check_migration
 fi
 
@@ -2027,6 +2095,10 @@ extend)
 
 lv_cleanup)
   lv_clean
+  ;;
+
+migrate+shrink)
+  migrate_plus_shrink
   ;;
 
 *)
