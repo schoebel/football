@@ -1478,7 +1478,15 @@ function hot_phase
 	remote "$host" "marsadm leave-resource $lv_name || marsadm leave-resource --force $lv_name"
 	sleep 3
     done
+
     remote "$primary" "marsadm delete-resource $lv_name"
+
+    # backgound safeguard races between delete-resource and create-resource
+    for host in $full_list; do
+	remote "$host" "marsadm wait-cluster"
+	sleep 1
+    done &
+    sleep 1
 
     section "CRITICAL: Renaming LVs and re-creating the MARS resource"
     echo "In case of failure, you need to CHECK the correct version by hand."
@@ -1489,6 +1497,9 @@ function hot_phase
 	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
     done
+
+    wait
+
     remote "$primary" "marsadm create-resource --force $lv_name $dev"
     remote "$primary" "marsadm primary $lv_name"
 
