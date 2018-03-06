@@ -779,6 +779,19 @@ function get_full_list
 
 # LV cleanup over the whole pool (may take some time)
 
+function lv_remove
+{
+    local host="$1"
+    local path="$2"
+    local fail_ignore="${3:-0}"
+
+    if exists_hook lv_remove; then
+	call_hook lv_remove "$host" "$path" $fail_ignore
+    else
+	remote "$host" "lvremove $lvremove_opt $path" $fail_ignore
+    fi
+}
+
 function LV_cleanup
 {
     local primary="$1"
@@ -809,7 +822,7 @@ function LV_cleanup
 	    (( total_count++ ))
 	    if (( do_remove && do_it )); then
 		call_hook disconnect "$host" "$lv_name"
-		remote "$host" "lvremove $lvremove_opt $path"
+		lv_remove "$host" "$path"
 	    fi
 	done
     done
@@ -1053,10 +1066,10 @@ function migrate_cleanup
 	    remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
 	    remote "$host" "marsadm down $res || echo IGNORE cleanup"
 	    remote "$host" "marsadm leave-resource $res || marsadm leave-resource --force $res || echo IGNORE cleanup"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$tmp_suffix || echo IGNORE cleanup"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res-copy || echo IGNORE cleanup"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res$shrink_suffix_old || echo IGNORE cleanup"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/$res || echo IGNORE cleanup"
+	    lv_remove "$host" "/dev/$vg_name/$res$tmp_suffix" 1
+	    lv_remove "$host" "/dev/$vg_name/$res-copy" 1
+	    lv_remove "$host" "/dev/$vg_name/$res$shrink_suffix_old" 1
+	    lv_remove "$host" "/dev/$vg_name/$res" 1
 	    sleep 3
 	fi
     done
@@ -1519,8 +1532,8 @@ function cleanup_old_remains
 	if [[ "$vg_name" != "" ]]; then
 	    make_tmp_umount "$host" "$host" "$lv_name" "$tmp_suffix"
 	    section "Removing LVs from $host"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix || echo IGNORE LV removal"
-	    remote "$host" "lvremove $lvremove_opt /dev/$vg_name/${lv_name}$shrink_suffix_old || echo IGNORE LV removal"
+	    lv_remove "$host" "/dev/$vg_name/${lv_name}$tmp_suffix" 1
+	    lv_remove "$host" "/dev/$vg_name/${lv_name}$shrink_suffix_old" 1
 	else
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi

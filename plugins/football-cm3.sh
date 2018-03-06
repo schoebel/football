@@ -80,6 +80,26 @@ function cm3_get_vg
     remote "$host" "vgs | awk '{ print \$1; }' | grep 'vginfong\|vg[0-9]\+[ab]'"
 }
 
+function cm3_lv_remove
+{
+    local host="$1"
+    local path="$2"
+    local fail_ignore="${3:-0}"
+
+    # Assumption: old istores will never become targets anymore.
+    # Therefore, keep old LVs as a backup.
+    if [[ "$host" =~ istore ]]; then
+	remote "$host" "lvrename $lvremove_opt $path.old" 1
+    else
+	remote "$host" "lvremove $lvremove_opt $path" 1
+    fi
+    local rc=$?
+    if (( fail_ignore )); then
+	return 0
+    fi
+    return $rc
+}
+
 function cm3_resource_stop
 {
     local host="$1"
