@@ -1119,7 +1119,7 @@ function migration_prepare
 
     section "Idempotence: check whether the additional replica has been alread created"
 
-    local already_present="$(remote "$target_primary" "marsadm view-is-attach $lv_name")"
+    local already_present="$(remote "$host" "marsadm view-disk-present $lv_name" | grep '^[0-9]\+$')"
     if (( already_present )); then
 	echo "Nothing to do: resource '$lv_name' is already present at '$target_primary'"
 	return
