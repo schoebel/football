@@ -1329,7 +1329,7 @@ function make_tmp_mount
     if [[ "$store" != "$hyper" ]]; then
 	# create remote devices instead
 	local old_dev="$dev_tmp"
-	dev_tmp="$(call_hook connect "$store" "$hyper" "$lv_name$suffix" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	dev_tmp="$(call_hook connect "$store" "$hyper" "$lv_name$suffix" 2>&1 | tee -a /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
 	echo "using tmp dev '$dev_tmp'"
 	[[ "$dev_tmp" = "" ]] && fail "cannot setup remote device between hosts '$store' => '$hyper'"
     fi
@@ -1439,7 +1439,7 @@ function hot_phase
 	remote "$primary" "marsadm primary $lv_name"
 	if [[ "$primary" != "$hyper" ]]; then
 	# create remote devices instead
-	    mars_dev="$(call_hook connect "$primary" "$hyper" "$lv_name" 2>&1 | tee /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
+	    mars_dev="$(call_hook connect "$primary" "$hyper" "$lv_name" 2>&1 | tee -a /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
 	    echo "using tmp mars dev '$mars_dev'"
 	    [[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
 	fi
@@ -1778,8 +1778,8 @@ if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ cleanup|wait ]]; then
 fi
 
 if [[ "$operation" = migrate_cleanup ]]; then
-    to_clean_old="$(call_hook determine_old_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
-    to_clean_new="$(call_hook determine_new_replicas "$primary" "$res" 2>&1 | tee /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
+    to_clean_old="$(call_hook determine_old_replicas "$primary" "$res" 2>&1 | tee -a /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
+    to_clean_new="$(call_hook determine_new_replicas "$primary" "$res" 2>&1 | tee -a /dev/stderr | grep "^FOREIGN" | cut -d: -f2)"
     if [[ "$to_clean_old$to_clean_new" = "" ]]; then
 	echo "NOTHING TO DO"
 	exit 0
