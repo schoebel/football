@@ -761,6 +761,27 @@ function get_vg
 
 # further helpers
 
+safeguard_delete_resource="${safeguard_delete_resource:-2}"
+
+function safeguard_deleted
+{
+    local host_list="$1"
+
+    if (( !safeguard_delete_resource )); then
+	return
+    fi
+
+    local host
+    for host in $host_list; do
+	remote "$host" "marsadm wait-cluster" &
+    done
+    wait
+    for host in $host_list; do
+	remote "$host" "for i in \$(find /mars/ -name \".deleted-*\"); do ls -l \$i; rm -f \$i; done" &
+    done
+    wait
+}
+
 function get_full_list
 {
     local host_list="$1"
@@ -773,6 +794,89 @@ function get_full_list
 	host_list="$full_list"
     done
     echo $full_list
+}
+
+function leave_resource
+{
+    local res="$1"
+    local host_list="$2"
+
+    host_list="${host_list## }"
+    host_list="${host_list%% }"
+    host_list="${host_list//  / }"
+    local host_glob="{${host_list// /,}}"
+    [[ "$host_glob" =~ , ]] || host_glob="$host_list"
+    local full_list="$(get_full_list "$host_list")"
+
+    local retry
+    for (( retry=0; retry < 10; retry++ )); do
+	safeguard_deleted "$host_list"
+	local cmd
+	local host
+	for host in $host_list; do
+	    cmd="marsadm down $res || marsadm down --force $res || echo IGNORE"
+	    cmd+="; marsadm leave-resource $res || echo IGNORE"
+	    cmd+="; marsadm leave-resource --force $res || echo IGNORE"
+	    remote "$host" "$cmd"
+	done
+	if (( safeguard_delete_resource > 1 )); then
+	    for host in $full_list; do
+		remote "$host" "marsadm wait-cluster" &
+	    done
+	    wait
+	    for host in $full_list; do
+		remote "$host" "rm -f /mars/resource-$res/{data,replay,version-*,.deleted-*}-$host_glob" &
+	    done
+	    wait
+	    sleep 10
+	fi
+	local count=0
+	for host in $full_list; do
+	    cmd="ls -l /mars/resource-$res/{data,replay}-$host_glob | tee /dev/stderr | wc -l"
+	    (( count += $(remote "$host" "$cmd") ))
+	done
+	(( !count )) && return 0
+	echo "LEFT $count: REPEAT delete-resource $host_list"
+	sleep 7
+	echo "RETRY $retry leave-resource" 
+    done
+    fail "leave-resource $res did not work on $host_list"
+}
+
+function delete_resource
+{
+    local res="$1"
+    local host_list="$2"
+
+    local full_list="$(get_full_list "$host_list")"
+
+    local retry
+    for (( retry=0; retry < 3; retry++ )); do
+	local host
+	leave_resource "$res" "$full_list"
+	if (( !safeguard_delete_resource )) && [[ "$primary" != "" ]]; then
+	    remote "$primary" "marsadm delete-resource $res"
+	else
+	    safeguard_deleted "$full_list"
+	    for host in $full_list; do
+		remote "$host" "marsadm delete-resource --force $res" &
+	    done
+	    wait
+	fi
+	sleep 16
+	local has_remains=0
+	for host in $full_list; do
+	    local count="$(remote "$host" "shopt -s nullglob; ls /mars/resource-$res/{replay,data}-*"  | wc -l)"
+	    echo "Host '$host' has '$count' remains"
+	    if (( count )); then
+		(( has_remmains++ ))
+	    fi
+	done
+	if (( !has_remains )); then
+	    return
+	fi
+	echo "RETRY $retry delete-resource" 
+    done
 }
 
 ######################################################################
@@ -1053,6 +1157,7 @@ function migrate_cleanup
 
     section "Cleanup migration data at $host_list"
 
+    local new_host_list=""
     local host
     for host in $host_list; do
 	# safety: don't kill any targets
@@ -1060,15 +1165,22 @@ function migrate_cleanup
 	    echo "Skipping target $host"
 	    continue
 	fi
-	echo "CLEANUP $host"
+	new_host_list+=" $host"
+    done
+    leave_resource "$res" "$new_host_list"
+    for host in $host_list; do
+	echo "CLEANUP LVs $host"
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
-	    remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
-	    remote "$host" "marsadm down $res || echo IGNORE cleanup"
-	    remote "$host" "marsadm leave-resource $res || marsadm leave-resource --force $res || echo IGNORE cleanup"
 	    lv_remove "$host" "/dev/$vg_name/$res$tmp_suffix" 1
 	    lv_remove "$host" "/dev/$vg_name/$res-copy" 1
 	    lv_remove "$host" "/dev/$vg_name/$res$shrink_suffix_old" 1
+	fi
+    done
+    for host in $new_host_list; do
+	echo "CLEANUP LVs $host"
+	local vg_name="$(get_vg "$host")"
+	if [[ "$vg_name" != "" ]]; then
 	    lv_remove "$host" "/dev/$vg_name/$res" 1
 	    sleep 3
 	fi
@@ -1472,14 +1584,7 @@ function hot_phase
     echo "In case of failure, you can re-establish MARS resources by hand."
     echo ""
 
-    for host in $full_list; do
-	remote "$host" "marsadm wait-cluster || echo IGNORE"
-	remote "$host" "marsadm down $lv_name"
-	remote "$host" "marsadm leave-resource $lv_name || marsadm leave-resource --force $lv_name"
-	sleep 3
-    done
-
-    remote "$primary" "marsadm delete-resource $lv_name"
+    delete_resource "$lv_name" "$full_list"
 
     # backgound safeguard races between delete-resource and create-resource
     for host in $full_list; do
