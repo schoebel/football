@@ -221,6 +221,10 @@ confirm=${confirm:-1}
 # Enable this for debugging and testing: the check is then skipped.
 force=${force:-0}
 
+## debug_injection_point
+# RTFS don't set this unless you are a developer knowing what you are doing.
+debug_injection_point="${debug_injection_point:-0}"
+
 ## logdir
 # Where the logfiles should be created.
 # HINT: after playing Football in masses for a whiile, your $logdir will
@@ -1039,6 +1043,21 @@ function wait_for_screener
     done
 }
 
+# debugging: failure injection for testing of idempotence
+
+declare -g injection_nr=0
+
+function injection_point
+{
+    (( injection_nr++ ))
+    if (( debug_injection_point )); then
+	echo "INJECTION point $injection_nr"
+	if (( injection_nr >= debug_injection_point && debug_injection_point > 0 )); then
+	    fail "INJECTION_POINT $debug_injection_point has triggered"
+	fi
+    fi
+}
+
 ######################################################################
 
 # Compensation actions upon failures.
@@ -1278,6 +1297,8 @@ function create_migration_space
 
     # do it
     remote "$host" "lvcreate -L ${size}k $etxra -n $lv_name $vg_name"
+    injection_point
+    sleep 1
 }
 
 function merge_cluster
@@ -1347,10 +1368,14 @@ function migration_prepare
 
     if exists_hook join_resource; then
 	call_hook join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
+	injection_point
 	call_hook join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
+	injection_point
     else
 	remote "$target_primary" "marsadm $(call_hook ssh_port "$target_primary" 1) join-resource $lv_name $primary_dev"
+	injection_point
 	remote "$target_secondary" "marsadm $(call_hook ssh_port "$target_secondary" 1) join-resource $lv_name $secondary_dev"
+	injection_point
     fi
     remote "$target_primary" "marsadm wait-cluster"
 }
@@ -1422,6 +1447,8 @@ function migrate_resource
 
     wait_for_screener "$res" "migrate" "waiting" "$res $source_primary => $target_primary"
 
+    call_hook want_downtime "$res" 1
+
     failure_handler=failure_restart_vm
     failure_restart_primary="$source_primary $secondary_list"
     failure_restart_hyper=""
@@ -1429,6 +1456,7 @@ function migrate_resource
 
     call_hook report_downtime "$res" 1
     call_hook resource_stop "$source_primary" "$res"
+    injection_point
 
     section "Migrate cluster config"
 
@@ -1439,16 +1467,19 @@ function migrate_resource
     call_hook migrate_cm3_config "$source_primary" "$target_primary" "$res"
 
     failure_restart_primary="$target_primary $source_primary $target_secondary $secondary_list"
+    injection_point
 
     section "Starting new primary"
 
     call_hook resource_start "$target_primary" "$res"
+    injection_point
 
     section "Checking new primary"
 
     call_hook resource_check "$res"
     failure_handler=""
     call_hook report_downtime "$res" 0
+    call_hook want_downtime "$res" 0
 }
 
 function migrate_cleanup
@@ -1470,6 +1501,7 @@ function migrate_cleanup
 	new_host_list+=" $host"
     done
     leave_resource "$res" "$new_host_list"
+    injection_point
     for host in $host_list; do
 	echo "CLEANUP LVs $host"
 	local vg_name="$(get_vg "$host")"
@@ -1705,13 +1737,16 @@ function create_shrink_space
     fi
     call_hook disconnect "$host" "$lv_name"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix; fi"
+    injection_point
 
     # do it
     section "Creating shrink space on $host"
 
     local extra="$(get_stripe_extra "$host" "$vg_name")"
     remote "$host" "lvcreate -L ${size}k $extra -n ${lv_name}$tmp_suffix $vg_name"
+    sleep 1
     remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}$tmp_suffix"
+    injection_point
 }
 
 function create_shrink_space_all
@@ -1757,6 +1792,7 @@ function make_tmp_mount
     fi
     remote "$hyper" "mkdir -p $mnt$suffix"
     remote "$hyper" "mount $mount_opts $dev_tmp $mnt$suffix"
+    injection_point
 }
 
 function make_tmp_umount
@@ -1769,6 +1805,7 @@ function make_tmp_umount
     section "Removing temporary mount from $hyper"
 
     remote "$hyper" "if mountpoint $mnt$suffix/; then sync; umount $mnt$suffix/ || umount -f $mnt$suffix/; fi"
+    injection_point
 
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
@@ -1792,6 +1829,7 @@ function copy_data
     local mnt="$(call_hook get_mountpoint "$lv_name")"
 
     remote "$hyper" "for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
+    injection_point
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
     remote "$hyper" "sync"
 }
@@ -1850,10 +1888,12 @@ function hot_phase
     if (( optimize_dentry_cache )) && exists_hook resource_stop_vm ; then
 	# retain mountpoints
 	call_hook resource_stop_vm "$hyper" "$lv_name"
+	injection_point
     else
 	optimize_dentry_cache=0
 	# stop completely
 	call_hook resource_stop "$primary" "$lv_name"
+	injection_point
 
 	remote "$primary" "marsadm primary $lv_name"
 	if [[ "$primary" != "$hyper" ]]; then
@@ -1863,6 +1903,7 @@ function hot_phase
 	    [[ "$mars_dev" = "" ]] && fail "cannot setup remote mars device between hosts '$primary' => '$hyper'"
 	fi
 	remote "$hyper" "mount $mount_opts $mars_dev $mnt/"
+	injection_point
     fi
 
     section "Final rsync"
@@ -1871,20 +1912,24 @@ function hot_phase
 
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
     remote "$hyper" "rmdir $mnt$suffix || true"
+    injection_point
 
     if (( optimize_dentry_cache )); then
 	call_hook resource_stop_rest "$hyper" "$primary" "$lv_name"
+	injection_point
     else
 	remote "$hyper" "sync; umount $mnt/"
 	if [[ "$primary" != "$hyper" ]]; then
 	    # remove intermediate remote device
 	    sleep 1
 	    call_hook disconnect "$primary" "$lv_name"
+	    injection_point
 	fi
     fi
 
     remote "$primary" "marsadm wait-umount $lv_name"
     remote "$primary" "marsadm secondary $lv_name"
+    injection_point
 
     local full_list="$(get_full_list "$primary $secondary_list")"
 
@@ -1895,6 +1940,7 @@ function hot_phase
     failure_handler=failure_rebuild_mars
 
     delete_resource "$lv_name" "$full_list"
+    injection_point
 
     # backgound safeguard races between delete-resource and create-resource
     for host in $full_list; do
@@ -1911,11 +1957,13 @@ function hot_phase
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
 	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old || echo IGNORE backup creation"
 	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
+	injection_point
     done
 
     wait
 
     remote "$primary" "marsadm create-resource --force $lv_name $dev"
+    injection_point
     remote "$primary" "marsadm primary $lv_name"
 
     section "IMPORTANT: go online again"
@@ -1923,6 +1971,7 @@ function hot_phase
     echo ""
 
     call_hook resource_start "$primary" "$lv_name"
+    injection_point
 
     failure_handler=""
 
@@ -1936,6 +1985,7 @@ function hot_phase
 	else
 	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) join-resource $lv_name $dev"
 	fi
+	injection_point
     done
 
     call_hook restore_local_quota "$hyper" "$lv_name"
@@ -1966,6 +2016,7 @@ function cleanup_old_remains
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi
     done
+    injection_point
 }
 
 ######################################################################
@@ -1999,18 +2050,21 @@ function extend_fs
     section "Extend the MARS resource"
 
     remote "$primary" "marsadm resize $lv_name"
+    injection_point
     sleep 1
 
     # propagate new size over intermediate iSCSI
     if [[ "$hyper" != "$primary" ]]; then
 	section "propagate new size over iSCSI"
 	call_hook extend_iscsi "$hyper"
+	injection_point
 	sleep 3
     fi
 
     section "Resize the filesystem"
 
     remote "$hyper" "$fs_resize_cmd $mnt"
+    injection_point
 }
 
 ######################################################################
@@ -2036,11 +2090,13 @@ function migrate_wait
 function migrate_check
 {
     call_hook check_migrate "$primary" "$target_primary" "$res"
+    injection_point
 }
 
 function migrate_finish
 {
     migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
+    injection_point
 }
 
 function manual_migrate_config
@@ -2051,6 +2107,7 @@ function manual_migrate_config
 function migrate_clean
 {
     migrate_cleanup "$to_clean_old" "$to_clean_new" "$res"
+    injection_point
     cleanup_old_remains "$to_clean_new" "$res"
 }
 
@@ -2063,6 +2120,7 @@ function shrink_prepare
     make_tmp_mount "$hyper" "$primary" "$res"
     copy_data "$hyper" "$res" "$tmp_suffix" "$rsync_nice" "$rsync_opt_prepare" "$rsync_repeat_prepare"
     call_hook save_local_quota "$hyper" "$res"
+    injection_point
     if (( !reuse_mount )); then
 	make_tmp_umount "$hyper" "$primary" "$res"
     fi
@@ -2118,6 +2176,7 @@ function migrate_plus_shrink
     secondary_list="$target_secondary"
     shrink_prepare
     shrink_finish
+    injection_point
     migrate_wait
     if (( wait_before_cleanup )); then
 	wait_for_screener "$res" "cleanup" "delayed" "migrate+shrink $res $old_primary => $target_primary" "$wait_before_cleanup"
