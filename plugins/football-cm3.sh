@@ -645,6 +645,9 @@ function _check_migrate
     echo "source_cluster='$source_cluster'"
     echo "target_cluster='$target_cluster'"
 
+    [[ "$source_cluster" = "" ]] && fail "cm3 source cluster is undefined"
+    [[ "$target_cluster" = "" ]] && fail "cm3 target cluster is undefined"
+
     if [[ "$source_cluster" != "$target_cluster" ]]; then
 	if (( check_segments )); then
 	    # At the moment, cross-segment migrations won't work.
