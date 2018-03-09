@@ -745,8 +745,10 @@ function cm3_migrate_cm3_config
 	echo "--------------------- diff old => new ------------------"
 	diff -ui $backup/$res.old.pp.json $backup/$res.new.pp.json
 	echo ""
-	clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL"
-	clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL"
+	(clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL") ||\
+	    echo IGNORE
+	(clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL") ||\
+	    echo IGNORE
 	echo ""
 
 	section "Update cm3 configs"
