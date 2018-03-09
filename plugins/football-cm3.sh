@@ -100,6 +100,20 @@ function cm3_lv_remove
     return $rc
 }
 
+function cm3_resource_locked
+{
+    local res="$1"
+
+    # heuristics: tar processes indicate a running movespace or backup restore
+    local something="$(remote "$res" "ps ax" | grep "/bin/tar ")"
+    if [[ "$something" != "" ]]; then
+	echo "RESOURCE_LOCK $(date +%s) $(date) resource $res is locked" >> /dev/stderr
+	echo 1
+    else
+	echo 0
+    fi
+}
+
 function cm3_resource_stop
 {
     local host="$1"

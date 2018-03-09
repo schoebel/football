@@ -1036,6 +1036,10 @@ function check_migration
 	remote "$host" "[[ -d /mars/ips/ ]]"
     done
     call_hook check_host "$primary $secondary_list $target_primary $target_secondary"
+    # Check for locks
+    if (( $(call_hook resource_locked "$res") )); then
+	fail "Resource '$res' is locked at moment => retry later"
+    fi
 }
 
 function check_vg_space
