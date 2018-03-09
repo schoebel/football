@@ -295,6 +295,21 @@ wait_timeout="${wait_timeout:-$(( 24 * 60 ))}" # Minutes
 # Some LVM versions are requiring this for unattended batch operations.
 lvremove_opt="${lvremove_opt:--f}"
 
+## automatic recovery options: enable_failure_*
+enable_failure_restart_vm="${enable_failure_restart_vm:-1}"
+enable_failure_recreate_cluster="${enable_failure_recreate_cluster:-0}"
+enable_failure_rebuild_mars="${enable_failure_rebuild_mars:-1}"
+
+## critical_status
+# This is the "magic" exit code indicating _criticality_
+# of a failed command.
+critical_status="${critical_status:-199}"
+
+## serious_status
+# This is the "magic" exit code indicating _seriosity_
+# of a failed command.
+serious_status="${serious_status:-198}"
+
 ## tmp_suffix
 # Only for experts.
 tmp_suffix="${tmp_suffix:--tmp}"
@@ -439,14 +454,65 @@ EOF
 
 # basic infrastructure
 
+failure_handler=""
+recursive_failure=0
+
 function fail
 {
     local txt="${1:-Unkown failure}"
-    echo "FAILURE: $txt" >> /dev/stderr
-    if (( critical_section && critical_status )); then
-	exit $critical_status
+    local status="${2:--1}"
+
+    unset exit
+    echo "=====================================================" >> /dev/stderr
+    echo "FAIL pid=$BASHPID status=$status '$txt'" >> /dev/stderr
+
+    if (( recursive_failure )); then
+	echo "RECURSIVE_FAILURE (now $status): $txt" >> /dev/stderr
+	status="$recursive_failure"
+	failure_handler=""
+    elif (( critical_section && critical_status )); then
+	echo "FAILURE_IN_CRITICAL_SECTION" >> /dev/stderr
+    else
+	echo "FAILURE (status=$status): $txt" >> /dev/stderr
     fi
-    exit -1
+    if [[ "$failure_handler" != "" ]] && [[ "$BASHPID" = "$main_pid" ]]; then
+	echo "STARTING FAILURE HANDLER '$failure_handler'" >> /dev/stderr
+	recursive_failure="${serious_status:-$status}"
+	$failure_handler
+	local status=$?
+	echo "FINISHED FAILURE HANDLER '$failure_handler' status=$status" >> /dev/stderr
+    fi
+    if (( recursive_failure && serious_status && !status )); then
+	echo "FAILING with serious_status=$serious_status" >> /dev/stderr
+	status="$serious_status"
+    elif (( critical_section && critical_status )); then
+	echo "FAILING with critical_status=$critical_status" >> /dev/stderr
+	status="$critical_status"
+    else
+	echo "FAILING with status=$status" >> /dev/stderr
+    fi
+    if [[ "$BASHPID" = "$main_pid" ]]; then
+	echo "" >> /dev/stderr
+	echo "EXIT status=$status" >> /dev/stderr
+    fi
+    unset exit
+    exit $status
+}
+
+# override the standard exit function for detection of recursion
+function exit
+{
+    local status="${1:-0}"
+
+    unset exit
+    if (( status || recursive_failure )); then
+	fail "exit $status" "$status"
+    fi
+    if [[ "$BASHPID" = "$main_pid" ]]; then
+	call_hook 0 football_finished "$status" "$0" "$@"
+    fi
+    echo "EXIT status=$status" >> /dev/stderr
+    exit $status
 }
 
 # Unfortunately, the bash has no primitive for running an arbitrary
@@ -975,6 +1041,119 @@ function wait_for_screener
 
 ######################################################################
 
+# Compensation actions upon failures.
+# Try to KTLO = Keep The Lights On
+# by restarting services before error exit
+
+failure_restart_primary=""
+failure_restart_hyper=""
+failure_restart_vm=""
+
+function failure_restart_vm
+{
+    local primary_list="${1:-$failure_restart_primary}"
+    local hyper="${2:-failure_restart_hyper}"
+    local res="${3:-$res}"
+
+    if (( enable_failure_restart_vm )) && \
+	[[ "$res" != "" ]]; then
+	if [[ "$primary_list" = "" ]] && [[ "$hyper" != "" ]]; then
+	    # Last resort.
+	    # Assume that the hypervisor is working and try to work there
+	    section "EMERGENCY try to restart hyper='$hyper' resource='$res'"
+
+	    # try to get a defined state
+	    call_hook 0 resource_stop_vm "$hyper" "$res" || echo IGNORE
+	    # try to start twice
+	    if ! call_hook 0 resource_start_vm "$hyper" "$res"; then
+		call_hook 0 resource_stop_vm "$hyper" "$res" || echo IGNORE
+		call_hook resource_start_vm "$hyper" "$res"
+	    fi
+	    return
+	fi
+	local -A tried=()
+	local primary
+	for primary in $primary_list; do
+	    (( tried[$primary] )) && continue
+	    section "EMERGENCY check whether restart primary='$primary' resource='$res' is possible"
+	    if [[ "$(call_hook is_startable "$primary" "$res" | tee -a /dev/stderr | tail -1)" != "1" ]]; then
+		echo "Startup of $res is reported as not possible at $primary".
+		echo "If this is wrong, fix configs by hand."
+		continue
+	    fi
+	    (( tried[$primary]++ ))
+	    local retry
+	    for (( retry=0; retry < 3; retry++ )); do
+		section "EMERGENCY try to restart primary='$primary' resource='$res'"
+
+		# try to get a defined state
+		call_hook 0 resource_stop "$primary" "$res" ||
+		call_hook 0 resource_stop "$primary" "$res" || echo IGNORE
+
+		# try to restart
+		if ! call_hook 0 resource_start "$primary" "$res"; then
+		    call_hook 0 resource_stop "$primary" "$res"
+		    call_hook 0 resource_start "$primary" "$res"
+		fi
+		if (( !$? )); then
+		    return
+		fi
+		# check whether the cluster config is recent
+		if (( enable_failure_recreate_cluster )); then
+		    # Brute force... hopefully it will help
+		    local other
+		    for other in $primary_list; do
+			declare -g always_migrate=$(( retry > 0 ))
+			if call_hook 0 update_cm3_config "$other" "$primary" "$res"; then
+			    sleep 10
+			    break
+			fi
+		    done
+		fi
+	    done
+	done
+    fi
+    fail "cannot restart vm='$res' at primary_list='$primary_list'"
+}
+
+function failure_rebuild_mars
+{
+    local primary_list="${1:-$failure_restart_primary}"
+    local hyper="${2:-failure_restart_hyper}"
+    local res="${3:-$res}"
+
+    [[ "$primary_list" = "" ]] && return
+    [[ "$res" = "" ]] && return
+
+    if (( enable_failure_rebuild_mars )); then
+	# Assuption: at least some usable LV must exist.
+	# Don't try to rename anything. In case of emergency, just use
+	# everything which looks plausible.
+
+	local lv
+	for lv in $res $res$shrink_suffix_old; do
+	    local primary
+	    for primary in $primary_list; do
+		section "EMERGENCY try to restart primary='$primary' resource='$res'"
+		local mars_resource_exists="$(remote "$primary" "marsadm view-disk-present $res" | grep '^[0-9]\+$')"
+		if (( !mars_resource_exists )); then
+		    local vg_name="$(get_vg "$primary")"
+		    (remote "$primary" "if ! [[ -e /dev/mars/$lv ]]; then marsadm create-resource --force $res /dev/$vg_name/$lv; fi")
+		    sleep 3
+		fi
+		if (failure_restart_vm "$primary" "" "$res"); then
+		    return
+		fi
+	    done
+	done
+    else
+	failure_restart_vm "$primary_list" "$hyper" "$res"
+    fi
+    fail "cannot rebuild mars resource='$res' at primary_list='$primary_list'"
+}
+
+######################################################################
+
 # LV cleanup over the whole pool (may take some time)
 
 function lv_remove
@@ -1243,12 +1422,23 @@ function migrate_resource
 
     wait_for_screener "$res" "migrate" "waiting" "$res $source_primary => $target_primary"
 
+    failure_handler=failure_restart_vm
+    failure_restart_primary="$source_primary $secondary_list"
+    failure_restart_hyper=""
+    failure_restart_vm="$res"
+
     call_hook report_downtime "$res" 1
     call_hook resource_stop "$source_primary" "$res"
 
     section "Migrate cluster config"
 
+    call_hook invalidate_caches
+
+    failure_restart_primary="$source_primary $target_primary $secondary_list $target_secondary"
+
     call_hook migrate_cm3_config "$source_primary" "$target_primary" "$res"
+
+    failure_restart_primary="$target_primary $source_primary $target_secondary $secondary_list"
 
     section "Starting new primary"
 
@@ -1257,6 +1447,7 @@ function migrate_resource
     section "Checking new primary"
 
     call_hook resource_check "$res"
+    failure_handler=""
     call_hook report_downtime "$res" 0
 }
 
@@ -1644,11 +1835,16 @@ function hot_phase
     # go offline
     section "Go offline"
 
-    call_hook want_downtime "$res" 1
-
     # repeat for better dentry caching
     wait_for_screener "$res" "shrink" "waiting" "$hyper $lv_name" "" "$cache_repeat_lapse" \
 	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
+
+    call_hook want_downtime "$res" 1
+
+    failure_handler=failure_restart_vm
+    failure_restart_primary="$primary $secondary_list"
+    failure_restart_hyper="$hyper"
+    failure_restart_vm="$lv_name"
 
     call_hook report_downtime "$res" 1
     if (( optimize_dentry_cache )) && exists_hook resource_stop_vm ; then
@@ -1675,6 +1871,7 @@ function hot_phase
 
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
     remote "$hyper" "rmdir $mnt$suffix || true"
+
     if (( optimize_dentry_cache )); then
 	call_hook resource_stop_rest "$hyper" "$primary" "$lv_name"
     else
@@ -1694,6 +1891,8 @@ function hot_phase
     section "IMPORTANT: destroying the MARS resources at $full_list"
     echo "In case of failure, you can re-establish MARS resources by hand."
     echo ""
+
+    failure_handler=failure_rebuild_mars
 
     delete_resource "$lv_name" "$full_list"
 
@@ -1724,6 +1923,8 @@ function hot_phase
     echo ""
 
     call_hook resource_start "$primary" "$lv_name"
+
+    failure_handler=""
 
     section "Re-create the MARS replicas"
 
@@ -2070,7 +2271,8 @@ do_confirm
 (( verbose < 1 )) && verbose=1
 
 # main: start the internal actions
-echo "START $(date)"
+main_pid="$BASHPID"
+echo "START $(date) main_pid=$main_pid"
 
 case "${operation//-/_}" in
 migrate_prepare)

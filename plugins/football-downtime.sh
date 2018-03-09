@@ -33,11 +33,6 @@
 downtime_cmd_set="${downtime_cmd_set:-}"
 downtime_cmd_unset="${downtime_cmd_unset:-}"
 
-## critical_status
-# This is the "magic" exit code indicating _criticality_
-# of a failed command.
-critical_status="${critical_status:-199}"
-
 ##########################################################
 
 function downtime_describe_plugin

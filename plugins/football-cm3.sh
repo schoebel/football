@@ -169,6 +169,20 @@ function cm3_resource_start
     remote "$host" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
 }
 
+function cm3_resource_start_vm
+{
+    local hyper="$1"
+    local res="$2"
+
+    # start only the vm
+    # precondition is that mounts etc are already present
+    remote "$hyper" "nodeagent vmstart $res"
+    declare -g  downtime_begin
+    declare -g  downtime_end="$(date +%s)"
+    echo "DOWNTIME END $(date) ($(( downtime_end - downtime_begin )) s)"
+    remote "$hyper" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
+}
+
 function cm3_resource_check
 {
     local res="$1"
@@ -702,6 +716,18 @@ function cm3_update_cm3_config
     for host in $host_list; do
 	remote "$host" "update-motd || echo IGNORE"
     done
+}
+
+function cm3_is_startable
+{
+    local host="$1"
+    local res="$2"
+
+    if (remote "$host" "cm3 -us") | grep -q " $res "; then
+	echo "1"
+    else
+	echo "0"
+    fi
 }
 
 function cm3_migrate_cm3_config
