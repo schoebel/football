@@ -413,6 +413,11 @@ Combined actions:
      Similar to migrate ; shrink but produces less network traffic.
      Default percent value (when left out) is $target_percent.
 
+  $0 migrate+shrink+back <resource> <tmp_primary> [<percent>]
+     Migrate temporarily to <tmp_primary>, then shrink there,
+     finally migrate back to old primary and secondaries.
+     Default percent value (when left out) is $target_percent.
+
 Actions for repair in emergency situations:
 
   $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
@@ -1420,7 +1425,7 @@ function migration_prepare
     local size="$(( $(remote "$source_primary" "marsadm view-sync-size $lv_name") / 1024 ))" ||\
 	fail "cannot determine resource size"
     local needed_size="$size"
-    if [[ "$operation" = "migrate+shrink" ]]; then
+    if [[ "$operation" =~ migrate\+shrink ]]; then
 	determine_space
 	(( needed_size += target_space ))
 	echo "Combined migrate+shrink needs $size + $target_space = $needed_size"
@@ -1562,6 +1567,7 @@ function migrate_cleanup
     local host_list="$1"
     local host_list2="$(echo $2)"
     local res="$3"
+    local do_split="${4:-1}"
 
     section "Cleanup migration data at $host_list"
 
@@ -1595,28 +1601,30 @@ function migrate_cleanup
 	fi
     done
 
-    section "Recompute host list"
+    if (( do_split )); then
+	section "Recompute host list"
 
-    local new_host_list="$(echo $(
+	local new_host_list="$(echo $(
 	for host in $host_list $host_list2; do
 	    echo "$host"
 	    remote "$host" "marsadm lowlevel-ls-host-ips" 2>/dev/null
 	done |\
 	    awk '{ print $1; }' |\
 	    sort -u ))"
-    echo "Augmented host list: $new_host_list"
-    host_list="$new_host_list"
+	echo "Augmented host list: $new_host_list"
+	host_list="$new_host_list"
 
-    for host in $host_list; do
-	remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
-    done
+	for host in $host_list; do
+	    remote "$host" "marsadm wait-cluster || echo IGNORE cleanup"
+	done
 
-    section "Split cluster at $host_list"
+	section "Split cluster at $host_list"
 
-    sleep 10
-    call_hook prepare_hosts "$host_list"
-    call_hook split_cluster "$host_list"
-    call_hook finish_hosts "$host_list"
+	sleep 10
+	call_hook prepare_hosts "$host_list"
+	call_hook split_cluster "$host_list"
+	call_hook finish_hosts "$host_list"
+    fi
 }
 
 ######################################################################
@@ -2222,9 +2230,20 @@ function extend_stack
 
 function migrate_plus_shrink
 {
+    local go_back="${1:-0}"
+
     local old_hyper="$hyper"
     local old_primary="$primary"
     local old_secondary="$secondary_list"
+    if (( go_back )); then
+	# completely unused
+	target_secondary=""
+	local tmp_primary="$target_primary"
+	local status_file="$football_logdir/initial.$res.status"
+	if ! [[ -s "$status_file" ]]; then
+	    echo "$old_primary $old_secondary" > "$status_file"
+	fi
+    fi
     local old_target_secondary="$target_secondary"
     migrate_check
     merge_cluster "$primary" "$res" "$target_primary" "$target_secondary"
@@ -2236,7 +2255,11 @@ function migrate_plus_shrink
 	migrate_prepare
 	migrate_wait
 	migrate_finish
-	target_secondary="$old_target_secondary"
+	if (( go_back )); then
+	    target_secondary=""
+	else
+	    target_secondary="$old_target_secondary"
+	fi
 	declare -g -A hypervisor_host=()
 	declare -g -A storage_host=()
 	call_hook invalidate_caches
@@ -2250,13 +2273,35 @@ function migrate_plus_shrink
     secondary_list="$target_secondary"
     shrink_prepare
     shrink_finish
-    injection_point
-    migrate_wait
+    if (( go_back )); then
+	if [[ -s "$status_file" ]]; then
+	    read old_primary old_secondary < "$status_file"
+	fi
+	echo "GO_BACK $target_primary[$target_hyper] => $old_primary[$old_hyper] $old_secondary"
+	wait_for_screener "$res" "cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"
+	migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res" 0
+	hyper="$old_hyper"
+	primary="$target_primary"
+	secondary_list=""
+	target_primary="$old_primary"
+	target_secondary="$old_secondary"
+	call_hook invalidate_caches
+	migrate_prepare
+	migrate_wait
+	migrate_finish
+	old_primary="$tmp_primary"
+	old_secondary=""
+    else
+	migrate_wait
+    fi
     if (( wait_before_cleanup )); then
-	wait_for_screener "$res" "cleanup" "delayed" "migrate+shrink $res $old_primary => $target_primary" "$wait_before_cleanup"
+	wait_for_screener "$res" "cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"
     fi
     migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res"
     cleanup_old_remains "$old_primary $old_secondary $target_primary $target_secondary" "$res"
+    if (( go_back )); then
+	rm -f "$status_file"
+    fi
 }
 
 ### global actions
@@ -2479,6 +2524,10 @@ lv_cleanup)
 
 migrate+shrink)
   migrate_plus_shrink
+  ;;
+
+migrate+shrink+back)
+  migrate_plus_shrink 1
   ;;
 
 *)
