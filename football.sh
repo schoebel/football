@@ -245,7 +245,6 @@ min_space="${min_space:-20000000}"
 # Use this for repeated refreshes of the dentry cache after some time.
 cache_repeat_lapse="${cache_repeat_lapse:-120}" # Minutes
 
-
 # more complex options
 
 ## remote_ping
@@ -1903,6 +1902,9 @@ function migrate_plus_shrink
     shrink_prepare
     shrink_finish
     migrate_wait
+    if (( wait_before_cleanup )); then
+	wait_for_screener "$res" "cleanup" "delayed" "migrate+shrink $res $old_primary => $target_primary" "$wait_before_cleanup"
+    fi
     migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res"
     cleanup_old_remains "$old_primary $old_secondary $target_primary $target_secondary" "$res"
 }
@@ -2070,6 +2072,9 @@ migrate)
   migrate_prepare
   migrate_wait
   migrate_finish
+  if (( wait_before_cleanup )); then
+      wait_for_screener "$res" "cleanup" "delayed" "$res $primary => $target_primary" "$wait_before_cleanup"
+  fi
   migrate_cleanup "$primary $secondary_list" "$target_primary $target_secondary" "$res"
   cleanup_old_remains "$primary $secondary_list" "$res"
   ;;
@@ -2095,6 +2100,9 @@ shrink_cleanup)
 shrink)
   shrink_prepare
   shrink_finish
+  if (( wait_before_cleanup )); then
+      wait_for_screener "$res" "cleanup" "delayed" "shrink $res"  "$wait_before_cleanup"
+  fi
   shrink_cleanup
   ;;
 

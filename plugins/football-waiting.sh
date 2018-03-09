@@ -45,6 +45,15 @@
 enable_migrate_waiting="${enable_migrate_waiting:-0}"
 enable_shrink_waiting="${enable_shrink_waiting:-0}"
 
+## enable_cleanup_delayed and wait_before_cleanup
+# By setting this, you can delay the cleanup operations for some time.
+# This way, you are keeping the old LV contents as a kind of "backup"
+# for some limited time.
+# HINT: dont set to wait_before_cleanuplarge values, because it can
+# seriously slow down Football.
+enable_cleanup_delayed="${enable_cleanup_delayed:-0}"
+wait_before_cleanup="${wait_before_cleanup:-180}" # Minutes
+
 ## reduce_wait_msg
 # Instead of reporting the waiting status once per minute,
 # decrease the frequency of resporting.
