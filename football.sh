@@ -239,6 +239,13 @@ screener="${screener:-0}"
 # Use this to ensure a minimum size.
 min_space="${min_space:-20000000}"
 
+## cache_repeat_lapse
+# When using the waiting capabilities of screener, and when waits
+# are lasting very long, your dentry cache may become cold.
+# Use this for repeated refreshes of the dentry cache after some time.
+cache_repeat_lapse="${cache_repeat_lapse:-120}" # Minutes
+
+
 # more complex options
 
 ## remote_ping
@@ -277,6 +284,10 @@ rsync_nice="${rsync_nice:-nice -19}"
 # remains hot.
 rsync_repeat_prepare="${rsync_repeat_prepare:-5}"
 rsync_repeat_hot="${rsync_repeat_hot:-3}"
+
+## wait_timeout
+# Avoid infinite loops upon waiting.
+wait_timeout="${wait_timeout:-$(( 24 * 60 ))}" # Minutes
 
 ## lvremove_opt
 # Some LVM versions are requiring this for unattended batch operations.
@@ -406,9 +417,10 @@ General features:
 
   - By adding the option --screener, you can handover football execution
     to $(dirname "$0")/screener.sh .
-    When --enable_critical_waiting is also added, then the critical
+    When some --enable_*_waiting is also added, then the critical
     sections involving customer downtime are temporarily halted until
-    some sysadmins says "screener.sh continue \$resource".
+    some sysadmins says "screener.sh continue \$resource" or
+    attaches to the sessions and presses the RETURN key.
 
 EOF
    show_vars "$0"
@@ -879,6 +891,62 @@ function delete_resource
     done
 }
 
+function wait_for_screener
+{
+    local res="$1"
+    local situation="$2"
+    local mode="${3:-waiting}"
+    local msg="${4:-$operation}"
+    local timeout="${5:-$wait_timeout}"
+    local repeat_lapse="${6:-0}"
+    local lapse_cmd="${7:-uptime}"
+    shift 7
+
+    local enable="enable_${situation}_${mode}"
+    if (( !$enable )); then
+	echo "$enable is off"
+	return
+    fi
+    echo "$enable is on"
+
+    local hot_round=0
+    local total_round=0
+    call_hook start_wait "$res" "$mode" "$situation: $msg"
+    while (( $(call_hook poll_wait "$res" "$mode") )); do
+	if (( timeout > 0 && total_round > timeout + 1 )); then
+	    break
+	fi
+	local keypress=0
+	if [[ -t 0 ]]; then
+	    if (( !hot_round )); then
+		echo "Press RETURN to interrupt / shorten the $mode (${total_round}m/${timeout}m)"
+	    fi
+	    local i
+	    local dummy
+	    for (( i = 0; i < 60; i++ )); do
+		read -t 1 dummy
+		keypress=$(( !$? ))
+		(( keypress )) && break
+	    done
+	else
+	    sleep 60
+	fi
+	(( hot_round++ ))
+	(( total_round++ ))
+	if (( repeat_lapse > 0 && hot_round >= repeat_lapse )); then
+	    hot_round=0
+	    $lapse_cmd "$@"
+	fi
+	if (( timeout > 0 && total_round >= timeout )); then
+	    echo "TIMEOUT SCREENER_$mode $(date +%s) $(date)"
+	    call_hook poll_wait "$res" "$mode" 1 1
+	elif (( keypress )); then
+	    echo "KEYPRESS SCREENER_$mode $(date +%s) $(date)"
+	    call_hook poll_wait "$res" "$mode" 1 1
+	fi
+    done
+}
+
 ######################################################################
 
 # LV cleanup over the whole pool (may take some time)
@@ -1126,11 +1194,7 @@ function migrate_resource
     # critical path
     section "Stopping old primary"
 
-    # wait for screener
-    call_hook start_critical "$res" "migrate $res => $target_primary"
-    while (( $(call_hook poll_critical "$res") )); do
-	sleep 60
-    done
+    wait_for_screener "$res" "migrate" "waiting" "$res $source_primary => $target_primary"
 
     call_hook report_downtime "$res" 1
     call_hook resource_stop "$source_primary" "$res"
@@ -1527,17 +1591,9 @@ function hot_phase
 
     call_hook want_downtime "$res" 1
 
-    # wait for screener
-    local hot_round=0
-    call_hook start_critical "$res" "shrink $hyper $lv_name"
-    while (( $(call_hook poll_critical "$res") )); do
-	sleep 60
-	if (( ++hot_round >= 60 )); then
-	    hot_round=0
-            # repeat for better dentry caching
-	    copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
-	fi
-    done
+    # repeat for better dentry caching
+    wait_for_screener "$res" "shrink" "waiting" "$hyper $lv_name" "" "$cache_repeat_lapse" \
+	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
 
     call_hook report_downtime "$res" 1
     if (( optimize_dentry_cache )) && exists_hook resource_stop_vm ; then
