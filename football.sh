@@ -919,14 +919,24 @@ function wait_for_screener
     local enable="enable_${situation}_${mode}"
     if (( !$enable )); then
 	echo "$enable is off"
-	return
     fi
     echo "$enable is on"
 
     local hot_round=0
     local total_round=0
-    call_hook start_wait "$res" "$mode" "$situation: $msg"
-    while (( $(call_hook poll_wait "$res" "$mode") )); do
+    local reset_freq=0
+    if (( $enable )); then
+	call_hook start_wait "$res" "$mode" "$situation: $msg"
+    fi
+    while true; do
+	local locked="$(verbose=0 call_hook resource_locked "$res")"
+	local poll=0
+	if (( $enable )); then
+	    poll="$(verbose=0 call_hook poll_wait "$res" "$mode" 0 $reset_freq)"
+	fi
+	if (( !poll && !locked )); then
+	    return
+	fi
 	if (( timeout > 0 && total_round > timeout + 1 )); then
 	    break
 	fi
@@ -945,11 +955,13 @@ function wait_for_screener
 	else
 	    sleep 60
 	fi
+	reset_freq=0
 	(( hot_round++ ))
 	(( total_round++ ))
 	if (( repeat_lapse > 0 && hot_round >= repeat_lapse )); then
 	    hot_round=0
 	    $lapse_cmd "$@"
+	    reset_freq=1
 	fi
 	if (( timeout > 0 && total_round >= timeout )); then
 	    echo "TIMEOUT SCREENER_$mode $(date +%s) $(date)"
