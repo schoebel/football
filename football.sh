@@ -1131,6 +1131,7 @@ function migration_prepare
 	fail "cannot determine resource size"
     local needed_size="$size"
     if [[ "$operation" = "migrate+shrink" ]]; then
+	determine_space
 	(( needed_size += target_space ))
 	echo "Combined migrate+shrink needs $size + $target_space = $needed_size"
     fi
@@ -1315,6 +1316,13 @@ function determine_space
     local src_primary="${2:-$primary}"
     local dst_primary="${3:-${target_primary:-$2}}"
 
+    declare -g target_space
+    declare -g total_space
+    if (( target_space > 0 || total_space > 0 )); then
+	# already computed
+	return
+    fi
+
     lv_path="$(remote "$src_primary" "lvs --noheadings --separator ':' -o \"vg_name,lv_name\"" |\
        grep ":$res$" | sed 's/ //g' |\
        awk -F':' '{ printf("/dev/%s/%s", $1, $2); }')" ||\
@@ -1330,9 +1338,8 @@ function determine_space
     remote "$dst_primary" "if [[ -e ${dev}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite ${dev}$shrink_suffix_old on $src_primary - First remove it - Do this by hand\"; exit -1; fi"
 
     df="$(remote "$src_hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
-    declare -g used_space="$(echo "$df" | awk '{print $3;}')"
+    local used_space="$(echo "$df" | awk '{print $3;}')"
     declare -g total_space="$(echo "$df" | awk '{print $2;}')"
-    declare -g target_space
     # absolute or relative space computation
     case "$target_percent" in
     *k)
@@ -1361,6 +1368,7 @@ function determine_space
 function check_shrinking
 {
     # works on global variables
+    determine_space
     if (( target_space >= total_space )); then
 	echo "No need for shrinking the LV space of $res"
 	(( !force )) && exit 0
@@ -1373,6 +1381,7 @@ function check_shrinking
 function check_extending
 {
     # works on global variables
+    determine_space
     if (( target_space <= total_space )); then
 	echo "No need for extending the LV space of $res"
 	(( !force )) && exit 0
@@ -1833,6 +1842,7 @@ function migrate_clean
 
 function shrink_prepare
 {
+    determine_space
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
     copy_data "$hyper" "$res" "$tmp_suffix" "$rsync_nice" "$rsync_opt_prepare" "$rsync_repeat_prepare"
@@ -1856,6 +1866,7 @@ function shrink_cleanup
 
 function extend_stack
 {
+    determine_space
     extend_fs "$hyper" "$primary" "$secondary_list" "$res" "$target_space"
 }
 
@@ -2023,11 +2034,9 @@ elif [[ "$operation" = lv_cleanup ]]; then
 fi
 
 # determine sizes and available space (only for extending / shrinking)
-if [[ "$operation" =~ shrink ]] && ! [[ "$operation" =~ cleanup ]]; then
-    determine_space
+if [[ "$operation" =~ ^(shrink|shrink_prepare|move\+shrink)$ ]]; then
     check_shrinking
 elif [[ "$operation" =~ extend ]]; then
-    determine_space
     check_extending
 fi
 
@@ -2103,8 +2112,7 @@ migrate+shrink)
 
 *)
   helpme
-  echo "Unknown operation '$operation'"
-  exit -1
+  fail "Unknown operation '$operation'"
   ;;
 esac
 
