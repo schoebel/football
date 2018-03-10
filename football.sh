@@ -225,12 +225,12 @@ force=${force:-0}
 # RTFS don't set this unless you are a developer knowing what you are doing.
 debug_injection_point="${debug_injection_point:-0}"
 
-## logdir
+## football_logdir
 # Where the logfiles should be created.
 # HINT: after playing Football in masses for a whiile, your $logdir will
 # be easily populated with hundreds or thousands of logfiles.
 # Set this to your convenience.
-logdir="${logdir:-.}"
+football_logdir="${football_logdir:-${logdir:-$HOME/football-logs}}"
 
 ## screener
 # When enabled, handover execution to the screener.
@@ -2211,6 +2211,8 @@ if (( screener )); then
     exec $(dirname "$0")/screener.sh start "${res:-$1}" "$0" "${*//--screener?(=*)/}" --confirm=0
 fi
 
+mkdir -p "$football_logdir"
+
 {
 echo "$0 $@"
 
@@ -2402,4 +2404,4 @@ migrate+shrink)
 esac
 
 echo "DONE $(date)"
-} 2>&1 | log "$logdir" "logs$args_info.$start_stamp.$LOGNAME.log"
+} 2>&1 | log "$football_logdir" "logs$args_info.$start_stamp.$LOGNAME.log"
