@@ -1292,7 +1292,15 @@ function create_migration_space
     # some checks
     [[ "$host" = "" ]] && return
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-    remote "$host" "if [[ -e /dev/$vg_name/${lv_name} ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name} on $host - Do this by hand\"; exit -1; fi"
+    if (( reuse_lv )); then
+	local dev="/dev/$vg_name/${lv_name}"
+	if [[ "$(remote "$host" "if [[ -e \"$dev\" ]]; then echo \"EXIST\"; fi")" = "EXIST" ]]; then
+	    echo "Device $dev already exists on $host"
+	    return
+	fi
+    else
+	remote "$host" "if [[ -e /dev/$vg_name/${lv_name} ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name} on $host - Do this by hand\"; exit -1; fi"
+    fi
     local extra="$(get_stripe_extra "$host" "$vg_name")"
 
     # do it
