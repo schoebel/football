@@ -756,6 +756,10 @@ function cm3_migrate_cm3_config
 	    json_pp |\
 	    log "$backup" "$res.old.pp.json"
 
+	if ! [[ -s "$backup/$res.old.raw.json" ]]; then
+	    fail "cluster config for vm '$res' is empty"
+	fi
+
 	local old_url="/clusters/$source_cluster/vms/$res.schlund.de"
 	local new_url="/clusters/$target_cluster/vms/$res.schlund.de"
 	echo clustertool DELETE "$old_url"
