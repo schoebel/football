@@ -1579,10 +1579,6 @@ function determine_space
     echo "Determined the following VG name: \"$vg_name\""
     echo "Determined the following LV path: \"$lv_path\""
 
-    # Assumption: device pathnames should be _uniform_ everywhere.
-    local dev="/dev/$vg_name/$lv_name"
-    remote "$dst_primary" "if [[ -e ${dev}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite ${dev}$shrink_suffix_old on $src_primary - First remove it - Do this by hand\"; exit -1; fi"
-
     df="$(remote "$src_hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
     local used_space="$(echo "$df" | awk '{print $3;}')"
     declare -g total_space="$(echo "$df" | awk '{print $2;}')"
@@ -1735,13 +1731,14 @@ function create_shrink_space
     section "Checking shrink space on $host"
 
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-    remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}$shrink_suffix_old on $host - Do this by hand\"; exit -1; fi"
     if (( reuse_lv )); then
 	# check whether LV already exists
 	if remote "$host" "[[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]" 1; then
 	    echo "reusing already exists LV /dev/$vg_name/${lv_name}$tmp_suffix on '$host'"
 	    return
 	fi
+    else
+	remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}$shrink_suffix_old on $host - Do this by hand\"; exit -1; fi"
     fi
     call_hook disconnect "$host" "$lv_name"
     remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]; then lvremove $lvremove_opt /dev/$vg_name/${lv_name}$tmp_suffix; fi"
