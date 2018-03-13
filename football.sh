@@ -1977,8 +1977,10 @@ function hot_phase
 
     for host in $primary $secondary_list; do
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
-	remote "$host" "lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old || echo IGNORE backup creation"
-	remote "$host" "lvrename $vg_name $lv_name$suffix $lv_name"
+	local rename_cmd="if [[ -e /dev/$vg_name/$lv_name$shrink_suffix_old ]] && [[ -e /dev/$vg_name/$lv_name ]]; then lvremove $lvremove_opt /dev/$vg_name/$lv_name$shrink_suffix_old; fi"
+	rename_cmd+="; lvrename $vg_name $lv_name ${lv_name}$shrink_suffix_old || echo IGNORE backup creation"
+	rename_cmd+="; if ! [[ -e /dev/$vg_name/$lv_name ]]; then lvrename $vg_name $lv_name$suffix $lv_name; fi"
+	remote "$host" "$rename_cmd"
 	injection_point
     done
 
