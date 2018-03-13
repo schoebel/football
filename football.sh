@@ -384,16 +384,6 @@ Dto for testing (do not rely on it):
      Remove old / currently unused LV replicas from MARS and deallocate
      from LVM.
 
-  $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
-     Transfer only the cluster config, without changing the MARS replicas.
-     This does no resource stopping / restarting.
-     Useful for reverting a failed migration.
-
-  $0 manual_config_update <hostname>
-     Only update the cluster config, without changing anything else.
-     Useful for manual repair of failed migration.
-
-
 Actions for inplace FS shrinking:
 
   $0 shrink          <resource> <percent>
@@ -422,6 +412,31 @@ Combined actions:
   $0 migrate+shrink <resource> <target_primary> [<target_secondary>] [<percent>]
      Similar to migrate ; shrink but produces less network traffic.
      Default percent value (when left out) is $target_percent.
+
+Actions for repair in emergency situations:
+
+  $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
+     Transfer only the cluster config, without changing the MARS replicas.
+     This does no resource stopping / restarting.
+     Useful for reverting a failed migration.
+
+  $0 manual_config_update <hostname>
+     Only update the cluster config, without changing anything else.
+     Useful for manual repair of failed migration.
+
+  $0 repair_vm <resource> <primary_candidate_list>
+     Try to restart the VM <resource> on one of the given machines.
+     Useful during unexpected customer downtime.
+
+  $0 repair_mars <resource> <primary_candidate_list>
+     Before restarting the VM like in repair_vm, try to find a local
+     LV where a stand-alone MARS resource can be found and built up.
+     Use this only when the MARS resources are gone, and when you are
+     desperate. Problem: this will likely create a MARS setup which is
+     not usable for production, and therefore must be corrected later
+     by hand. Use this only during an emergency situation in order to
+     get the customers online again, while buying the downsides of this
+     command.
 
 Global maintenance:
 
@@ -606,6 +621,8 @@ function scan_args
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
+	    elif [[ "$par" =~ repair_ ]]; then
+		local -a params=(operation res primary secondary_list)
 	    else
 		helpme
 		fail "unknown operation '$1'"
@@ -2227,6 +2244,19 @@ git describe --tags
 case "${operation//-/_}" in
 manual_config_update)
   call_hook update_cm3_config "$host"
+  exit $?
+  ;;
+
+repair_vm)
+  enable_failure_restart_vm=1
+  failure_restart_vm "$primary $secondary_list" "" "$res"
+  exit $?
+  ;;
+
+repair_mars)
+  enable_failure_restart_vm=1
+  enable_failure_rebuild_mars=1
+  failure_rebuild_mars "$primary $secondary_list" "" "$res"
   exit $?
   ;;
 esac
