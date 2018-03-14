@@ -1986,7 +1986,7 @@ function hot_phase
 
     wait
 
-    remote "$primary" "marsadm create-resource --force $lv_name $dev"
+    remote "$primary" "if ! [[ -e /dev/mars/$lv_name ]]; then marsadm create-resource --force $lv_name $dev; fi"
     injection_point
     remote "$primary" "marsadm primary $lv_name"
 
