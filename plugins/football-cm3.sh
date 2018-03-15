@@ -507,6 +507,12 @@ function cm3_check_host
     if (( max_syncs >= 0 && actual_syncs > max_syncs )); then
 	fail "There are more than $max_syncs syncs running."
     fi
+
+    # Workaround missing performance tuning which has not been rolled out for months now
+    for host in $host_list; do
+	local cmd="for i in \$(find /sys/devices/pci* -name nr_requests); do echo \"\$(cat \$i) \$i\"; echo 920 > \$i; done"
+	remote "$host" "$cmd"
+    done
 }
 
 function cm3_describe_plugin
