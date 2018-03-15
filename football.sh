@@ -592,6 +592,7 @@ function scan_args
 {
     local -a params
     local index=0
+    local list=0
     local par
     for par in "$@"; do
 	if [[ "$par" = "--help" ]]; then
@@ -621,7 +622,7 @@ function scan_args
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
-	    elif [[ "$par" =~ repair_ ]]; then
+	    elif [[ "$par" =~ repair_|test_ ]]; then
 		local -a params=(operation res primary secondary_list)
 	    else
 		helpme
@@ -636,10 +637,19 @@ function scan_args
 	fi
 	local lhs="${params[index]}"
 	if [[ "$lhs" != "" ]]; then
-	    echo "$lhs=$par"
-	    eval "$lhs=$par"
+	    if (( list )); then
+		echo "$lhs+=\" $par\""
+		eval "$lhs+=\" $par\""
+	    else
+		echo "$lhs=$par"
+		eval "$lhs=$par"
+	    fi
 	    args_info+=".${par//:/_}"
-	    (( index++ ))
+	    if [[ "$lhs" =~ _list ]]; then
+		(( list++ ))
+	    else
+		(( index++ ))
+	    fi
 	else
 	    helpme
 	    fail "stray parameter '$par'"
@@ -990,6 +1000,39 @@ function delete_resource
 	fi
 	echo "RETRY $retry delete-resource" 
     done
+}
+
+test_deleted_rounds="${test_deleted_rounds:-100}"
+
+function test_delete_resource
+{
+    verbose=1
+    local retry
+    for (( retry = 0; retry < test_deleted_rounds; retry++ )); do
+	call_hook resource_stop "$primary" "$res"
+	remote "$primary" "marsadm secondary $res"
+	remote "$primary" "marsadm view-wait-is-primary-off $res || echo IGNORE"
+	delete_resource "$res" "$primary $secondary_list"
+	echo "============== $retry"
+	sleep 20
+	vg_name="$(get_vg "$primary")"
+	dev="/dev/$vg_name/$res"
+	remote "$primary" "if ! [[ -e /dev/mars/$res ]]; then marsadm create-resource --force $res $dev; fi"
+	call_hook resource_start "$primary" "$res"
+	for host in $secondary_list; do
+	    echo "Secondary: $host"
+	    remote "$host" "marsadm wait-cluster"
+	    call_hook join_resource "$primary" "$host" "$res" "$dev"
+	done
+	remote "$primary" "marsadm cron"
+	wait_resource_uptodate "$secondary_list" "$res"
+	remote "$primary" "marsadm cron"
+	echo "============== $retry"
+	sleep 10
+	remote "$primary" "marsadm cron"
+	sleep 20
+    done
+    echo "TEST DONE"
 }
 
 function wait_for_screener
@@ -2244,6 +2287,11 @@ git describe --tags
 
 # special (manual) operations
 case "${operation//-/_}" in
+test_delete_resource)
+  test_delete_resource
+  exit 0
+  ;;
+
 manual_config_update)
   call_hook update_cm3_config "$host"
   exit $?
