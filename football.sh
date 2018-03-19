@@ -863,13 +863,14 @@ function get_store
     echo "$store"
 }
 
-declare -A vgs
+declare -g -A vgs=()
 
 function get_vg
 {
     local host="$1"
 
-    declare -g vgs
+    [[ "$host" = "" ]] && return -1
+    declare -g -A vgs
     local vg="${vgs[$host]}"
     if [[ "$vg" = "" ]]; then
 	vg="$(call_hook get_vg "$host")" ||\
