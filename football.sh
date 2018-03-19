@@ -2368,14 +2368,6 @@ for host in $secondary_list; do
     ping $ping_opts "$host" || fail "Host '$host' is not pingable"
     remote "$host" "mountpoint /mars > /dev/null"
     remote "$host" "[[ -d /mars/ips/ ]]"
-#    if [[ "$operation" =~ migrate ]] && ! [[ "$operation" =~ finish ]]; then
-#	local check
-#	for check in $target_primary $target_secondary; do
-#	    if [[ "$check" = "$host" ]]; then
-#		fail "target '$check' is also a secondary - this cannot work"
-#	    fi
-#	done
-#    fi
 done
 
 # check connections (only for migration)
