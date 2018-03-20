@@ -1388,8 +1388,13 @@ function merge_cluster
 	remote "$target_secondary" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
     fi
 
-    remote "$target_primary" "marsadm wait-cluster"
-
+    local host
+    for host in $source_primary $target_primary $target_secondary; do
+	remote "$host" "marsadm wait-cluster"
+	if remote "$host" "marsadm view all" | grep " is dead"; then
+	    fail "bad mars connection at '$host', please fix your network / firwalling / etc"
+	fi
+    done
 }
 
 function migration_prepare
