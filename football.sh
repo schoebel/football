@@ -21,7 +21,9 @@
 
 ############################################################
 
-# TST summer 2017 lab prototype
+# Container Football
+
+# TST started in summer 2017
 
 # Generic MARS background migration of a VM / container.
 # Plugins can be used for adaptation to system-specific sub-operations
@@ -31,6 +33,7 @@
 # There are some basic conventions / assumptions:
 #   - MARS resource names are equal to LV names and to KVM / LXC names
 #   - All hosts are in DNS with their pure names (accessible via resolv.conf)
+#     [consequence: all host names are globally disjoint]
 #   - There is a 1:n relationship between each
 #        $storage_host : $hypervisor_host : $container_host
 
@@ -189,6 +192,8 @@ source_glob "$football_confs"    "football-*.reconf"   "Pass6a"
 source_glob "$football_includes" "football-*.reconf"   "Pass6b"
 
 # parameters
+# normally given on the command line.
+
 operation="${operation:-}"
 res="${res:-}"
 target_primary="${target_primary:-}"
@@ -196,38 +201,118 @@ target_secondary="${target_secondary:-}"
 target_percent=${target_percent:-85}
 
 # short options
+
+## dry_run
+# When set, actions are only simulated.
 dry_run=${dry_run:-0}
+
+## verbose
+# increase speakiness.
 verbose=${verbose:-0}
+
+## confirm
+# Only for debugging: manually started operations can be
+# manually checked and confirmed before actually starting opersions.
 confirm=${confirm:-1}
+
+## force
+# Normally, shrinking and extending will only be started if there
+# is something to do.
+# Enable this for debugging and testing: the check is then skipped.
 force=${force:-0}
+
+## logdir
+# Where the logfiles should be created.
+# HINT: after playing Football in masses for a whiile, your $logdir will
+# be easily populated with hundreds or thousands of logfiles.
+# Set this to your convenience.
 logdir="${logdir:-.}"
+
+## min_space
+# When testing / debugging with extremely small LVs, it may happen
+# that mkfs refuses to create extemely small filesystems.
+# Use this to ensure a minimum size.
 min_space="${min_space:-20000000}"
 
 # more complex options
+
+## ssh_opt
+# Useful for customization to your ssh environment.
 ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInteractiveAuthentication=no -o VerifyHostKeyDNS=no}"
+
+## rsync_opt
+# The rsync options in general.
 rsync_opt="${rsync_opt:- -aSH --info=STATS}"
+
+## rsync_opt_prepare
+# Additional rsync options for preparation and updating
+# of the temporary shrink mirror filesystem.
 rsync_opt_prepare="${rsync_opt_prepare:---exclude='.filemon2' --delete}"
+
+## rsync_opt_hot
+# This is only used at the final rsync, immediately before going
+# online again.
 rsync_opt_hot="${rsync_opt_hot:---delete}"
+
+## rsync_nice
+# Typically, the preparation steps are run with background priority.
 rsync_nice="${rsync_nice:-nice -19}"
+
+## rsync_repeat_prepare and rsync_repeat_hot
+# Tuning: increases the reliability of rsync and ensures that the dentry cache
+# remains hot.
 rsync_repeat_prepare="${rsync_repeat_prepare:-5}"
 rsync_repeat_hot="${rsync_repeat_hot:-3}"
 
+## lvremove_opt
+# Some LVM versions are requiring this for unattended batch operations.
 lvremove_opt="${lvremove_opt:--f}"
 
-# some constants
+## tmp_suffix
+# Only for experts.
 tmp_suffix="${tmp_suffix:--tmp}"
+
+## shrink_suffix_old
+# Suffix for backup LVs. These are kept for wome time until
+# *_cleanup operations will remove them.
 shrink_suffix_old="${shrink_suffix_old:--preshrink}"
+
+
+# some constants
 commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls basename dirname cut ping date mkdir rm wc bc}"
 
 ######################################################################
 
 # help
 
+function show_vars
+{
+    local script="$1"
+
+    if (( !verbose )); then
+	return
+    fi
+
+    local matches=0
+    local line
+    while read line; do
+	if [[ "$line" =~ ^\#\#\  ]]; then
+	    matches=1
+	elif [[ "$line" = "" ]]; then
+	    (( matches )) && echo ""
+	    matches=0
+	fi
+	if (( matches )); then
+	    echo "  $line"
+	fi
+    done < "$script"
+}
+
 function helpme
 {
     cat <<EOF
 Usage:
-  $0 --help
+  $0 --help [--verbose]
      Show help
   $0 --variable=<value>
      Override any shell variable
@@ -247,7 +332,8 @@ Actions for resource migration:
      Run the sequence migrate_prepare ; migrate_wait ; migrate_finish.
 
   $0 migrate_cleanup <resource>
-     Remove old / currently unused LV replicas from MARS and deallocate from LVM.
+     Remove old / currently unused LV replicas from MARS and deallocate
+     from LVM.
 
   $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
      Transfer only the cluster config, without changing the MARS replicas.
@@ -262,11 +348,13 @@ Actions for resource migration:
 Actions for inplace FS shrinking:
 
   $0 shrink_prepare  <resource> [<percent>]
-     Allocate temporary LVM space (when possible) and create initial raw FS copy.
+     Allocate temporary LVM space (when possible) and create initial
+     raw FS copy.
      Default percent value(when left out) is $target_percent.
 
   $0 shrink_finish   <resource>
-     Incrementally update the FS copy, swap old <=> new copy with small downtime.
+     Incrementally update the FS copy, swap old <=> new copy with
+     small downtime.
 
   $0 shrink_cleanup  <resource>
      Remove old FS copy from LVM.
@@ -296,8 +384,10 @@ General features:
   - the following LV suffixes are used (naming convention):
     $tmp_suffix = currently emerging version for shrinking
     $shrink_suffix_old = old version before shrinking took place
+
 EOF
-   verbose=0 call_hook describe_plugin
+   show_vars "$0"
+   call_hook describe_plugin
 }
 
 ######################################################################
@@ -372,8 +462,8 @@ function scan_args
     local par
     for par in "$@"; do
 	if [[ "$par" = "--help" ]]; then
-	    helpme
-	    exit 0
+	    operation=help
+	    continue
 	elif [[ "$par" =~ "=" ]]; then
 	    par="${par#--}"
 	    local lhs="$(echo "$par" | cut -d= -f1)"
@@ -414,6 +504,10 @@ function scan_args
 	    fail "stray parameter '$par'"
 	fi
     done
+    if [[ "$operation" = "help" ]]; then
+	helpme
+	exit 0
+    fi
 }
 
 function do_confirm
@@ -984,15 +1078,47 @@ function check_extending
 
 # actions for FS shrinking
 
+## optimize_dentry_cache
+# Don't umount the temporary shrink space unnecessarily.
+# Try to shutdown the VM / container without umounting.
+# Important for high speed.
 optimize_dentry_cache="${optimize_dentry_cache:-1}"
 
+## mkfs_cmd
+# Tunable for creation of new filesystems.
 mkfs_cmd="${mkfs_cmd:-mkfs.xfs -s size=4096 -d agcount=1024}"
+
+## mount_opts
+# Options for temporary mounts.
+# Not used for ordinary clustermanager operations.
 mount_opts="${mount_opts:--o rw,nosuid,noatime,attr2,inode64,usrquota}"
+
+## reuse_mount
+# Assume that already existing temporary mounts are the correct ones.
+# This will speed up interrupted and repeated runs by factors.
 reuse_mount="${reuse_mount:-1}"
+
+## reuse_lv
+# Assume that temporary LVs are reusable.
 reuse_lv="${reuse_lv:-1}"
-do_quota="${do_quota:-2}" # 1 = global xfs quota transfer, 2 = additionally local one
+
+## do_quota
+# Transfer xfs quota information.
+# 0 = off
+# 1 = global xfs quota transfer
+# 2 = additionally local one
+do_quota="${do_quota:-2}"
+
+## xfs_dump_dir
+# Temporary space for keeping xfs quota dumps.
 xfs_dump_dir="${xfs_dump_dir:-xfs-quota-$start_stamp}"
+
+## xfs_quota_enable
+# Command for re-enabling the quota system after shrink.
 xfs_quota_enable="${xfs_quota_enable:-xfs_quota -x -c enable}"
+
+## xfs_dump and xfs_restore
+# Commands for transfer of xfs quota information.
 xfs_dump="${xfs_dump:-xfs_quota -x -c dump}"
 xfs_restore="${xfs_restore:-xfs_quota -x -c restore}"
 
@@ -1295,6 +1421,8 @@ function cleanup_old_remains
 
 # actions for _online_ FS extension / resizing
 
+## fs_resize_cmd
+# Command for online filesystem expansion.
 fs_resize_cmd="${fs_resize_cmd:-xfs_growfs -d}"
 
 function extend_fs

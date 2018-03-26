@@ -21,6 +21,8 @@
 
 ###########################################
 
+# Container Football
+
 # 1&1 specific plugin / hooks for working with Jessie icpu conventions and cm3
 #
 # This script must be sourced from the main script.
@@ -148,6 +150,28 @@ function cm3_resource_check
 
 # Workarounds for firewalling (transitional => TBD)
 
+## workaround_firewall
+# Documentation of technical debt for later generations:
+# This is needed since July 2017. In the many years before, no firewalling
+# was effective at the replication network, because it is a physically
+# separate network from the rest of the networking infrastructure.
+# An attacker would first need to gain root access to the _hypervisor_
+# (not only to the LXC container and/or to KVM) before gaining access to
+# those physical replication network interfaces.
+# Since about that time, which is about the same time when the requirements
+# for Container Football had been communicated, somebody introduced some
+# unnecessary firewall rules, based on "security arguments".
+# These arguments were however explicitly _not_ required by the _real_
+# security responsible person, and explicitly _not_ recommended by him.
+# Now the problem is that it is almost politically impossible to get
+# rid of suchalike "security feature".
+# Until the problem is resolved, Container Football requires
+# the _entire_ local firewall to be _temporarily_ shut down in order to
+# allow marsadm commands over ssh to work.
+# Notice: this is _not_ increasing the general security in any way.
+# LONGTERM solution / TODO: future versions of mars should no longer
+# depend on ssh.
+# Then this "feature" can be turned off.
 workaround_firewall="${workaround_firewall:-1}"
 
 function cm3_prepare_hosts
@@ -157,6 +181,9 @@ function cm3_prepare_hosts
     if (( workaround_firewall )); then
 	local host
 	for host in $host_list; do
+	    # Disabling is _necessary_ because of another security feature:
+	    # Otherwise the firewall would be automatically restarted
+	    # by a cron job.
 	    remote "$host" "systemctl disable ui-firewalling.service || echo IGNORE"
 	    remote "$host" "service ui-firewalling stop || /etc/init.d/firewalling stop"
 	done
@@ -180,7 +207,17 @@ function cm3_finish_hosts
 
 # Workarounds for ssh between different clusters
 
+## ip_magic
+# Similarly to workaround_firewall, this is needed since somebody
+# introduced additional firewall rules also disabling sysadmin ssh
+# connections at the _ordinary_ sysadmin network.
 ip_magic="${ip_magic:-1}"
+
+## do_split_cluster
+# The current MARS branch 0.1a.y is not yet constructed for forming
+# a BigCluster constisting of several thousands of machines.
+# When a future version of mars0.1b.y (or 0.2.y) will allow this,
+# this can be disabled.
 do_split_cluster="${do_split_cluster:-1}"
 
 function cm3_merge_cluster
@@ -240,6 +277,7 @@ function cm3_join_resource
 
 # General checks
 
+# This is deliberately not documented.
 needed_marsadm="${needed_marsadm:-2.1 1.1}"
 needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0}"
 max_cluster_size="${max_cluster_size:-4}"
@@ -340,15 +378,29 @@ PLUGIN football-cm3
    Following marsadm --version must be installed: $needed_marsadm
 
    Following mars kernel modules must be loaded: $needed_mars
+
 EOF
+   show_vars "${files[cm3]}"
 }
 
 ###########################################
 
 # Mini infrastucture for access to clustermw
 
-clustertool_host="${clustertool_host:-http://clustermw:3042}"
+## clustertool_host
+# URL prefix of the internal configuation database REST interface.
+# Set this via *.preconf config files.
+clustertool_host="${clustertool_host:-}"
+
+## clustertool_user
+# Username for clustertool access.
+# By default, scans for a *.password file (see next option).
 clustertool_user="${clustertool_user:-$(shopt -u nullglob; ls *.password | head -1 | cut -d. -f1)}" || fail "cannot find a password file *.password for clustermw"
+
+## clustertool_passwd
+# Here you can supply the encrpted password.
+# By default, a file $clustertool_user.password is used
+# containing the encrypted password.
 clustertool_passwd="${clustertool_passwd:-$(cat $clustertool_user.password)}"
 
 echo "Using clustermw username: '$clustertool_user'"
@@ -418,12 +470,31 @@ function cm3_get_flavour
 
 # Migration operation: move cm3 config from old cluster to a new cluster
 
+## do_migrate
+# Keep this enabled. Only disable for testing.
 do_migrate="${do_migrate:-1}" # must be enabled; disable for dry-run testing
+
+## always_migrate
+# Only use for testing, or for special situation.
+# This skip the test whether the resource has already migration.
 always_migrate="${always_migrate:-0}" # only enable for testing
+
+## check_segments
 # 0 = disabled
 # 1 = only display the segment names
 # 2 = check for equality
+# WORKAROUND, potentially harmful when used inadequately.
+# The historical physical segment borders need to be removed for
+# Container Football.
+# Unfortunately, the subproject aiming to accomplish this did not
+# proceed for one year now. In the meantime, Container Football can
+# be only played within the ancient segment borders.
+# After this big impediment is eventually resolved, this option
+# should be switched off.
 check_segments="${check_segments:-1}"
+
+## backup_dir
+# Directory for keeping JSON backups of clustermw.
 backup_dir="${backup_dir:-.}"
 
 function _check_migrate
@@ -700,6 +771,12 @@ function cm3_restore_local_quota
 
 # Hooks for shrinking
 
+## iqn_base and iet_type and iscsi_eth and iscsi_tid
+# Workaround: this is needed for _dynamic_ generation of iSCSI sessions
+# bypassing the ordinary ones as automatically generated by the
+# cm3 cluster manager (only at the old istore architecture).
+# Notice: not needed for regular operations, only for testing.
+# Normally, you dont want to shrink over a _shared_ 1MBit iSCSI line.
 iqn_base="${iqn_base:-iqn.2000-01.info.test:test}"
 iet_type="${iet_type:-blockio}"
 iscsi_eth="${iscsi_eth:-eth1}"
@@ -788,6 +865,13 @@ function cm3_extend_iscsi
     local hyper="$1"
 
     remote "$hyper" "iscsiadm -m session -R"
+}
+
+###########################################
+
+function cm3_invalidate_caches
+{
+    declare -g -A ssh_hyper=()
 }
 
 register_module "cm3"
