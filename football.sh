@@ -1329,7 +1329,11 @@ function check_vg_space
     local rest="$(remote "$host" "vgs --noheadings -o \"vg_free\" --units k $vg_name" | sed 's/\.[0-9]\+//' | sed 's/k//')" || fail "cannot determine VG rest space"
     echo "$vg_name REST space on '$host' : $rest"
     if (( rest <= min_size )); then
-	fail "NOT ENOUGH SPACE on $host (needed: $min_size)"
+	if (( force )); then
+	    echo "NOT ENOUGH SPACE on $host (needed: $min_size)"
+	else
+	    fail "NOT ENOUGH SPACE on $host (needed: $min_size)"
+	fi
     fi
 }
 
