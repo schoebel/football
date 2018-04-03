@@ -1380,15 +1380,16 @@ function merge_cluster
     section "Ensure that \"marsadm merge-cluster\" has been executed."
 
     # This is idempotent.
-    if exists_hook merge_cluster; then
-	call_hook merge_cluster "$source_primary" "$target_primary"
-	call_hook merge_cluster "$source_primary" "$target_secondary"
-    else
-	remote "$target_primary" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
-	remote "$target_secondary" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
-    fi
-
     local host
+    for host in $target_primary $target_secondary; do
+	[[ "$host" = "$source_primary" ]] && continue
+	if exists_hook merge_cluster; then
+	    call_hook merge_cluster "$source_primary" "$host"
+	else
+	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
+	fi
+    done
+
     for host in $source_primary $target_primary $target_secondary; do
 	remote "$host" "marsadm wait-cluster"
 	if remote "$host" "marsadm view all" | grep " is dead"; then
