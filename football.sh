@@ -2128,6 +2128,9 @@ function extend_fs
 	local dev="/dev/$vg_name/$lv_name"
 	remote "$host" "lvresize -L ${size}k $dev"
     done
+    for host in $primary $secondary_list; do
+	remote "$host" "marsadm wait-cluster"
+    done
 
     section "Extend the MARS resource"
 
