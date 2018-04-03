@@ -1322,12 +1322,20 @@ function check_vg_space
 {
     local host="$1"
     local min_size="$2"
+    local lv_name="$3"
 
     [[ "$host" = "" ]] && return
 
     local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
     local rest="$(remote "$host" "vgs --noheadings -o \"vg_free\" --units k $vg_name" | sed 's/\.[0-9]\+//' | sed 's/k//')" || fail "cannot determine VG rest space"
     echo "$vg_name REST space on '$host' : $rest"
+    if [[ "$lv_name" != "" ]]; then
+	local dev="/dev/$vg_name/$lv_name"
+	if remote "$host" "[[ -b $dev ]]" 1; then
+	    echo "Device $dev already exists at '$host'"
+	    return
+	fi
+    fi
     if (( rest <= min_size )); then
 	if (( force )); then
 	    echo "NOT ENOUGH SPACE on $host (needed: $min_size)"
@@ -1435,8 +1443,8 @@ function migration_prepare
 	echo "Combined migrate+shrink needs $size + $target_space = $needed_size"
     fi
 
-    check_vg_space "$target_primary" "$needed_size"
-    check_vg_space "$target_secondary" "$needed_size"
+    check_vg_space "$target_primary" "$needed_size" "$lv_name"
+    check_vg_space "$target_secondary" "$needed_size" "$lv_name"
 
     local primary_vg_name="$(get_vg "$target_primary")"
     local secondary_vg_name="$(get_vg "$target_secondary")"
@@ -1695,7 +1703,7 @@ function check_shrinking
 	(( !force )) && exit 0
     fi
     for host in $src_primary $secondary_list; do
-	check_vg_space "$host" "$target_space"
+	check_vg_space "$host" "$target_space" "$res$tmp_suffix"
     done
 }
 
