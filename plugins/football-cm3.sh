@@ -30,6 +30,40 @@
 # Guard agains multiple sourcing
 [[ "${files[cm3]}" != "" ]] && return
 
+function cm3_describe_plugin
+{
+    cat <<EOF
+
+PLUGIN football-cm3
+
+   1&1 specfic plugin for dealing with the cm3 cluster manager
+   and its concrete operating enviroment (singleton instance).
+
+   Current maximum cluster size limit: $max_cluster_size
+
+   Maximum #syncs running before migration can start: $max_syncs
+
+   Following marsadm --version must be installed: $needed_marsadm
+
+   Following mars kernel modules must be loaded: $needed_mars
+
+EOF
+   show_vars "${files[cm3]}"
+}
+
+register_description "cm3"
+
+###########################################
+
+## enable_cm3
+# ShaHoLin-specifc plugin for working with the infong platform
+# (istore, icpu, infong) via 1&1-specific clustermanager cm3
+# and related toolsets. Much of it is bound to a singleton database
+# instance (clustermw & siblings).
+enable_cm3="${enable_cm3:-$(if [[ "$0" =~ tetris ]]; then echo 1; else echo 0; fi)}"
+
+(( enable_cm3 )) || return 0
+
 ## skip_resource_ping
 # Enable this only for testing. Normally, a resource name denotes a
 # container name == machine name which must be runnuing as a precondition,
@@ -513,27 +547,6 @@ function cm3_check_host
 	local cmd="for i in \$(find /sys/devices/pci* -name nr_requests); do echo \"\$(cat \$i) \$i\"; echo 920 > \$i; done"
 	remote "$host" "$cmd"
     done
-}
-
-function cm3_describe_plugin
-{
-    cat <<EOF
-
-PLUGIN football-cm3
-
-   1&1 specfic plugin for dealing with the cm3 cluster manager
-   and its concrete operating enviroment (singleton instance).
-
-   Current maximum cluster size limit: $max_cluster_size
-
-   Maximum #syncs running before migration can start: $max_syncs
-
-   Following marsadm --version must be installed: $needed_marsadm
-
-   Following mars kernel modules must be loaded: $needed_mars
-
-EOF
-   show_vars "${files[cm3]}"
 }
 
 ###########################################

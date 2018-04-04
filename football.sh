@@ -471,7 +471,7 @@ General features:
 
 EOF
    show_vars "$0"
-   call_hook describe_plugin
+   module_list="$description_list $module_list" call_hook describe_plugin
 }
 
 ######################################################################
