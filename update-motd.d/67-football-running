@@ -1,0 +1,9 @@
+#!/bin/bash
+
+TETRIS_RUNNING="${TETRIS_RUNNING:-/var/motd/*.txt}"
+
+shopt -s nullglob
+
+if [[ "$(echo $TETRIS_RUNNING)" != "" ]]; then
+	cat $TETRIS_RUNNING
+fi

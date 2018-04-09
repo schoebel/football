@@ -2479,6 +2479,8 @@ do_confirm
 main_pid="$BASHPID"
 echo "START $(date) main_pid=$main_pid"
 
+call_hook football_start "$0" "$@"
+
 case "${operation//-/_}" in
 migrate_prepare)
   migrate_prepare
@@ -2550,6 +2552,8 @@ migrate+shrink+back)
   fail "Unknown operation '$operation'"
   ;;
 esac
+
+call_hook football_finished 0 "$0" "$@"
 
 echo "DONE $(date)"
 } 2>&1 | log "$football_logdir" "logs$args_info.$start_stamp.$LOGNAME.log"
