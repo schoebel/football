@@ -561,13 +561,14 @@ clustertool_host="${clustertool_host:-}"
 ## clustertool_user
 # Username for clustertool access.
 # By default, scans for a *.password file (see next option).
-clustertool_user="${clustertool_user:-$(shopt -u nullglob; ls *.password | head -1 | cut -d. -f1)}" || fail "cannot find a password file *.password for clustermw"
+clustertool_user="${clustertool_user:-$(shopt -u nullglob; ls *.password | head -1 | cut -d. -f1)}" ||\
+    echo "cannot find a password file *.password for clustermw: you MUST supply the credentials via default curl config files (see man page)"
 
 ## clustertool_passwd
 # Here you can supply the encrpted password.
 # By default, a file $clustertool_user.password is used
 # containing the encrypted password.
-clustertool_passwd="${clustertool_passwd:-$(cat $clustertool_user.password)}"
+clustertool_passwd="${clustertool_passwd:-$([[ -r $clustertool_user.password ]] && cat $clustertool_user.password)}"
 
 echo "Using clustermw username: '$clustertool_user'"
 
@@ -577,7 +578,11 @@ function clustertool
     local path="${2:-/clusters}"
     local content="$3"
 
-    local cmd="curl -s -u \"$clustertool_user:$clustertool_passwd\" -X \"$op\" \"$clustertool_host$path\""
+    local inline_pw=""
+    if [[ "clustertool_user" != "" ]]; then
+	inline_pw="-u '$clustertool_user:${clustertool_passwd/\'/\\\'/}'"
+    fi
+    local cmd="curl -s $inline_pw -X \"$op\" \"$clustertool_host$path\""
     [[ "$content" != "" ]] && cmd+=" -d '${content//\'/\'}'"
     echo "$cmd" | sed -u 's/\(curl .*\)-u *[^ ]*/\1/' >> /dev/stderr
     eval "$cmd" || fail "failed REST command '$cmd'"
