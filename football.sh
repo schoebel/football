@@ -314,6 +314,13 @@ critical_status="${critical_status:-199}"
 # of a failed command.
 serious_status="${serious_status:-198}"
 
+## pre_hand or --pre-hand=
+# Set this to do an ordinary handover to a new start position
+# (in the source cluster) before doing anything else.
+# This may be used for handover to a different datacenter,
+# in order to minimize cross traffic between datacenters.
+pre_hand="${pre_hand:-}"
+
 ## tmp_suffix
 # Only for experts.
 tmp_suffix="${tmp_suffix:--tmp}"
@@ -923,6 +930,41 @@ function get_full_list
 	host_list="$full_list"
     done
     echo $full_list
+}
+
+function handover
+{
+    local target="$1"
+    local res="$2"
+
+    local current="$(get_store "$res")"
+    if [[ "$current" = "" ]]; then
+	fail "cannot determine current store for '$res'"
+    fi
+    if [[ "$current" = "$target" ]]; then
+	echo "No handover needed: resource '$res' is already running at '$target'"
+	return
+    fi
+    call_hook check_handover "$current" "$target" "$res"
+
+    section "Handover '$res' $current => $target"
+
+    wait_for_screener "$res" "handover" "waiting" "$res $current => $target"
+
+    call_hook want_downtime "$res" 1
+
+    failure_handler=failure_restart_vm
+    failure_restart_primary="$current $target $primary $secondary_list $target_primary $target_secondary"
+    failure_restart_hyper=""
+    failure_restart_vm="$res"
+    call_hook resource_stop "$current" "$res"
+    injection_point
+    call_hook invalidate_caches
+    call_hook resource_start "$target" "$res"
+    call_hook resource_check "$res"
+    failure_handler=""
+
+    call_hook want_downtime "$res" 0
 }
 
 function leave_resource
@@ -2330,6 +2372,8 @@ function lv_clean
 
 # MAIN: get and check parameters, determine hosts and resources, run actions
 
+main_pid="$BASHPID"
+
 commands_installed "$commands_needed"
 
 scan_args "$@"
@@ -2349,6 +2393,7 @@ mkdir -p "$football_logdir"
 
 {
 echo "$0 $@"
+main_pid="$BASHPID"
 
 git describe --tags
 
@@ -2392,6 +2437,19 @@ fi
 if [[ "$res" = "" ]]; then
     helpme
     fail "No resource name parameter given"
+fi
+
+if [[ "$pre_hand" != "" ]]; then
+    echo "Pre-Handover of '$res' to '$pre_hand'"
+    # Here are no further checks because handover is _defined_ that
+    # it _must_ be working as a precondition.
+    # In strange situations, this might be used for cleaning up the situation.
+    do_confirm
+    (
+	main_pid="$BASHPID"
+	handover "$pre_hand" "$res"
+    )
+    echo "Handover status=$?"
 fi
 
 hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be determined"
@@ -2476,7 +2534,6 @@ do_confirm
 (( verbose < 1 )) && verbose=1
 
 # main: start the internal actions
-main_pid="$BASHPID"
 echo "START $(date) main_pid=$main_pid"
 
 call_hook football_start "$0" "$@"

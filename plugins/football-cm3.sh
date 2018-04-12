@@ -759,6 +759,26 @@ function cm3_is_startable
     fi
 }
 
+function cm3_check_handover
+{
+    local source="$1"
+    local target="$2"
+    local res="$3"
+
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+    echo "Source '$source' is at cluster '$source_cluster'"
+    echo "Target '$target' is at cluster '$target_cluster'"
+    [[ "$source_cluster" = "" ]] && fail "Cannot determine source cluster"
+    [[ "$target_cluster" = "" ]] && fail "Cannot determine target cluster"
+    if [[ "$source_cluster" != "$target_cluster" ]]; then
+	fail "Cannot handover from '$source' to '$target': cluster names are different"
+    fi
+    if [[ "$(cm3_is_startable "$target" "$res")" != "1" ]]; then
+	fail "According to 'cm3 -us', resource '$res' is not startable at '$target'"
+    fi
+}
+
 function cm3_migrate_cm3_config
 {
     local source="$1"
