@@ -505,6 +505,11 @@ function cm3_check_host
 
     local host
     for host in $host_list; do
+	# check that clustermw is working
+	local cluster="$(_get_cluster_name "$host")"
+	if [[ "$cluster" = "" ]]; then
+	    fail "cannot determine cluster from host '$host'"
+	fi
 	local marsadm_version="$(remote "$host" "marsadm --version" | grep -o 'Version: [0-9.]*' | awk '{ print $2; }')"
 	echo "Installed marsadm version at $host: '$marsadm_version'"
 	check_needed "marsadm" "[0-9]\." "$marsadm_version" "$needed_marsadm"
