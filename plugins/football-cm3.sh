@@ -95,7 +95,7 @@ function cm3_get_store
 	return
     fi
     # fallback to nc over iscsi network
-    try="$(remote "$host" "nc \$(iscsiadm -m session -o show | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+') 101 2>/dev/null | cut -d. -f1" 1)"
+    try="$(remote "$host" "nc \$(iscsiadm -m session -o show | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | tail -1) 101 2>/dev/null | cut -d. -f1" 1)"
     if [[ "$try" != "" ]]; then
 	echo "$try"
 	return
