@@ -523,6 +523,7 @@ function fail
 	echo "FAILING with status=$status" >> /dev/stderr
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
+	(call_hook football_failed "$status" "$0" "$@")
 	echo "" >> /dev/stderr
 	echo "EXIT status=$status" >> /dev/stderr
     fi
