@@ -392,16 +392,36 @@ function cm3_merge_cluster
     [[ "$source" = "" ]] && return
     [[ "$target" = "" ]] && return
 
+    if remote "$target" "marsadm merge-cluster --ssh-port=24 $source" 1; then
+	return
+    fi
+    local source_ip=""
     if (( ip_magic )); then
 	# This MAGIC may be needed when mutual icpu / istore
 	# ssh connects via hostnames are disallowed
 	# by some network firewall rules.
 	# Workaround by going down to the replication IPs.
-	local source_ip="$(remote "$source" "marsadm lowlevel-ls-host-ips" | grep "$source" | awk '{ print $2; }')"
+	local source_ip="$(remote "$source" "marsadm lowlevel-ls-host-ips" | grep "$source" | sort -u | tail -1 | awk '{ print $2; }')"
 	echo "Peer '$source' has IP '$source_ip'"
-	source="$source_ip"
     fi
-    remote "$target" "marsadm merge-cluster --ssh-port=24 $source"
+    if [[ "$source_ip" != "" ]] && \
+	remote "$target" "marsadm merge-cluster --ssh-port=24 $source_ip" 1; then
+	return
+    fi
+    # Workaround asymmetric firewalling
+    echo "Trying swapped roles $source <=> $target"
+    if remote "$source" "marsadm merge-cluster --ssh-port=24 $target" 1; then
+	return
+    fi
+    if (( ip_magic )); then
+	local target_ip="$(remote "$target" "marsadm lowlevel-ls-host-ips" | grep "$target" | sort -u | tail -1 | awk '{ print $2; }')"
+	echo "Peer '$target' has IP '$target_ip'"
+    fi
+    if [[ "$target_ip" != "" ]] && \ 
+	remote "$source" "marsadm merge-cluster --ssh-port=24 $target_ip" 1; then
+	return
+    fi
+    fail "merge-cluster did not work on any ssh method"
 }
 
 function cm3_split_cluster
@@ -427,10 +447,10 @@ function cm3_split_cluster
 	    # try to fix asymmetric clusters by mutual re-merging
 	    for host in $host_list; do
 		sleep 5
-		if remote "$host" "marsadm merge-cluster --ssh-port=24 $old_host" 1; then
-		    ok=1
-		    break
-		fi
+		(
+		    echo "Try re-merge $host <=> $old_host"
+		    cm3_merge_cluster "$host" "$old_host"
+		)
 		old_host="$host"
 		remote "$host" "marsadm wait-cluster" 1
 	    done
