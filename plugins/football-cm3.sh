@@ -227,7 +227,7 @@ function cm3_resource_check
     while ! ping $ping_opts $host; do
 	if (( timeout-- <= 0 )); then
 	    echo "HOST $host DOES NOT PING!"
-	    return
+	    break
 	fi
 	sleep 3
     done
