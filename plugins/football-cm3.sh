@@ -456,7 +456,7 @@ function cm3_split_cluster
 	    done
 	done
 	if (( !ok )); then
-	    fail "Please run 'marsadm split-cluster --ssh-port=24' by hand"
+	    warn "Please run 'marsadm split-cluster --ssh-port=24' by hand"
 	fi
     fi
 }

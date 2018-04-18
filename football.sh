@@ -488,6 +488,13 @@ EOF
 failure_handler=""
 recursive_failure=0
 
+function warn
+{
+    local txt="$1"
+    echo "WARNING: $txt" >> /dev/stderr
+    call_hook football_warning "$res" "$txt"
+}
+
 function fail
 {
     local txt="${1:-Unkown failure}"
