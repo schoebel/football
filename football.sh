@@ -1347,7 +1347,9 @@ function check_migration
 {
     # works on global parameters
     [[ "$target_primary" = "" ]] && fail "target hostname is not defined"
-    [[ "$target_primary" = "$primary" ]] && fail "target host '$target_primary' needs to be distinct from source host"
+    if [[ "$target_primary" = "$primary" ]] ; then
+	echo "Nothing to do: source primary '$primary' is equal to the target primary"
+    fi
     for host in $target_primary $target_secondary; do
 	ping $ping_opts "$host" > /dev/null || fail "Host '$host' is not pingable"
 	remote "$host" "mountpoint /mars > /dev/null"
@@ -1573,6 +1575,11 @@ function migrate_resource
     local target_primary="$2"
     local target_secondary="$3"
     local res="$4"
+
+    if [[ "$source_primary" = "$target_primary" ]]; then
+	echo "Nothing to do: source primary '$source_primary' is equal to the target primary"
+	return
+    fi
 
     wait_resource_uptodate "$target_primary" "$res"
 
