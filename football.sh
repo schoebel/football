@@ -953,6 +953,11 @@ function handover
 	echo "No handover needed: resource '$res' is already running at '$target'"
 	return
     fi
+    if [[ "$(remote "$target" "marsadm view-resource-members $res" | grep "^$target$")" != "$target" ]]; then
+	warn "Handover to '$target' is not possible: host is not member of resource '$res'"
+	return
+    fi
+
     call_hook check_handover "$current" "$target" "$res"
 
     section "Handover '$res' $current => $target"
