@@ -1510,6 +1510,7 @@ function migration_prepare
 
     section "Join the resources"
 
+    remote "$target_primary" "marsadm wait-cluster"
     if exists_hook join_resource; then
 	call_hook join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
 	injection_point
