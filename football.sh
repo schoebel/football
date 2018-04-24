@@ -2391,6 +2391,27 @@ function lv_clean
 
 ######################################################################
 
+# ssh
+
+function get_real_ssh_user
+{
+    local raw="$(ssh-add -l)"
+    # check for syntax username@host
+    if [[ "$raw" =~ @ ]]; then
+	echo "$raw" | grep -o '[^ ]\+@[^ ]\+' | sort -u | tail -1
+	return
+    fi
+    # check for path to home directory
+    if [[ "$raw" =~ /home/ ]]; then
+	echo "$raw" | grep -o '/home/[^/ ]\+' | cut -d/ -f3 | sort -u | tail -1
+	return
+    fi
+    # fallback to fingerprint
+    echo "$raw" | grep -i -o '[0-9a-z]\+:[^ ]\+' | sed 's:/:_:g' | sort -u | tail -1
+}
+
+######################################################################
+
 # MAIN: get and check parameters, determine hosts and resources, run actions
 
 main_pid="$BASHPID"
@@ -2400,6 +2421,12 @@ commands_installed "$commands_needed"
 scan_args "$@"
 
 ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
+
+## user_name
+# Normally automatically derived from ssh agent or from $LOGNAME.
+# Please override this only when really necessary.
+export user_name="${user_name:-$(get_real_ssh_user)}"
+export user_name="${user_name:-$LOGNAME}"
 
 if (( screener )); then
     [[ "$res" = "" ]] && fail "cannot start screener on empty resource"
@@ -2413,7 +2440,7 @@ fi
 mkdir -p "$football_logdir"
 
 {
-echo "$0 $@"
+echo "user_name=$user_name $0 $@"
 main_pid="$BASHPID"
 
 git describe --tags
@@ -2634,4 +2661,4 @@ esac
 call_hook football_finished 0 "$0" "$@"
 
 echo "DONE $(date)"
-} 2>&1 | log "$football_logdir" "logs$args_info.$start_stamp.$LOGNAME.log"
+} 2>&1 | log "$football_logdir" "logs$args_info.$start_stamp.$user_name.log"
