@@ -1117,6 +1117,37 @@ function cm3_extend_iscsi
 
 ###########################################
 
+# Internal interface to Monitis
+
+## monitis_downtime_script
+# ShaHoLin-internal
+monitis_downtime_script="${monitis_downtime_script:-}"
+
+## monitis_downtime_duration
+# ShaHoLin-internal
+monitis_downtime_duration="${monitis_downtime_duration:-20}" # Minutes
+
+function cm3_want_downtime
+{
+    local resource="$1"
+    local down="${2:-0}"
+
+    if [[ "$monitis_downtime_script" = "" ]]; then
+	return
+    fi
+    local cmd
+    if (( down )); then
+	local now="$(date "+%Y%m%d-%H:%M")"
+	cmd="$monitis_downtime_script set --start $now --duration $monitis_downtime_duration $resource.schlund.de"
+    else
+	cmd="$monitis_downtime_script get $resource.schlund.de"
+    fi
+    echo "Calling Monitis script: $cmd"
+    $cmd || echo IGNORE
+}
+
+###########################################
+
 function cm3_invalidate_caches
 {
     declare -g -A ssh_hyper=()
