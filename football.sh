@@ -1446,15 +1446,21 @@ function create_migration_space
 
 function merge_cluster
 {
-    local source_primary="$1"
-    local lv_name="$2"
-    local target_primary="$3"
-    local target_secondary="$4"
+    local lv_name="$1"
+    local source_primary="$2"
+    local source_secondary="$3"
+    local target_primary="$4"
+    local target_secondary="$5"
 
     section "Ensure that \"marsadm merge-cluster\" has been executed."
 
-    # This is idempotent.
+    # Safeguard operating errors
     local host
+    for host in $source_primary $source_secondary $target_primary $target_secondary; do
+	remote "$host" "marsadm up $lv_name" 1
+    done
+
+    # This is idempotent.
     for host in $target_primary $target_secondary; do
 	[[ "$host" = "$source_primary" ]] && continue
 	if exists_hook merge_cluster; then
@@ -1474,10 +1480,11 @@ function merge_cluster
 
 function migration_prepare
 {
-    local source_primary="$1"
-    local lv_name="$2"
-    local target_primary="$3"
-    local target_secondary="$4"
+    local lv_name="$1"
+    local source_primary="$2"
+    local source_secondary="$3"
+    local target_primary="$4"
+    local target_secondary="$5"
 
     merge_cluster "$@"
 
@@ -2237,7 +2244,7 @@ function migrate_prepare
 {
     call_hook prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
 
-    migration_prepare "$primary" "$res" "$target_primary" "$target_secondary"
+    migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
 
     call_hook finish_hosts "$primary $secondary_list $target_primary $target_secondary"
 }
@@ -2324,7 +2331,7 @@ function migrate_plus_shrink
     fi
     local old_target_secondary="$target_secondary"
     migrate_check
-    merge_cluster "$primary" "$res" "$target_primary" "$target_secondary"
+    merge_cluster "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
     if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
 	# Less network traffic:
 	# Migrate to only one target => new secondary will be created
