@@ -530,6 +530,12 @@ function cm3_check_host
 	if [[ "$cluster" = "" ]]; then
 	    fail "cannot determine cluster from host '$host'"
 	fi
+	echo "Host '$host' is on cluster '$cluster'"
+	local serial="$(clustertool GET "/clusters/$cluster/properties/CLUSTERCONF_SERIAL")"
+	if [[ "$serial" = "" ]]; then
+	    fail "Suspected misconfiguration: cannot determine serial for cluster '$cluster'"
+	fi
+	echo "Cluster '$cluster' has serial '$serial'"
 	local marsadm_version="$(remote "$host" "marsadm --version" | grep -o 'Version: [0-9.]*' | awk '{ print $2; }')"
 	echo "Installed marsadm version at $host: '$marsadm_version'"
 	check_needed "marsadm" "[0-9]\." "$marsadm_version" "$needed_marsadm"
