@@ -2094,6 +2094,9 @@ function hot_phase
     injection_point
 
     local full_list="$(get_full_list "$primary $secondary_list")"
+    for host in $full_list; do
+	call_hook save_resource_state "$host" "$lv_name"
+    done
 
     section "IMPORTANT: destroying the MARS resources at $full_list"
     echo "In case of failure, you can re-establish MARS resources by hand."
@@ -2102,6 +2105,7 @@ function hot_phase
     failure_handler=failure_rebuild_mars
 
     delete_resource "$lv_name" "$full_list"
+    call_hook restore_resource_state "$primary" "$lv_name"
     injection_point
 
     # backgound safeguard races between delete-resource and create-resource
@@ -2128,6 +2132,7 @@ function hot_phase
 
     remote "$primary" "if ! [[ -e /dev/mars/$lv_name ]]; then marsadm create-resource --force $lv_name $dev; fi"
     injection_point
+    call_hook restore_resource_state "$primary" "$lv_name"
     remote "$primary" "marsadm primary $lv_name"
 
     section "IMPORTANT: go online again"
@@ -2451,6 +2456,7 @@ echo "user_name=$user_name $0 $@"
 main_pid="$BASHPID"
 
 git describe --tags
+call_hook pre_init "$@"
 
 # special (manual) operations
 case "${operation//-/_}" in
