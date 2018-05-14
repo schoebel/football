@@ -47,6 +47,12 @@ PLUGIN football-cm3
 
    Following mars kernel modules must be loaded: $needed_mars
 
+Specific actions for plugin football-cm3:
+
+  $0 clustertool {GET|PUT} <url>
+    Call through to the clustertool via REST.
+    Useful for manual inspection and repair.
+
 EOF
    show_vars "${files[cm3]}"
 }
@@ -608,6 +614,9 @@ function clustertool
     local op="${1:-GET}"
     local path="${2:-/clusters}"
     local content="$3"
+    shift
+    shift
+    shift
 
     local inline_pw=""
     if [[ "clustertool_user" != "" ]]; then
@@ -615,8 +624,21 @@ function clustertool
     fi
     local cmd="curl -s $inline_pw -X \"$op\" \"$clustertool_host$path\""
     [[ "$content" != "" ]] && cmd+=" -d '${content//\'/\'}'"
+    local arg
+    for arg in "$@"; do
+	cmd+=" \"$arg\""
+    done
     echo "$cmd" | sed -u 's/\(curl .*\)-u *[^ ]*/\1/' >> /dev/stderr
     eval "$cmd" || fail "failed REST command '$cmd'"
+}
+
+function cm3_clustertool
+{
+    shift
+    local op="${1:-GET}"
+    local path="${2:-/clusters}"
+    shift 2
+    clustertool "$op" "$path" "" "$@"
 }
 
 function _get_cluster_name
@@ -1153,4 +1175,6 @@ function cm3_invalidate_caches
     declare -g -A ssh_hyper=()
 }
 
+
 register_module "cm3"
+register_command "clustertool"

@@ -550,6 +550,7 @@ function exit
     if [[ "$BASHPID" = "$main_pid" ]]; then
 	call_hook 0 football_finished "$status" "$0" "$@"
     fi
+    echo ""
     echo "EXIT status=$status" >> /dev/stderr
     exit $status
 }
@@ -644,6 +645,9 @@ function scan_args
 		local -a params=(operation host)
 	    elif [[ "$par" =~ repair_|test_ ]]; then
 		local -a params=(operation res primary secondary_list)
+	    elif [[ "$par" =~ tool ]]; then
+		operation="$par"
+		return
 	    else
 		helpme
 		fail "unknown operation '$1'"
