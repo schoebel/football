@@ -425,7 +425,7 @@ Combined actions:
      finally migrate back to old primary and secondaries.
      Default percent value (when left out) is $target_percent.
 
-Actions for repair in emergency situations:
+Actions for (manual) repair in emergency situations:
 
   $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
      Transfer only the cluster config, without changing the MARS replicas.
@@ -435,6 +435,16 @@ Actions for repair in emergency situations:
   $0 manual_config_update <hostname>
      Only update the cluster config, without changing anything else.
      Useful for manual repair of failed migration.
+
+  $0 manual_merge_cluster <hostname1> <hostname2>
+     Run "marsadm merge-cluster" for the given hosts.
+     Hostnames must be from different (former) clusters.
+
+  $0 manual_split_cluster <hostname_list>
+     Run "marsadm split-cluster" at the given hosts.
+     Useful for fixing failed / asymmetric splits.
+     Hint: provide _all_ hostnames which have formerly participated
+     in the cluster.
 
   $0 repair_vm <resource> <primary_candidate_list>
      Try to restart the VM <resource> on one of the given machines.
@@ -643,6 +653,9 @@ function scan_args
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
+	    elif [[ "$par" =~ manual_ ]]; then
+		operation="$par"
+		return
 	    elif [[ "$par" =~ repair_|test_ ]]; then
 		local -a params=(operation res primary secondary_list)
 	    elif [[ "$par" =~ tool ]]; then
@@ -1648,6 +1661,46 @@ function migrate_resource
     call_hook want_downtime "$res" 0
 }
 
+function get_augmented_host_list
+{
+    local host_list="$1"
+
+    local host
+    echo $(
+	for host in $host_list; do
+	    echo "$host"
+	    remote "$host" "marsadm lowlevel-ls-host-ips" 2>/dev/null
+	done |\
+	    awk '{ print $1; }' |\
+	    sort -u
+    )
+}
+
+function manual_merge_cluster
+{
+    local host1="$1"
+    local host2="$2"
+
+    local host_list="$(get_augmented_host_list "$host1 $host2")"
+    echo "Augmented host list: $host_list"
+
+    call_hook prepare_hosts "$host_list"
+    call_hook merge_cluster "$host1" "$host2"
+    call_hook finish_hosts "$host_list"
+}
+
+function _split_cluster
+{
+    local host_list="$1"
+
+    local host_list="$(get_augmented_host_list "$host_list")"
+    echo "Augmented host list: $host_list"
+
+    call_hook prepare_hosts "$host_list"
+    call_hook split_cluster "$host_list"
+    call_hook finish_hosts "$host_list"
+}
+
 function migrate_cleanup
 {
     local host_list="$1"
@@ -1690,13 +1743,7 @@ function migrate_cleanup
     if (( do_split )); then
 	section "Recompute host list"
 
-	local new_host_list="$(echo $(
-	for host in $host_list $host_list2; do
-	    echo "$host"
-	    remote "$host" "marsadm lowlevel-ls-host-ips" 2>/dev/null
-	done |\
-	    awk '{ print $1; }' |\
-	    sort -u ))"
+	local new_host_list="$(get_augmented_host_list "$host_list $host_list2")"
 	echo "Augmented host list: $new_host_list"
 	host_list="$new_host_list"
 
@@ -1707,9 +1754,7 @@ function migrate_cleanup
 	section "Split cluster at $host_list"
 
 	sleep 10
-	call_hook prepare_hosts "$host_list"
-	call_hook split_cluster "$host_list"
-	call_hook finish_hosts "$host_list"
+	_split_cluster "$host_list"
     fi
 }
 
@@ -2471,6 +2516,18 @@ test_delete_resource)
 
 manual_config_update)
   call_hook update_cm3_config "$host"
+  exit $?
+  ;;
+
+manual_merge_cluster)
+  shift
+  manual_merge_cluster "$@"
+  exit $?
+  ;;
+
+manual_split_cluster)
+  shift
+  _split_cluster "$*"
   exit $?
   ;;
 
