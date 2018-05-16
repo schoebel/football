@@ -827,6 +827,22 @@ function cm3_check_handover
     fi
 }
 
+## enable_mod_deflate
+# Internal, for support.
+enable_mod_deflate="${enable_mod_deflate:-1}"
+
+## enable_segment_move
+# Seems to be needed by some other tooling.
+enable_segment_move="${enable_segment_move:-1}"
+
+## override_hwclass_id
+# When necessary, override this from $include_dir/plugins/*.conf
+override_hwclass_id="${override_hwclass_id:-}" # typically 25007
+
+## override_hvt_id
+# When necessary, override this from $include_dir/plugins/*.conf
+override_hvt_id="${override_hvt_id:-}" # typically 8057 or 8059
+
 function cm3_migrate_cm3_config
 {
     local source="$1"
@@ -872,6 +888,56 @@ function cm3_migrate_cm3_config
 	echo "--------------------- diff old => new ------------------"
 	diff -ui $backup/$res.old.pp.json $backup/$res.new.pp.json
 	echo ""
+	# Optional actions
+	if (( enable_mod_deflate )); then
+	    local url="/vms/$res.schlund.de/properties"
+	    local old_val="$(clustertool GET "$url")"
+	    echo "OLD properties:"
+	    echo "$old_val" | json_pp
+	    local update_url="$url/ENABLE_MOD_DEFLATE"
+	    (clustertool PUT "$update_url" yes || echo IGNORE)
+	    local new_val="$(clustertool GET "$url")"
+	    echo "NEW properties:"
+	    echo "$new_val" | json_pp
+	fi
+	if (( enable_segment_move )); then
+	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment"
+	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment"
+	    echo "source_segment='$source_segment'"
+	    echo "target_segment='$target_segment'"
+	    if [[ "$source_segment" != "" ]] && [[ "$target_segment" != "" ]] ; then
+		local source_url="/segments/$source_segment/vms/$res.schlund.de"
+		local target_url="/segments/$target_segment/vms/$res.schlund.de"
+		echo clustertool GET "$source_url"
+		(clustertool GET "$source_url") |\
+		    log "$backup" "$res.segm.raw.json" |\
+		    json_pp |\
+		    log "$backup" "$res.segm.pp.json"
+		if [[ -s $backup/$res.segm.raw.json ]]; then
+		    echo clustertool DELETE "$source_url"
+		    (clustertool DELETE "$source_url" || echo IGNORE)
+		    echo clustertool PUT "$target_url" "$(< $backup/$res.segm.raw.json)"
+		    (clustertool PUT "$target_url" "$(< $backup/$res.segm.raw.json)" || echo IGNORE)
+		fi
+	    fi
+	fi
+	echo ""
+	# Overrides of *_id
+	local override=""
+	if [[ "$override_hwclass_id" != "" ]]; then
+	    override=+"\"hwclass_id\" : \"$override_hwclass_id\", "
+	fi
+	if [[ "$override_hvt_id" != "" ]] ; then
+	    override+"\"hvt_id\" : \"$override_hvt_id\", "
+	fi
+	if [[ "$override" != "" ]]; then
+	    local target_url="/vms/$res.schlund.de"
+	    local arg="{ $override }"
+	    echo clustertool PUT "$target_url" "$arg"
+	    (clustertool PUT "$target_url" "$arg" || echo IGNORE)
+	    echo ""
+	fi
+	# Tell the world that something has changed
 	(clustertool PUT "/clusters/$source_cluster/properties/CLUSTERCONF_SERIAL") ||\
 	    echo IGNORE
 	(clustertool PUT "/clusters/$target_cluster/properties/CLUSTERCONF_SERIAL") ||\
