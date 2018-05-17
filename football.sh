@@ -653,7 +653,7 @@ function scan_args
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
-	    elif [[ "$par" =~ manual_ ]]; then
+	    elif [[ "$par" =~ manual_|plugin_|generic_ ]]; then
 		operation="$par"
 		return
 	    elif [[ "$par" =~ repair_|test_ ]]; then
@@ -662,6 +662,13 @@ function scan_args
 		operation="$par"
 		return
 	    else
+		local module
+		for module in $module_list; do
+		    if [[ "$par" =~ ^${module}_ ]]; then
+			operation="$par"
+			return
+		    fi
+		done
 		helpme
 		fail "unknown operation '$1'"
 	    fi
@@ -2498,6 +2505,14 @@ if (( screener )); then
     exec $(dirname "$0")/screener.sh start "${res:-$1}" "$0" "${*//--screener?(=*)/}" --confirm=0
 fi
 
+for name in $plugin_command_list; do
+    if [[ "${operation//-/_}" = "$name" ]]; then
+	shift
+	call_hook ${name#*_} "$@"
+	exit $?
+    fi
+done
+
 mkdir -p "$football_logdir"
 
 {
@@ -2505,9 +2520,11 @@ echo "user_name=$user_name $0 $@"
 main_pid="$BASHPID"
 
 git describe --tags
+
 call_hook pre_init "$@"
 
 # special (manual) operations
+
 case "${operation//-/_}" in
 test_delete_resource)
   test_delete_resource
