@@ -49,6 +49,11 @@ PLUGIN football-basic
        release.
    This plugin is exclusive-or with cm3.
 
+Plugin specific actions:
+
+   $0 basic_add_host <hostname>
+      Manually add another host to the hostname cache.
+
 EOF
    show_vars "${files[collector]}"
    show_vars "${files[basic]}"
@@ -276,4 +281,16 @@ function basic_pre_init
     resources_init
 }
 
-register_module "basic" "basic"
+function basic_add_host
+{
+    local new_host="$1"
+
+    if ! ping -c1 $new_host; then
+	fail "host '$new_host' is not pingable."
+    fi
+    echo "$new_host" >> "$hostname_cache"
+    basic_pre_init
+}
+
+register_module "basic"
+register_command "basic_add_host"
