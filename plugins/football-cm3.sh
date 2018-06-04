@@ -1206,6 +1206,7 @@ function cm3_extend_iscsi
 ###########################################
 
 # Internal interface to Monitis
+# and other internal communication
 
 ## monitis_downtime_script
 # ShaHoLin-internal
@@ -1232,6 +1233,33 @@ function cm3_want_downtime
     fi
     echo "Calling Monitis script: $cmd"
     $cmd || echo IGNORE
+}
+
+## shaholin_finished_log
+# ShaHoLin-specific logfile, reporting _only_ successful completion
+# of an action.
+shaholin_finished_log="${shaholin_finished_log:-$football_logdir/shaholin-finished.log}"
+
+shaholin_finished_called=0
+
+function cm3_football_finished
+{
+    local status="$1"
+    shift
+    local txt="$(echo "$@")"
+
+    if [[ "$shaholin_finished_log" = "" ]]; then
+	return
+    fi
+    if (( status )); then
+	return
+    fi
+    if ! [[ "$txt" =~ migrate ]]; then
+	return
+    fi
+    if (( !shaholin_finished_called++ )); then
+	echo "$txt" >> "$shaholin_finished_log"
+    fi
 }
 
 ###########################################
