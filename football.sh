@@ -789,15 +789,35 @@ function log
     fi
 }
 
+function phase
+{
+    local name="${1:-DEFAULT}"
+    local txt="${2:-}"
+
+    echo ""
+    echo ""
+    echo "============================================================================="
+    echo "================== PHASE $name ==============================="
+    echo "$name: $txt"
+    echo ""
+
+    call_hook phase "$name" "$res" "$txt"
+}
+
 section_nr=1
 
 function section
 {
     local txt="${1:--}"
+
     echo ""
     echo "==================================================================="
-    echo "$(( section_nr++ )). $txt"
+    echo "${section_nr}. $txt"
     echo ""
+
+    call_hook section "$section_nr" "$res" "$txt"
+    (( section_nr++ ))
+    return 0
 }
 
 function exists_hook
@@ -1715,6 +1735,8 @@ function migrate_cleanup
     local res="$3"
     local do_split="${4:-1}"
 
+    phase migrate_cleanup
+
     section "Cleanup migration data at $host_list"
 
     local new_host_list=""
@@ -2303,6 +2325,8 @@ function extend_fs
 
 function migrate_prepare
 {
+    phase migrate_prepare
+
     call_hook prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
 
     migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
@@ -2312,6 +2336,8 @@ function migrate_prepare
 
 function migrate_wait
 {
+    phase migrate_wait
+
     wait_resource_uptodate "$target_primary $target_secondary" "$res"
 }
 
@@ -2323,6 +2349,8 @@ function migrate_check
 
 function migrate_finish
 {
+    phase migrate_finish
+
     migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
     injection_point
 }
@@ -2343,6 +2371,8 @@ function migrate_clean
 
 function shrink_prepare
 {
+    phase shrink_prepare
+
     determine_space
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
@@ -2356,11 +2386,15 @@ function shrink_prepare
 
 function shrink_finish
 {
+    phase shrink_finish
+
     hot_phase "$hyper" "$primary" "$secondary_list" "$res"
 }
 
 function shrink_cleanup
 {
+    phase shrink_cleanup
+
     cleanup_old_remains "$primary $secondary_list" "$res"
 }
 
@@ -2368,6 +2402,8 @@ function shrink_cleanup
 
 function extend_stack
 {
+    phase extend
+
     determine_space
     extend_fs "$hyper" "$primary" "$secondary_list" "$res" "$target_space"
 }
@@ -2579,7 +2615,7 @@ if [[ "$res" = "" ]]; then
 fi
 
 if [[ "$pre_hand" != "" ]]; then
-    echo "Pre-Handover of '$res' to '$pre_hand'"
+    phase pre-handover "Pre-Handover of '$res' to '$pre_hand'"
     # Here are no further checks because handover is _defined_ that
     # it _must_ be working as a precondition.
     # In strange situations, this might be used for cleaning up the situation.
@@ -2589,6 +2625,7 @@ if [[ "$pre_hand" != "" ]]; then
 	handover "$pre_hand" "$res"
     )
     echo "Handover status=$?"
+    phase main "$0 $*"
 fi
 
 hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be determined"
