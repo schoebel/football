@@ -2555,7 +2555,9 @@ mkdir -p "$football_logdir"
 echo "user_name=$user_name $0 $@"
 main_pid="$BASHPID"
 
-git describe --tags
+if ! git describe --tags; then
+    echo "$0 version 2.0"
+fi
 
 call_hook pre_init "$@"
 
