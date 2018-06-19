@@ -1172,9 +1172,6 @@ function wait_for_screener
 	if (( !poll && !locked )); then
 	    return
 	fi
-	if (( timeout > 0 && total_round > timeout + 1 )); then
-	    break
-	fi
 	local keypress=0
 	if [[ -t 0 ]]; then
 	    if (( !hot_round )); then
@@ -1192,11 +1189,13 @@ function wait_for_screener
 	fi
 	reset_freq=0
 	(( hot_round++ ))
-	(( total_round++ ))
 	if (( repeat_lapse > 0 && hot_round >= repeat_lapse )); then
 	    hot_round=0
 	    $lapse_cmd "$@"
 	    reset_freq=1
+	fi
+	if (( !locked )); then
+	    (( total_round++ ))
 	fi
 	if (( timeout > 0 && total_round >= timeout )); then
 	    echo "TIMEOUT SCREENER_$mode $(date +%s) $(date)"
@@ -1204,6 +1203,7 @@ function wait_for_screener
 	elif (( keypress )); then
 	    echo "KEYPRESS SCREENER_$mode $(date +%s) $(date)"
 	    call_hook poll_wait "$res" "$mode" 1 1
+	    break
 	fi
     done
 }

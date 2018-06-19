@@ -140,11 +140,38 @@ function cm3_lv_remove
     return $rc
 }
 
+## date_lock
+# Don't enter critical sections at certain days of the week,
+# and/or during certain hours.
+# This is a regex matching against "date +%u_%H"
+date_lock="${date_lock:-}"
+
 function cm3_resource_locked
 {
     local res="$1"
 
-    # heuristics: tar processes indicate a running movespace or backup restore
+    # 1. is there a global lock?
+    if [[ -e "$football_logdir/lock" ]] || [[ -e "$screener_logdir/lock" ]] ; then
+	echo "RESOURCE_LOCK $(date +%s) $(date) GLOBAL LOCK" >> /dev/stderr
+	echo 1
+	return
+    fi
+    # 2. is there a resource lock?
+    if [[ -e "$football_logdir/lock.$res" ]] || [[ -e "$screener_logdir/lock.$res" ]] ; then
+	echo "RESOURCE_LOCK $(date +%s) $(date) LOCAL $res LOCK" >> /dev/stderr
+	echo 1
+	return
+    fi
+    # 3. date lock
+    if [[ "$date_lock" != "" ]]; then
+	local date_spec="$(date +%u_%H)"
+	if [[ "$date_spec" =~ $date_lock ]]; then
+	    echo "RESOURCE_LOCK $(date +%s) $(date) $date_spec =~ $date_lock LOCK" >> /dev/stderr
+	    echo 1
+	    return
+	fi
+    fi
+    # 4. Heuristics: tar processes indicate a running movespace or backup restore
     local something="$(remote "$res" "ps ax" | grep "/bin/tar ")"
     if [[ "$something" != "" ]]; then
 	echo "RESOURCE_LOCK $(date +%s) $(date) resource $res is locked" >> /dev/stderr
