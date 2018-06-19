@@ -1677,6 +1677,7 @@ function migrate_resource
     wait_for_screener "$res" "migrate" "waiting" "$res $source_primary => $target_primary"
 
     call_hook want_downtime "$res" 1
+    call_hook tell_action migrate finish
     call_hook update_ticket migrate_finish running
 
     failure_handler=failure_restart_vm
@@ -1764,6 +1765,7 @@ function migrate_cleanup
 
     section "Cleanup migration data at $host_list"
 
+    call_hook tell_action migrate cleanup
     call_hook update_ticket migrate_cleanup running
 
     local new_host_list=""
@@ -1813,6 +1815,7 @@ function migrate_cleanup
 	_split_cluster "$host_list"
     fi
 
+    call_hook tell_action migrate done
     call_hook update_ticket migrate_cleanup finished
 }
 
@@ -2147,6 +2150,7 @@ function hot_phase
 	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
 
     call_hook want_downtime "$res" 1
+    call_hook tell_action shrink finish
     call_hook update_ticket shrink_finish running
 
     failure_handler=failure_restart_vm
@@ -2358,7 +2362,9 @@ function migrate_prepare
 {
     phase migrate_prepare
 
+    call_hook tell_action migrate init
     call_hook prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
+    call_hook tell_action migrate prepare
     call_hook update_ticket migrate_prepare running
 
     migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
@@ -2410,7 +2416,9 @@ function shrink_prepare
 {
     phase shrink_prepare
 
+    call_hook tell_action shrink init
     determine_space
+    call_hook tell_action shrink prepare
     call_hook update_ticket shrink_prepare running
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
@@ -2434,8 +2442,10 @@ function shrink_cleanup
 {
     phase shrink_cleanup
 
+    call_hook tell_action shrink cleanup
     call_hook update_ticket shrink_cleanup running
     cleanup_old_remains "$primary $secondary_list" "$res"
+    call_hook tell_action shrink done
     call_hook update_ticket shrink_cleanup finished
 }
 
@@ -2445,8 +2455,11 @@ function extend_stack
 {
     phase extend
 
+    call_hook tell_action extend init
     determine_space
+    call_hook tell_action extend prepare
     extend_fs "$hyper" "$primary" "$secondary_list" "$res" "$target_space"
+    call_hook tell_action extend done
 }
 
 ### combined operations

@@ -1348,6 +1348,36 @@ function cm3_football_failed
     return 0
 }
 
+## shaholin_action
+# OPTIONAL: specific action script with parameters.
+shaholin_action="${shaholin_action:-}"
+
+function cm3_tell_action
+{
+    local db_type="$1"
+    local db_resource="$res"
+    local db_change="$ticket"
+    local db_srcCluster="$(_get_cluster_name "$db_resource" 2>/dev/null)"
+    local db_dstCluster="$(_get_cluster_name "$target_primary" 2>/dev/null)"
+    local db_state="$2"
+
+    if [[ "$shaholin_action" = "" ]]; then
+	return
+    fi
+
+    if [[ "$db_srcCluster" = "" ]]; then
+	db_srcCluster="$(_get_cluster_name "$primary" 2>/dev/null)"
+    fi
+    if [[ "$db_dstCluster" = "" ]]; then
+	db_dstCluster="$db_srcCluster"
+    fi
+
+    local cmd="$shaholin_action \"$db_type\" \"$db_resource\" \"$db_change\" \"$db_srcCluster\" \"$db_dstCluster\" \"$db_state\""
+    echo "action: $cmd"
+    (eval "$cmd")
+    return 0
+}
+
 ###########################################
 
 function cm3_invalidate_caches
