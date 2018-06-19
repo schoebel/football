@@ -1677,6 +1677,7 @@ function migrate_resource
     wait_for_screener "$res" "migrate" "waiting" "$res $source_primary => $target_primary"
 
     call_hook want_downtime "$res" 1
+    call_hook update_ticket migrate_finish running
 
     failure_handler=failure_restart_vm
     failure_restart_primary="$source_primary $secondary_list"
@@ -1709,6 +1710,7 @@ function migrate_resource
     failure_handler=""
     call_hook report_downtime "$res" 0
     call_hook want_downtime "$res" 0
+    call_hook update_ticket migrate_finish finished
 }
 
 function get_augmented_host_list
@@ -1762,6 +1764,8 @@ function migrate_cleanup
 
     section "Cleanup migration data at $host_list"
 
+    call_hook update_ticket migrate_cleanup running
+
     local new_host_list=""
     local host
     for host in $host_list; do
@@ -1808,6 +1812,8 @@ function migrate_cleanup
 	sleep 10
 	_split_cluster "$host_list"
     fi
+
+    call_hook update_ticket migrate_cleanup finished
 }
 
 ######################################################################
@@ -2141,6 +2147,7 @@ function hot_phase
 	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
 
     call_hook want_downtime "$res" 1
+    call_hook update_ticket shrink_finish running
 
     failure_handler=failure_restart_vm
     failure_restart_primary="$primary $secondary_list"
@@ -2265,6 +2272,7 @@ function hot_phase
     call_hook resource_check "$lv_name"
     call_hook report_downtime "$res" 0
     call_hook want_downtime "$res" 0
+    call_hook update_ticket shrink_finish finished
 }
 
 function cleanup_old_remains
@@ -2351,6 +2359,7 @@ function migrate_prepare
     phase migrate_prepare
 
     call_hook prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
+    call_hook update_ticket migrate_prepare running
 
     migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
 
@@ -2359,9 +2368,14 @@ function migrate_prepare
 
 function migrate_wait
 {
+    local update_ticket="${1:-1}"
+
     phase migrate_wait
 
     wait_resource_uptodate "$target_primary $target_secondary" "$res"
+    if (( update_ticket )); then
+	call_hook update_ticket migrate_prepare finished
+    fi
 }
 
 function migrate_check
@@ -2397,6 +2411,7 @@ function shrink_prepare
     phase shrink_prepare
 
     determine_space
+    call_hook update_ticket shrink_prepare running
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
     make_tmp_mount "$hyper" "$primary" "$res"
     copy_data "$hyper" "$res" "$tmp_suffix" "$rsync_nice" "$rsync_opt_prepare" "$rsync_repeat_prepare"
@@ -2405,6 +2420,7 @@ function shrink_prepare
     if (( !reuse_mount )); then
 	make_tmp_umount "$hyper" "$primary" "$res"
     fi
+    call_hook update_ticket shrink_prepare finished
 }
 
 function shrink_finish
@@ -2418,7 +2434,9 @@ function shrink_cleanup
 {
     phase shrink_cleanup
 
+    call_hook update_ticket shrink_cleanup running
     cleanup_old_remains "$primary $secondary_list" "$res"
+    call_hook update_ticket shrink_cleanup finished
 }
 
 ### for extending
@@ -2497,7 +2515,7 @@ function migrate_plus_shrink
 	old_primary="$tmp_primary"
 	old_secondary=""
     else
-	migrate_wait
+	migrate_wait 0
     fi
     if (( wait_before_cleanup )); then
 	wait_for_screener "$res" "cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"

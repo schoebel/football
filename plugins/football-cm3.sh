@@ -1289,6 +1289,65 @@ function cm3_football_finished
     fi
 }
 
+## ticket
+# OPTIONAL: the meaning is ShaHoLin specific.
+# This can be used for updating JIRA tickets.
+# Can be set on the command line like "./tetris.sh $args --ticket=TECCM-4711
+ticket="${ticket:-}"
+
+## ticket_get_cmd
+# Optional: when set, this script can be used for retrieving ticket IDs
+# in place of commandline option --ticket=
+ticket_get_cmd="${ticket_get_cmd:-}"
+
+## ticket_update_cmd
+# This can be used for calling an external command which updates
+# the ticket(s) given by the $ticket parameter.
+ticket_update_cmd="${ticket_update_cmd:-}"
+
+function cm3_pre_init
+{
+    if [[ "$ticket" = "" ]] &&\
+	[[ "$ticket_update_cmd" != "" ]] &&\
+	[[ "$ticket_get_cmd" != "" ]]; then
+	echo "Trying to get ticket ID for resource '$res'"
+	ticket="$($ticket_get_cmd $res)"
+	echo "Got ticket ID '$ticket'"
+    fi
+}
+
+ticket_compensation=""
+
+function cm3_update_ticket
+{
+    local ticket_phase="$1"
+    local ticket_state="$2"
+
+    [[ "$ticket" = "" ]] && return
+    [[ "$ticket_update_cmd" = "" ]] && return
+
+    local cmd="$ticket_update_cmd \"$ticket\" \"$res\" \"$ticket_phase\" \"$ticket_state\""
+    echo "ticket: $cmd"
+    if [[ "$ticket_state" =~ running ]]; then
+	ticket_compensation="${cmd//running/failed}"
+    else
+	ticket_compensation=""
+    fi
+    (eval "$cmd")
+    return 0
+}
+
+function cm3_football_failed
+{
+    if [[ "$ticket_compensation" != "" ]]; then
+	local cmd="$ticket_compensation"
+	ticket_compensation=""
+	echo "ticket: $cmd"
+	(eval "$cmd")
+    fi
+    return 0
+}
+
 ###########################################
 
 function cm3_invalidate_caches
