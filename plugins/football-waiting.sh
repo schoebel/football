@@ -42,6 +42,7 @@
 # This ensures that only 1 operation can be started for the same resource,
 # and it simplifies the handling for junior sysadmins.
 #
+enable_startup_waiting="${enable_startup_waiting:-0}"
 enable_handover_waiting="${enable_handover_waiting:-0}"
 enable_migrate_waiting="${enable_migrate_waiting:-0}"
 enable_shrink_waiting="${enable_shrink_waiting:-0}"

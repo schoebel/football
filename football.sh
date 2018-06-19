@@ -1400,6 +1400,31 @@ function LV_cleanup
 
 # checks for LV migration
 
+## startup_when_locked
+# When == 0:
+#  Don't abort and don't wait when a lock is detected at startup.
+# When == 1 and when enable_startup_waiting=1:
+#  Wait until the lock is gone.
+# When == 2:
+#  Abort start of script execution when a lock is detected.
+#  Later, when a locks are set _during_ execution, they will
+#  be obeyed when enable_*_waiting is set (instead), and will
+#  lead to waits instead of aborts.
+startup_when_locked="${startup_when_locked:-1}"
+
+function check_locked
+{
+    if (( $(call_hook resource_locked "$res") )); then
+	if (( startup_when_locked <= 0 )); then
+	    warn "Resource '$res' is locked at the moment"
+	elif (( startup_when_locked == 1 )); then
+	    wait_for_screener "$res" startup
+	else
+	    fail "Resource '$res' is locked at the moment => retry later"
+	fi
+    fi
+}
+
 function check_migration
 {
     # works on global parameters
@@ -1414,9 +1439,7 @@ function check_migration
     done
     call_hook check_host "$primary $secondary_list $target_primary $target_secondary"
     # Check for locks
-    if (( $(call_hook resource_locked "$res") )); then
-	fail "Resource '$res' is locked at moment => retry later"
-    fi
+    check_locked
 }
 
 function check_vg_space
