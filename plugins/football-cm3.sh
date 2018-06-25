@@ -709,7 +709,11 @@ function cm3_get_flavour
 {
     local host="$1"
 
-    clustertool GET "/nodes/$host.schlund.de" |\
+    local url="/nodes/$host.schlund.de"
+    if [[ "$host" =~ infong ]]; then
+	url="/vms/$host.schlund.de"
+    fi
+    clustertool GET "$url" |\
 	json_pp |\
 	grep flavour |\
 	grep -o '".*"' |\
