@@ -2694,6 +2694,12 @@ if exists_hook get_flavour; then
     hyper_flavour="$(call_hook get_flavour "$hyper" 2>/dev/null)"
     echo "Determined the following hypervisor FLAVOUR: \"$hyper_flavour\""
 fi
+if exists_hook get_bz_id; then
+    res_bz_id="$(call_hook get_bz_id "$res" 2>/dev/null)"
+    echo "Determined the following resource   BZ_ID: \"$res_bz_id\""
+    hyper_bz_id="$(call_hook get_bz_id "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor BZ_ID: \"$hyper_bz_id\""
+fi
 
 primary="$(get_store "$res")" || fail "No current primary hostname can be determined"
 

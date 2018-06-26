@@ -721,6 +721,22 @@ function cm3_get_flavour
 	sed 's/^.*: *//'
 }
 
+function cm3_get_bz_id
+{
+    local host="$1"
+
+    local url="/nodes/$host.schlund.de"
+    if [[ "$host" =~ infong ]]; then
+	url="/vms/$host.schlund.de"
+    fi
+    clustertool GET "$url" |\
+	json_pp |\
+	grep bz_id |\
+	grep -o '".*"' |\
+	sed 's/"//g' |\
+	sed 's/^.*: *//'
+}
+
 ###########################################
 
 # Migration operation: move cm3 config from old cluster to a new cluster
