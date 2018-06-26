@@ -291,6 +291,10 @@ rsync_nice="${rsync_nice:-nice -19}"
 rsync_repeat_prepare="${rsync_repeat_prepare:-5}"
 rsync_repeat_hot="${rsync_repeat_hot:-3}"
 
+## rsync_skip_lines
+# Number of rsync lines to skip in output (avoid overflow of logfiles).
+rsync_skip_lines="${rsync_skip_lines:-1000}"
+
 ## wait_timeout
 # Avoid infinite loops upon waiting.
 wait_timeout="${wait_timeout:-$(( 24 * 60 ))}" # Minutes
@@ -332,7 +336,7 @@ shrink_suffix_old="${shrink_suffix_old:--preshrink}"
 
 
 # some constants
-commands_needed="${commands_needed:-ssh rsync grep sed awk sort head tail tee cat ls basename dirname cut ping date mkdir rm wc bc}"
+commands_needed="${commands_needed:-ssh rsync grep sed awk stdbuf sort head tail tee cat ls basename dirname cut ping date mkdir rm wc bc}"
 
 ######################################################################
 
@@ -2100,7 +2104,7 @@ function copy_data
 
     local mnt="$(call_hook get_mountpoint "$lv_name")"
 
-    remote "$hyper" "for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
+    remote "$hyper" "set -o pipefail; for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ | stdbuf --input=0 --output=L awk 'BEGIN{ RS=\"[\\r\\n]\"; } { if (\$0 ~ /xfr\#|\%.*[0-9]+:[0-9]+:[0-9]+ /) { if (c++ % $rsync_skip_lines == 0) { print \$0; } } else { print \$0; } }'; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
     injection_point
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
     remote "$hyper" "sync"
