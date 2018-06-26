@@ -552,18 +552,55 @@ function check_needed
     fail "$type actual version '$actual' does not match one of '$needed_list'"
 }
 
+## forbidden_hosts
+# Regex for excluding hostnames from any Football actions.
+# The script will fail when some of these is encountered.
+forbidden_hosts="${forbidden_hosts:-}"
+
+## forbidden_flavours
+# Regex for excluding flavours from any Football actions.
+# The script will fail when some of these is encountered.
+forbidden_flavours="${forbidden_flavours:-}"
+
+## forbidden_bz_ids
+# PROVISIONARY regex for excluding certain bz_ids from any Football actions.
+# NOTICE: bz_ids are deprecated and should not be used in future
+# (technical debts).
+# The script will fail when some of these is encountered.
+forbidden_bz_ids="${forbidden_bz_ids:-}"
+
 function cm3_check_host
 {
     local host_list="$1"
 
     local host
     for host in $host_list; do
+	echo "Checking host '$host'..."
+	if [[ "$forbidden_hosts" != "" ]]; then
+	    if [[ "$host" =~ $forbidden_hosts ]]; then
+		fail "Host '$host' is forbidden by regex '$forbidden_hosts'"
+	    fi
+	fi
 	# check that clustermw is working
 	local cluster="$(_get_cluster_name "$host")"
 	if [[ "$cluster" = "" ]]; then
 	    fail "cannot determine cluster from host '$host'"
 	fi
 	echo "Host '$host' is on cluster '$cluster'"
+	if [[ "$forbidden_flavours" != "" ]]; then
+	    local flavour="$(call_hook get_flavour "$host" 2>/dev/null)"
+	    echo "Host '$host' has flavour '$flavour'"
+	    if [[ "$flavour" =~ $forbidden_flavours ]]; then
+		fail "Flavour '$flavour' is forbidden by regex '$forbidden_flavours'"
+	    fi
+	fi
+	if [[ "$forbidden_bz_ids" != "" ]]; then
+	    local bz_id="$(call_hook get_bz_id "$host" 2>/dev/null)"
+	    echo "Host '$host' has bz_id '$bz_id'"
+	    if [[ "$bz_id" =~ $forbidden_bz_ids ]]; then
+		fail "Bz_Id '$bz_id' is forbidden by regex '$forbidden_bz_ids'"
+	    fi
+	fi
 	local serial="$(clustertool GET "/clusters/$cluster/properties/CLUSTERCONF_SERIAL")"
 	if [[ "$serial" = "" ]]; then
 	    fail "Suspected misconfiguration: cannot determine serial for cluster '$cluster'"
