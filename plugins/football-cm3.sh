@@ -1045,6 +1045,10 @@ function cm3_migrate_cm3_config
 	} |\
 		sort -u)"
 	cm3_update_cm3_config "$total_list"
+	(call_hook runstack "$source" "$target" "$res")
+	(call_hook dastool  "$source" "$target" "$res")
+	(call_hook update_action "$res")
+	echo "Migrated from '$source_cluster' to '$target_cluster'"
     else
 	echo "Source and target clusters are equal: '$source_cluster'"
 	echo "Nothing to do."
