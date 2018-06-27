@@ -2206,6 +2206,7 @@ function hot_phase
     fi
 
     remote "$primary" "marsadm wait-umount $lv_name"
+    sleep 10
     remote "$primary" "marsadm secondary $lv_name"
     injection_point
 
