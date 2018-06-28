@@ -181,11 +181,29 @@ function cm3_resource_locked
     fi
 }
 
+function cm3_resource_info
+{
+    local res="$1"
+    local suffix="$2"
+
+    if ! ping $ping_opts $res; then
+	return
+    fi
+    echo "Show statistics for '$res$suffix'"
+    local hyper="$(get_hyper $res)"
+    [[ "$hyper" = "" ]] && return
+    local mnt="$(cm3_get_mountpoint "$res")$suffix"
+    local cmd="if mountpoint $mnt; then df -h $mnt; df -ih $mnt; fi"
+    remote "$hyper" "$cmd" 1
+    echo "---"
+}
+
 function cm3_resource_stop
 {
     local host="$1"
     local res="$2"
 
+    cm3_resource_info "$res"
     declare -g  downtime_begin
     [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
@@ -199,6 +217,7 @@ function cm3_resource_stop_vm
     local hyper="$1"
     local res="$2"
 
+    cm3_resource_info "$res"
     declare -g  downtime_begin
     [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
@@ -234,6 +253,7 @@ function cm3_resource_start
     declare -g  downtime_end="$(date +%s)"
     echo "DOWNTIME END $(date) ($(( downtime_end - downtime_begin )) s)"
     remote "$host" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
+    cm3_resource_info "$res"
 }
 
 function cm3_resource_start_vm
@@ -243,6 +263,7 @@ function cm3_resource_start_vm
 
     # start only the vm
     # precondition is that mounts etc are already present
+    cm3_resource_info "$res"
     remote "$hyper" "nodeagent vmstart $res"
     declare -g  downtime_begin
     declare -g  downtime_end="$(date +%s)"
@@ -264,6 +285,7 @@ function cm3_resource_check
 	fi
 	sleep 3
     done
+    cm3_resource_info "$res"
     echo "Checking $host via check_progs ...."
     sleep 15
     remote "$host" "check_progs -cvi" 1 || echo "ATTENTION SOMETHING DOES NOT WORK AT $host"

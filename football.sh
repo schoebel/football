@@ -2283,6 +2283,8 @@ function hot_phase
 
     # additional temporary mount
     make_tmp_mount "$hyper" "$primary" "$lv_name" "$suffix"
+    call_hook resource_info "$lv_name"
+    call_hook resource_info "$lv_name" "$suffix"
 
     section "Last online incremental rsync"
 
@@ -2332,7 +2334,13 @@ function hot_phase
 
     section "Final rsync"
 
+    call_hook resource_info "$lv_name"
+    call_hook resource_info "$lv_name" "$suffix"
+
     copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_hot" "$rsync_repeat_hot"
+
+    call_hook resource_info "$lv_name"
+    call_hook resource_info "$lv_name" "$suffix"
 
     make_tmp_umount "$hyper" "$primary" "$lv_name" "$suffix"
     remote "$hyper" "rmdir $mnt$suffix || true"
@@ -2403,6 +2411,7 @@ function hot_phase
     echo ""
 
     call_hook resource_start "$primary" "$lv_name"
+    call_hook resource_info "$lv_name"
     injection_point
 
     failure_handler=""
