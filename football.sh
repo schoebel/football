@@ -464,6 +464,11 @@ Actions for (manual) repair in emergency situations:
      get the customers online again, while buying the downsides of this
      command.
 
+  $0 manual_lock   <item> <host_list>
+  $0 manual_unlock <item> <host_list>
+     Manually lock or unlock an item at all of the given hosts, in
+     an atomic fashion. In most cases, use "ALL" for the item.
+
 Global maintenance:
 
   $0 lv_cleanup      <resource>
@@ -545,6 +550,8 @@ function fail
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
 	(call_hook football_failed "$status" "$0" "$@")
+	# unlock any locks
+	lock_hosts
 	echo "" >> /dev/stderr
 	echo "EXIT status=$status" >> /dev/stderr
     fi
@@ -563,6 +570,8 @@ function exit
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
 	call_hook 0 football_finished "$status" "$0" "$@"
+	# unlock any locks
+	lock_hosts
     fi
     echo ""
     echo "EXIT status=$status" >> /dev/stderr
@@ -619,6 +628,118 @@ function timeout_cmd
     local rc=$(( rc1 | rc2 ))
     #echo "RC=$rc" >> /dev/stderr
     return $rc
+}
+
+## lock_break_timeout
+# When remote ssh commands are failing, remote locks may sustain forever.
+# Avoid deadlocks by breaking remote locks after this timeout has elapsed.
+# NOTICE: these type of locks are only intended for short-term locking.
+lock_break_timeout="${lock_break_timeout:-3600}" # seconds
+
+declare -g locked_hosts=""
+declare -g locked_items=""
+
+function lock_hosts
+{
+    local do_lock="${1:-0}"
+    local host_list="${2:-$locked_hosts}"
+    local item_list="${3:-${locked_items:-ALL}}"
+    local exclusive="${4:-1}"
+
+    if [[ "$BASHPID" != "$main_pid" ]]; then
+	if (( !do_lock )); then
+	    return
+	fi
+	if (( exclusive )); then
+	    warn "Don't call $FUNCNAME from a subshell"
+	fi
+    fi
+
+    # IMPORTANT: sorting of names is necessary for deadlock avoidance
+    local host
+    local item
+    host_list="$(echo -n $(
+    for host in $host_list; do
+	echo $host
+    done | sort -u) )"
+    if [[ "$host_list" = "" ]]; then
+	return
+    fi
+    item_list="$(echo -n $(
+    for item in $item_list; do
+	echo $item
+    done | sort -u) )"
+    if [[ "$item_list" = "" ]]; then
+	echo "IMPLAUSIBLE locking $do_lock: empty item list for host_list='$host_list'"
+	return
+    fi
+    local unlock_cmd=""
+    for item in $item_list; do
+	unlock_cmd+="rm -f /tmp/LOCK.$item;"
+    done
+    if (( do_lock )); then
+	echo "Locking '$item_list' on hosts '$host_list'"
+	# Hint: this implies O_CREAT | O_EXCL
+	local lock_cmd="set -o noclobber"
+	local check_cmd=""
+	for item in $item_list; do
+	    if (( exclusive )); then
+		lock_cmd+=" && echo $user_name > /tmp/LOCK.$item"
+	    else
+		lock_cmd+=" && echo $user_name >> /tmp/LOCK.$item"
+	    fi
+	    check_cmd+="stat --format=%Y /tmp/LOCK.$item;"
+	done
+	while true; do
+	    local obtained=""
+	    local failed=0
+	    for host in $host_list; do
+		remote "$host" "$lock_cmd" 1
+		if (( $? )); then
+		    (( failed++ ))
+		    break
+		fi
+		obtained+=" $host"
+	    done
+	    if (( !failed )); then
+		echo "LOCKED '$item_list' on hosts '$obtained'"
+		break
+	    fi
+	    # Some already obtained locks need to be reverted...
+	    local u_host
+	    for u_host in $obtained; do
+		remote "$u_host" "$unlock_cmd"
+	    done
+	    echo "WAITING_FOR_LOCK $(date +%s) $(date): locks '$item_list' currently not obtainable at '$host'"
+	    sleep  $(( $RANDOM * 20 / 32767 + 10 ))
+	    local max_stamp="$(
+	    for host in $host_list; do
+		remote "$host" "$check_cmd" 1
+	    done | awk '{ if ($1 > s) { s = $1; } } END{ print s; }')"
+	    local now="$(date +%s)"
+	    if [[ "$max_stamp" != "" ]] &&\
+		(( max_stamp )) &&\
+		(( max_stamp + lock_break_timeout < now )); then
+		echo "max_stamp=$max_stamp"
+		echo "now      =$now"
+		echo "BREAKING LOCKS '$item_list' on hosts '$host_list'"
+		for host in $host_list; do
+		    remote "$host" "$unlock_cmd"
+		done
+	    fi
+	done
+	locked_hosts="$(for item in $locked_hosts $host_list; do echo $item; done | sort -u)"
+	locked_items="$(for item in $locked_items $item_list; do echo $item; done | sort -u)"
+    else
+	echo "UnLocking '$item_list' on hosts '$host_list'"
+	for host in $host_list; do
+	    remote "$host" "$unlock_cmd"
+	done
+	echo "UNLOCKED '$item_list' on hosts '$host_list'"
+	locked_hosts=""
+	locked_items=""
+    fi
+    return 0
 }
 
 args_info=""
@@ -2655,6 +2776,23 @@ repair_mars)
   enable_failure_restart_vm=1
   enable_failure_rebuild_mars=1
   failure_rebuild_mars "$primary $secondary_list" "" "$res"
+  exit $?
+  ;;
+
+manual_lock)
+  shift
+  item="$1"
+  shift
+  lock_hosts 1 "$*" "$item"
+  locked_hosts=""
+  exit $?
+  ;;
+
+manual_unlock)
+  shift
+  item="$1"
+  shift
+  lock_hosts 0 "$*" "$item"
   exit $?
   ;;
 esac
