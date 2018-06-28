@@ -99,6 +99,10 @@ football_includes="${football_includes:-/usr/lib/mars/plugins /etc/mars/plugins 
 # Thus you can change this during the first pass.
 football_confs="${football_confs:-/usr/lib/mars/confs /etc/mars/confs $script_dir/confs $HOME/.mars/confs ./confs}"
 
+## football_creds
+# List of directories where various credential files can be found.
+football_creds="${football_creds:-/usr/lib/mars/creds /etc/mars/creds $script_dir/creds $script_dir $HOME/.mars/creds ./creds}"
+
 declare -g -A files=()
 declare -g file
 declare -g module_list=""
@@ -139,7 +143,7 @@ function get_cred_file
     local glob="$1"
 
     local dir
-    for dir in $football_confs $football_includes; do
+    for dir in $football_creds $football_confs $football_includes; do
 	local file
 	for file in $dir/$glob; do
 	    if [[ -r "$file" ]]; then

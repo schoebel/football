@@ -662,16 +662,23 @@ clustertool_host="${clustertool_host:-}"
 ## clustertool_user
 # Username for clustertool access.
 # By default, scans for a *.password file (see next option).
-clustertool_user="${clustertool_user:-$(shopt -u nullglob; ls *.password | head -1 | cut -d. -f1)}" ||\
-    echo "cannot find a password file *.password for clustermw: you MUST supply the credentials via default curl config files (see man page)"
+clustertool_user="${clustertool_user:-$(get_cred_file "*.password" | head -1 | sed 's:.*/::g' | cut -d. -f1)}"
 
-## clustertool_passwd
+echo "Using clustermw username: '$clustertool_user'" >> /dev/stderr
+
+## clustertool_passwd_file
 # Here you can supply the encrpted password.
 # By default, a file $clustertool_user.password is used
 # containing the encrypted password.
-clustertool_passwd="${clustertool_passwd:-$([[ -r $clustertool_user.password ]] && cat $clustertool_user.password)}"
+clustertool_passwd_file="${clustertool_passwd_file:-$(get_cred_file "$clustertool_user.password")}"
 
-echo "Using clustermw username: '$clustertool_user'"
+echo "Using clustermw password file: '$clustertool_passwd_file'" >> /dev/stderr
+
+## clustertool_passwd
+# Here you may override the password via config file.
+# For security reasons, dont provide this at the command line.
+clustertool_passwd="${clustertool_passwd:-$(< $clustertool_passwd_file)}" ||\
+    echo "cannot read a password file *.password for clustermw: you MUST supply the credentials via default curl config files (see man page)"
 
 function clustertool
 {
