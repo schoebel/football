@@ -1646,6 +1646,8 @@ function merge_cluster
 
     section "Ensure that \"marsadm merge-cluster\" has been executed."
 
+    lock_hosts 1 "$(get_augmented_host_list "$source_primary $source_secondary $target_primary $target_secondary")" ALL
+
     # Safeguard operating errors
     local host
     for host in $source_primary $source_secondary $target_primary $target_secondary; do
@@ -1661,6 +1663,8 @@ function merge_cluster
 	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
 	fi
     done
+
+    lock_hosts
 
     for host in $source_primary $target_primary $target_secondary; do
 	remote "$host" "marsadm wait-cluster"
@@ -1862,9 +1866,13 @@ function manual_merge_cluster
     local host_list="$(get_augmented_host_list "$host1 $host2")"
     echo "Augmented host list: $host_list"
 
+    lock_hosts 1 "$host_list" ALL
+
     call_hook prepare_hosts "$host_list"
     call_hook merge_cluster "$host1" "$host2"
     call_hook finish_hosts "$host_list"
+
+    lock_hosts
 }
 
 function _split_cluster
@@ -1874,9 +1882,13 @@ function _split_cluster
     local host_list="$(get_augmented_host_list "$host_list")"
     echo "Augmented host list: $host_list"
 
+    lock_hosts 1 "$host_list" ALL
+
     call_hook prepare_hosts "$host_list"
     call_hook split_cluster "$host_list"
     call_hook finish_hosts "$host_list"
+
+    lock_hosts
 }
 
 function migrate_cleanup
