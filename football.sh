@@ -1790,6 +1790,11 @@ function wait_resource_uptodate
     (( verbose )) && echo "$(date) sync appears to have finished at '$host_list'"
 }
 
+## resource_pre_check
+# Useful for debugging of container problems.
+# Normally not needed.
+resource_pre_check="${resource_pre_check:-0}"
+
 function migrate_resource
 {
     local source_primary="$1"
@@ -1803,6 +1808,10 @@ function migrate_resource
     fi
 
     wait_resource_uptodate "$target_primary" "$res"
+
+    if (( resource_pre_check )); then
+	call_hook resource_check "$res" "$source_primary" "$target_primary"
+    fi
 
     # critical path
     section "Stopping old primary"
