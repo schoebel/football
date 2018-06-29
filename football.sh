@@ -329,6 +329,12 @@ serious_status="${serious_status:-198}"
 # in order to minimize cross traffic between datacenters.
 pre_hand="${pre_hand:-}"
 
+## post_hand or --post-hand=
+# Set this to do an ordinary handover to a final position
+# (in the target cluster) after everything has successfully finished.
+# This may be used to establish a uniform default running location.
+post_hand="${post_hand:-}"
+
 ## tmp_suffix
 # Only for experts.
 tmp_suffix="${tmp_suffix:--tmp}"
@@ -3026,6 +3032,15 @@ migrate+shrink+back)
   fail "Unknown operation '$operation'"
   ;;
 esac
+
+if [[ "$post_hand" != "" ]]; then
+    phase post-handover "Post-Handover of '$res' to '$post_hand'"
+    do_confirm
+    handover "$post_hand" "$res"
+    echo "Handover status=$?"
+fi
+
+phase done "$0 $*"
 
 call_hook football_finished 0 "$0" "$@"
 
