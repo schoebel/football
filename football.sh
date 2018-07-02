@@ -2752,6 +2752,25 @@ ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH ident
 export user_name="${user_name:-$(get_real_ssh_user)}"
 export user_name="${user_name:-$LOGNAME}"
 
+## replace_ssh_id_file
+# When set, replace current ssh user with this one.
+# The new user should hot have a passphrase.
+# Useful for logging out the original user (interrupting the original
+# ssh agent chain).
+replace_ssh_id_file="${replace_ssh_id_file:-}"
+
+if [[ "$replace_ssh_id_file" != "" ]] && [[ "$replace_ssh_id_file" != "EMPTY" ]]; then
+    echo "OLD ssh keys:"
+    ssh-add -l
+    echo "Replacing new ssh users from file '$replace_ssh_id_file'"
+    eval $(ssh-agent)
+    ssh-add -D
+    ssh-add $replace_ssh_id_file || fail "ssh-add $replace_ssh_id_file status=$?"
+    echo "NEW ssh keys:"
+    ssh-add -l
+    export replace_ssh_id_file="EMPTY"
+fi
+
 if (( screener )); then
     [[ "$res" = "" ]] && fail "cannot start screener on empty resource"
     # disallow endless recursion
