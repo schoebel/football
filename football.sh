@@ -2910,6 +2910,12 @@ if exists_hook get_hvt_id; then
     hyper_hvt_id="$(call_hook get_hvt_id "$hyper" 2>/dev/null)"
     echo "Determined the following hypervisor HVT_ID: \"$hyper_hvt_id\""
 fi
+if exists_hook get_hwclass_id; then
+    res_hwclass_id="$(call_hook get_hwclass_id "$res" 2>/dev/null)"
+    echo "Determined the following resource   HWCLASS_ID: \"$res_hwclass_id\""
+    hyper_hwclass_id="$(call_hook get_hwclass_id "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor HWCLASS_ID: \"$hyper_hwclass_id\""
+fi
 
 primary="$(get_store "$res")" || fail "No current primary hostname can be determined"
 
