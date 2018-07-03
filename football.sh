@@ -1161,17 +1161,10 @@ function handover
     call_hook want_downtime "$res" 0
 }
 
-function leave_resource
+function _leave_resource
 {
     local res="$1"
     local host_list="$2"
-
-    host_list="${host_list## }"
-    host_list="${host_list%% }"
-    host_list="${host_list//  / }"
-    local host_glob="{${host_list// /,}}"
-    [[ "$host_glob" =~ , ]] || host_glob="$host_list"
-    local full_list="$(get_full_list "$host_list")"
 
     local retry
     for (( retry=0; retry < 10; retry++ )); do
@@ -1200,12 +1193,33 @@ function leave_resource
 	    cmd="ls -l /mars/resource-$res/{data,replay}-$host_glob | tee /dev/stderr | wc -l"
 	    (( count += $(remote "$host" "$cmd") ))
 	done
-	(( !count )) && return 0
+	if (( !count )); then
+	    return 0
+	fi
 	echo "LEFT $count: REPEAT delete-resource $host_list"
 	sleep 7
 	echo "RETRY $retry leave-resource" 
     done
     fail "leave-resource $res did not work on $host_list"
+}
+
+function leave_resource
+{
+    local res="$1"
+    local host_list="$2"
+
+    host_list="${host_list## }"
+    host_list="${host_list%% }"
+    host_list="${host_list//  / }"
+    local host_glob="{${host_list// /,}}"
+    [[ "$host_glob" =~ , ]] || host_glob="$host_list"
+    local full_list="$(get_full_list "$host_list")"
+
+    lock_hosts 1 "$host_list" ALL
+
+    _leave_resource "$res" "$host_list"
+
+    lock_hosts
 }
 
 function delete_resource
@@ -1218,7 +1232,8 @@ function delete_resource
     local retry
     for (( retry=0; retry < 3; retry++ )); do
 	local host
-	leave_resource "$res" "$full_list"
+	lock_hosts 1 "$full_list" ALL
+	_leave_resource "$res" "$full_list"
 	if (( !safeguard_delete_resource )) && [[ "$primary" != "" ]]; then
 	    remote "$primary" "marsadm delete-resource $res"
 	else
@@ -1228,6 +1243,7 @@ function delete_resource
 	    done
 	    wait
 	fi
+	lock_hosts
 	sleep 16
 	local has_remains=0
 	for host in $full_list; do
