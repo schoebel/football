@@ -426,7 +426,9 @@ Dto for testing (do not rely on it):
 
 Actions for inplace FS extension:
 
+  $0 expand          <resource> <percent>
   $0 extend          <resource> <percent>
+    Increase mounted filesystem size during operations.
 
 Combined actions:
 
@@ -784,7 +786,7 @@ function scan_args
 		local -a params=(operation res)	
 	    elif [[ "$par" =~ migrate ]]; then
 		local -a params=(operation res target_primary target_secondary)
-	    elif [[ "$par" =~ shrink|extend ]]; then
+	    elif [[ "$par" =~ shrink|extend|expand ]]; then
 		local -a params=(operation res target_percent)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
@@ -2966,7 +2968,7 @@ fi
 # determine sizes and available space (only for extending / shrinking)
 if [[ "$operation" =~ ^(shrink|shrink_prepare|move\+shrink)$ ]]; then
     check_shrinking
-elif [[ "$operation" =~ extend ]]; then
+elif [[ "$operation" =~ extend|expand ]]; then
     check_extending
 fi
 
@@ -3036,7 +3038,7 @@ shrink)
   shrink_cleanup
   ;;
 
-extend)
+extend|expand)
   extend_stack
   ;;
 
