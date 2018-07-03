@@ -1722,6 +1722,8 @@ function migration_prepare
 
     section "Re-determine and check all resource sizes for safety"
 
+    lock_hosts 1 "$source_primary $source_secondary $target_primary $target_secondary" ALL
+
     local size="$(( $(remote "$source_primary" "marsadm view-sync-size $lv_name") / 1024 ))" ||\
 	fail "cannot determine resource size"
     local needed_size="$size"
@@ -1758,6 +1760,9 @@ function migration_prepare
 	remote "$target_secondary" "marsadm $(call_hook ssh_port "$target_secondary" 1) join-resource $lv_name $secondary_dev"
 	injection_point
     fi
+
+    lock_hosts
+
     remote "$target_primary" "marsadm wait-cluster"
 }
 
