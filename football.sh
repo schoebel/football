@@ -1232,7 +1232,6 @@ function delete_resource
     local retry
     for (( retry=0; retry < 3; retry++ )); do
 	local host
-	lock_hosts 1 "$full_list" ALL
 	_leave_resource "$res" "$full_list"
 	if (( !safeguard_delete_resource )) && [[ "$primary" != "" ]]; then
 	    remote "$primary" "marsadm delete-resource $res"
@@ -1243,7 +1242,6 @@ function delete_resource
 	    done
 	    wait
 	fi
-	lock_hosts
 	sleep 16
 	local has_remains=0
 	for host in $full_list; do
@@ -2326,6 +2324,8 @@ function hot_phase
     # go offline
     section "Go offline"
 
+    local full_list="$(get_full_list "$primary $secondary_list")"
+
     # repeat for better dentry caching
     wait_for_screener "$res" "shrink" "waiting" "$hyper $lv_name" "" "$cache_repeat_lapse" \
 	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
@@ -2333,6 +2333,8 @@ function hot_phase
     call_hook want_downtime "$res" 1
     call_hook tell_action shrink finish
     call_hook update_ticket shrink_finish running
+
+    lock_hosts 1 "$full_list" ALL
 
     failure_handler=failure_restart_vm
     failure_restart_primary="$primary $secondary_list"
@@ -2393,7 +2395,6 @@ function hot_phase
     remote "$primary" "marsadm secondary $lv_name"
     injection_point
 
-    local full_list="$(get_full_list "$primary $secondary_list")"
     for host in $full_list; do
 	call_hook save_resource_state "$host" "$lv_name"
     done
@@ -2459,6 +2460,8 @@ function hot_phase
     done
 
     call_hook restore_local_quota "$hyper" "$lv_name"
+
+    lock_hosts
 
     section "Checking new container"
 
