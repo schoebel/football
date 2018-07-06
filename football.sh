@@ -1849,6 +1849,9 @@ function migrate_resource
     call_hook tell_action migrate finish
     call_hook update_ticket migrate_finish running
 
+    local full_list="$(get_full_list "$source_primary $target_primary $target_secondary")"
+    lock_hosts 1 "$full_list" ALL
+
     failure_handler=failure_restart_vm
     failure_restart_primary="$source_primary $secondary_list"
     failure_restart_hyper=""
@@ -1873,6 +1876,8 @@ function migrate_resource
 
     call_hook resource_start "$target_primary" "$res"
     injection_point
+
+    lock_hosts
 
     section "Checking new primary"
 
