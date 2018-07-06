@@ -2838,7 +2838,7 @@ commands_installed "$commands_needed"
 
 scan_args "$@"
 
-ssh-add -l || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
+ssh-add -l >> /dev/stderr || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
 
 ## user_name
 # Normally automatically derived from ssh agent or from $LOGNAME.
