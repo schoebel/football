@@ -1147,6 +1147,8 @@ function handover
 
     call_hook want_downtime "$res" 1
 
+    lock_hosts 1 "$current $target" ALL
+
     failure_handler=failure_restart_vm
     failure_restart_primary="$current $target $primary $secondary_list $target_primary $target_secondary"
     failure_restart_hyper=""
@@ -1157,6 +1159,8 @@ function handover
     call_hook resource_start "$target" "$res"
     call_hook resource_check "$res"
     failure_handler=""
+
+    lock_hosts
 
     call_hook want_downtime "$res" 0
 }
