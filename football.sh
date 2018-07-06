@@ -236,6 +236,11 @@ debug_injection_point="${debug_injection_point:-0}"
 # Set this to your convenience.
 football_logdir="${football_logdir:-${logdir:-$HOME/football-logs}}"
 
+## football_backup_dir
+# In this directory, various backups are created.
+# Intended for manual repair.
+football_backup_dir="${football_backup_dir:-$football_logdir/backups}"
+
 ## screener
 # When enabled, handover execution to the screener.
 # Very useful for running Football in masses.
@@ -2161,7 +2166,7 @@ do_quota="${do_quota:-2}"
 
 ## xfs_dump_dir
 # Temporary space for keeping xfs quota dumps.
-xfs_dump_dir="${xfs_dump_dir:-xfs-quota-$start_stamp}"
+xfs_dump_dir="${xfs_dump_dir:-$football_backup_dir/xfs-quota-$start_stamp}"
 
 ## xfs_quota_enable
 # Command for re-enabling the quota system after shrink.

@@ -862,10 +862,6 @@ always_migrate="${always_migrate:-0}" # only enable for testing
 # should be switched off.
 check_segments="${check_segments:-1}"
 
-## backup_dir
-# Directory for keeping JSON backups of clustermw.
-backup_dir="${backup_dir:-.}"
-
 function _check_migrate
 {
     local source="$1"
@@ -1003,8 +999,8 @@ function cm3_migrate_cm3_config
 	echo "Moving config from cluster '$source_cluster' to cluster '$target_cluster'"
 
 	local backup=""
-	if [[ "$backup_dir" != "" ]]; then
-	    local backup="$backup_dir/json-backup.$start_stamp"
+	if [[ "$football_backup_dir" != "" ]]; then
+	    local backup="$football_backup_dir/json-backup.$start_stamp"
 	    mkdir -p $backup
 	fi
 
