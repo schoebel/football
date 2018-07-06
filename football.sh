@@ -1882,6 +1882,7 @@ function migration_prepare
     local source_secondary="$3"
     local target_primary="$4"
     local target_secondary="$5"
+    local extra_secondary="$6"
 
     section "Idempotence: check whether the additional replica has been alread created"
 
@@ -1926,7 +1927,7 @@ function migration_prepare
 	check_vg_space "$host" "$needed_size" "$lv_name"
     done
 
-    merge_cluster "$lv_name" "$host_list" "$target_primary $target_secondary"
+    merge_cluster "$lv_name" "$host_list" "$target_primary $target_secondary $extra_secondary"
 
     section "Create migration spaces"
 
@@ -2957,7 +2958,7 @@ function migrate_prepare
     call_hook tell_action migrate prepare
     call_hook update_ticket migrate_prepare running
 
-    migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
+    migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary" "$extra_secondary"
 }
 
 function migrate_wait
@@ -2996,6 +2997,55 @@ function migrate_clean
     migrate_cleanup "$to_clean_old" "$to_clean_new" "$res"
     injection_point
     cleanup_old_remains "$to_clean_new" "$res"
+}
+
+## migrate_two_phase
+# This is useful when the new hardware has a better replication network,
+# e.g. 10GBit uplink instead of 1GBit.
+# Instead of starting two or more syncs in parallel on the old hardware,
+# run the syncs in two phases:
+# 1. migrate data to the new primary only.
+# 1b. handover to new primary.
+# 2. now start migration of data to the new secondaries, over the better
+# network attachment of the new hardware.
+migrate_two_phase="${migrate_two_phase:-0}"
+
+function migrate
+{
+    local do_cleanup="${1:-1}"
+    local two_phase="${2:-$migrate_two_phase}"
+
+    echo "Migrate do_cleanup=$do_cleanup two_phase=$two_phase"
+    local old_target_secondary="$target_secondary"
+    if (( two_phase )) && [[ "$old_target_secondary" != "" ]]; then
+	echo "Migrating in two phases"
+	declare -g extra_secondary="$target_secondary"
+	target_secondary=""
+    fi
+    migrate_prepare
+    migrate_wait
+    migrate_finish
+    if (( two_phase )) && [[ "$old_target_secondary" != "" ]]; then
+	echo "Migrating in two phases"
+	old_primary="$primary"
+	old_secondary_list="$secondary_list"
+	target_secondary="$old_target_secondary"
+	declare -g extra_secondary=""
+	primary="$target_primary"
+	secondary_list=""
+	migrate 0 0
+	primary="$old_primary"
+	secondary_list="$old_secondary_list"
+    fi
+    if (( do_cleanup )); then
+	if (( wait_before_cleanup )); then
+	    wait_for_screener "$res" "cleanup" "delayed" "$res $primary => $target_primary" \
+		"" "" "" \
+		"$wait_before_cleanup"
+	fi
+	migrate_cleanup "$primary $secondary_list" "$target_primary $target_secondary" "$res"
+	cleanup_old_remains "$primary $secondary_list" "$res"
+    fi
 }
 
 ### for shrinking
@@ -3080,13 +3130,16 @@ function migrate_plus_shrink
     local old_target_secondary="$target_secondary"
     migrate_check
     if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
-	# Less network traffic:
-	# Migrate to only one target => new secondary will be created
-	# again at shrink 
-	target_secondary=""
-	migrate_prepare
-	migrate_wait
-	migrate_finish
+	if (( migrate_two_phase )); then
+	    migrate 1 1
+	else
+	    # Less network traffic:
+	    # Migrate to only one target => new secondary will be created
+	    # again at shrink 
+	    target_secondary=""
+	    migrate 0 0
+	fi
+	call_hook invalidate_caches
 	if (( go_back )); then
 	    target_secondary=""
 	else
@@ -3094,7 +3147,6 @@ function migrate_plus_shrink
 	fi
 	declare -g -A hypervisor_host=()
 	declare -g -A storage_host=()
-	call_hook invalidate_caches
     else
 	echo "Skipping the 'migrate' part, continue with 'shrink'"
     fi
@@ -3424,14 +3476,7 @@ migrate_finish)
   ;;
 migrate)
   migrate_check
-  migrate_prepare
-  migrate_wait
-  migrate_finish
-  if (( wait_before_cleanup )); then
-      wait_for_screener "$res" "cleanup" "delayed" "$res $primary => $target_primary" "$wait_before_cleanup"
-  fi
-  migrate_cleanup "$primary $secondary_list" "$target_primary $target_secondary" "$res"
-  cleanup_old_remains "$primary $secondary_list" "$res"
+  migrate
   ;;
 migrate_cleanup)
   migrate_clean
