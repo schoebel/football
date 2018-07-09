@@ -271,10 +271,15 @@ function cm3_resource_start_vm
     remote "$hyper" "if [[ -x /usr/sbin/nodeagent ]]; then /usr/sbin/nodeagent status; fi"
 }
 
+## check_ping_rounds
+# Number of pings to try before a container is assumed to
+# not respond.
+check_ping_rounds="${check_ping_rounds:-5}"
+
 function cm3_resource_check
 {
     local res="$1"
-    local timeout="${2:-10}"
+    local timeout="${2:-$check_ping_rounds}"
 
     local host="$res"
     echo "Checking whether $host is running...."
@@ -1244,7 +1249,7 @@ function cm3_restore_local_quota
 	section "Local xfs quota restore"
 
 	if [[ -s "$dumpfile" ]]; then
-	    local max_rounds=10
+	    local max_rounds=$check_ping_rounds
 	    while ! ping $ping_opts "$lv_name"; do
 		if (( max_rounds-- < 0 )); then
 		    (( !skip_resource_ping )) && fail "host $lv_name does not ping"
