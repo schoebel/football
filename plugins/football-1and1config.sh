@@ -67,20 +67,19 @@ function 1and1config_runstack
 
     [[ "$source" = "" ]] && return
     [[ "$target" = "" ]] && return
-    [[ "$res" = "" ]] && return
+    [[ "$res" = "" ]]    && return
 
     local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
     local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
 
-    if (( always_migrate )) || [[ "$source_cluster" != "$target_cluster" ]]; then
-		echo "Call runstack for deploying cluster config for example /etc/1und1/cm-infong.conf to '$res' in cluster '$target_cluster'"
+    if [[ "$source_cluster" != "$target_cluster" ]]; then
+	echo "Call runstack for deploying cluster config for example /etc/1und1/cm-infong.conf to '$res' in cluster '$target_cluster'"
 
-		local cmd="apply cluster/clusterconfig.git:master -- cluster $target_cluster -l $res "
+	local cmd="apply cluster/clusterconfig.git:master -- $target_cluster -l ${res}.schlund.de"
 
-		remote "runstack@runstack.schlund.de" "$cmd "
-	fi
+	remote "runstack@runstack.schlund.de" "$cmd "
+    fi
 }
-
 
 function 1and1config_dastool
 {
@@ -90,20 +89,23 @@ function 1and1config_dastool
 
     [[ "$source" = "" ]] && return
     [[ "$target" = "" ]] && return
-    [[ "$res" = "" ]] && return
+    [[ "$res" = "" ]]    && return
 
     local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
     local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
 
-    if (( always_migrate )) || [[ "$source_cluster" != "$target_cluster" ]]; then
-		echo "Call dastool for deploying cluster config for example /etc/1und1/infong.conf to '$res' "
+    if [[ "$source_cluster" != "$target_cluster" ]]; then
+	echo "Call dastool for deploying cluster config for example /etc/1und1/infong.conf to '$res' "
 
-		local cmd="/home/spacetools/bin/dastool $res.schlund.de "
+	# first try
+	local cmd="/home/spacetools/bin/dastool $res.schlund.de"
 
-		remote "spacetools@dastool6.schlund.de " "$cmd "
-	fi
+	# ssh with command only key bin/dastool
+	# local cmd="  $res.schlund.de
+	# at the moment there is no command only key
+	remote "spacetools@dastool6.schlund.de" "$cmd"
+    fi
 }
-
 
 function 1and1config_update_action
 {
@@ -111,13 +113,11 @@ function 1and1config_update_action
 
     [[ "$res" = "" ]] && return
 
-    if (( always_migrate )); then
-		echo "Call efficiency_update_resource_automat.pl for '$res' "
+    echo "Call efficiency_update_resource_tetris.pl for '$res'"
 
-		local cmd="/home/infongstats/bin/efficiency_update_resource_automat.pl --resource $1 --commit "
+    local cmd="/home/infongstats/bin/efficiency_update_resource_tetris.pl --resource $res"
 
-		remote "root@bkstool.schlund.de " "$cmd "
-	fi
+    remote "infongstats@bkstool.schlund.de " "$cmd"
 }
 
 register_module "1and1config"
