@@ -1726,43 +1726,49 @@ function create_migration_space
 function merge_cluster
 {
     local lv_name="$1"
-    local source_primary="$2"
-    local source_secondary="$3"
-    local target_primary="$4"
-    local target_secondary="$5"
+    local host_list="$2"
+    local target_list="$3"
 
-    section "Ensure that \"marsadm merge-cluster\" has been executed."
+    section "Ensure that \"marsadm merge-cluster\" has been executed at '$host_list' => '$target_list'."
 
-    local host_list="$(get_augmented_host_list "$source_primary $source_secondary $target_primary $target_secondary")"
-    echo "Augmented host list: $host_list"
-
-    lock_hosts 1 "$host_list" ALL
-
-    # Safeguard operating errors
     local host
-    for host in $source_primary $source_secondary $target_primary $target_secondary; do
-	remote "$host" "marsadm up $lv_name" 1
-    done
+    if [[ "$lv_name" != "" ]]; then
+	# Safeguard operating errors
+	for host in $host_list; do
+	    remote "$host" "marsadm up $lv_name" 1
+	done
+    fi
 
     call_hook prepare_hosts "$host_list"
 
     # This is idempotent.
-    for host in $target_primary $target_secondary; do
-	[[ "$host" = "$source_primary" ]] && continue
-	if exists_hook merge_cluster; then
-	    call_hook merge_cluster "$source_primary" "$host"
-	else
-	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
-	fi
+    for host in $target_list; do
+	local host2
+	for host2 in $host_list; do
+	    [[ "$host" = "$host2" ]] && continue
+	    if exists_hook merge_cluster; then
+		call_hook merge_cluster "$host2" "$host"
+	    else
+		remote "$host" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $host2"
+	    fi
+	done
     done
 
     call_hook finish_hosts "$host_list"
 
-    lock_hosts
-
-    for host in $source_primary $target_primary $target_secondary; do
-	remote "$host" "marsadm wait-cluster"
-	if remote "$host" "marsadm view all" | grep " is dead"; then
+    for host in $host_list; do
+	local ok=1
+	local retry=3
+	while (( retry-- >= 0 )); do
+	    remote "$host" "marsadm wait-cluster"
+	    if remote "$host" "marsadm view all" | grep " is dead"; then
+		sleep 30
+	    else
+		ok=1
+		break
+	    fi
+	done
+	if (( !ok )); then
 	    fail "bad mars connection at '$host', please fix your network / firwalling / etc"
 	fi
     done
@@ -1776,8 +1782,6 @@ function migration_prepare
     local target_primary="$4"
     local target_secondary="$5"
 
-    merge_cluster "$@"
-
     section "Idempotence: check whether the additional replica has been alread created"
 
     local already_present="$(remote "$host" "marsadm view-disk-present $lv_name" | grep '^[0-9]\+$')"
@@ -1788,7 +1792,9 @@ function migration_prepare
 
     section "Re-determine and check all resource sizes for safety"
 
-    lock_hosts 1 "$source_primary $source_secondary $target_primary $target_secondary" ALL
+    local host_list="$(get_augmented_host_list "$source_primary $source_secondary $target_primary $target_secondary")"
+
+    lock_hosts 1 "$host_list" ALL
 
     local size="$(( $(remote "$source_primary" "marsadm view-sync-size $lv_name") / 1024 ))" ||\
 	fail "cannot determine resource size"
@@ -1806,6 +1812,8 @@ function migration_prepare
     local secondary_vg_name="$(get_vg "$target_secondary")"
     local primary_dev="/dev/$primary_vg_name/${lv_name}"
     local secondary_dev="/dev/$secondary_vg_name/${lv_name}"
+
+    merge_cluster "$lv_name" "$host_list" "$target_primary $target_secondary"
 
     section "Create migration spaces"
 
@@ -1987,7 +1995,7 @@ function manual_merge_cluster
     lock_hosts 1 "$host_list" ALL
 
     call_hook prepare_hosts "$host_list"
-    call_hook merge_cluster "$host1" "$host2"
+    merge_cluster "$lv_name" "$host_list" "$host1 $host2"
     call_hook finish_hosts "$host_list"
 
     lock_hosts
@@ -2769,7 +2777,6 @@ function migrate_plus_shrink
     fi
     local old_target_secondary="$target_secondary"
     migrate_check
-    merge_cluster "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
     if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
 	# Less network traffic:
 	# Migrate to only one target => new secondary will be created
