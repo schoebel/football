@@ -771,6 +771,22 @@ function _get_members
 	grep -v infong
 }
 
+function cm3_get_location
+{
+    local host="$1"
+
+    local url="/nodes/$host.schlund.de"
+    if [[ "$host" =~ infong ]]; then
+	url="/vms/$host.schlund.de"
+    fi
+    clustertool GET "$url" |\
+	json_pp |\
+	grep "location.*:" |\
+	grep -o '".*"' |\
+	sed 's/"//g' |\
+	sed 's/^.*: *//'
+}
+
 function cm3_get_flavour
 {
     local host="$1"
@@ -984,6 +1000,12 @@ override_hwclass_id="${override_hwclass_id:-}" # typically 25007
 # When necessary, override this from $include_dir/plugins/*.conf
 override_hvt_id="${override_hvt_id:-}" # typically 8057 or 8059
 
+## override_overrides
+# When this is set and other override_* variables are not set,
+# then try to _guess_ some values.
+# No guarantees for correctness either.
+override_overrides=${override_overrides:-1}
+
 function cm3_migrate_cm3_config
 {
     local source="$1"
@@ -1064,6 +1086,23 @@ function cm3_migrate_cm3_config
 	fi
 	echo ""
 	# Overrides of *_id
+	if (( override_overrides )); then
+	    if [[ "$location" =~ ^de\. ]]; then
+		if [[ "$override_hvt_id" = "" ]] ; then
+		    override_hvt_id=8047
+		    echo "Override hvt_id=$override_hvt_id"
+		fi
+	    elif [[ "$location" =~ ^us\. ]]; then
+		if [[ "$override_hvt_id" = "" ]] ; then
+		    override_hvt_id=8059
+		    echo "Override hvt_id=$override_hvt_id"
+		fi
+	    fi
+	    if [[ "$override_hwclass_id" = "" ]]; then
+		override_hwclass_id=25007
+		echo "Override hwclass_id=$override_hwclass_id"
+	    fi
+	fi
 	local override=""
 	if [[ "$override_hwclass_id" != "" ]]; then
 	    override=+"\"hwclass_id\" : \"$override_hwclass_id\", "
