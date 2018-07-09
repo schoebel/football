@@ -1872,9 +1872,20 @@ function migration_prepare
 
     section "Idempotence: check whether the additional replica has been alread created"
 
-    local already_present="$(remote "$host" "marsadm view-disk-present $lv_name" | grep '^[0-9]\+$')"
-    if (( already_present )); then
-	echo "Nothing to do: resource '$lv_name' is already present at '$target_primary'"
+    local -A already=()
+    local need=0
+    local host
+    for host in $target_primary $target_secondary; do
+	local already_present="$(remote "$host" "marsadm view-disk-present $lv_name" | grep '^[0-9]\+$')"
+	if (( already_present )); then
+	    echo "Nothing to do at '$host': resource '$lv_name' is already present"
+	    already[$host]=1
+	else
+	    (( need++ ))
+	fi
+    done
+    if (( !need )); then
+	echo "All replicas are already created at $target_primary $target_secondary"
 	return
     fi
 
@@ -1897,20 +1908,20 @@ function migration_prepare
 	echo "Combined migrate+shrink needs $size + $target_space = $needed_size"
     fi
 
-    check_vg_space "$target_primary" "$needed_size" "$lv_name"
-    check_vg_space "$target_secondary" "$needed_size" "$lv_name"
-
-    local primary_vg_name="$(get_vg "$target_primary")"
-    local secondary_vg_name="$(get_vg "$target_secondary")"
-    local primary_dev="/dev/$primary_vg_name/${lv_name}"
-    local secondary_dev="/dev/$secondary_vg_name/${lv_name}"
+    for host in $target_primary $target_secondary; do
+	(( already[$host] )) && continue
+	check_vg_space "$host" "$needed_size" "$lv_name"
+    done
 
     merge_cluster "$lv_name" "$host_list" "$target_primary $target_secondary"
 
     section "Create migration spaces"
 
-    create_migration_space "$target_primary" "$lv_name" "$size"
-    create_migration_space "$target_secondary" "$lv_name" "$size"
+    for host in $target_primary $target_secondary; do
+	(( already[$host] )) && continue
+	create_migration_space "$host" "$lv_name" "$size"
+    done
+    injection_point
 
     section "Join the resources"
 
@@ -1918,17 +1929,18 @@ function migration_prepare
 
     call_hook prepare_hosts "$source_primary $target_primary $target_secondary"
 
-    if exists_hook join_resource; then
-	call_hook join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
+    for host in $target_primary $target_secondary; do
+	(( already[$host] )) && continue
+	remote "$host" "marsadm wait-cluster"
+	local vg_name="$(get_vg "$host")"
+	local dev="/dev/$vg_name/${lv_name}"
+	if exists_hook join_resource; then
+	    call_hook join_resource "$source_primary" "$host" "$lv_name" "$dev"
+	else
+	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) join-resource $lv_name $dev"
+	fi
 	injection_point
-	call_hook join_resource "$source_primary" "$target_secondary" "$lv_name" "$secondary_dev"
-	injection_point
-    else
-	remote "$target_primary" "marsadm $(call_hook ssh_port "$target_primary" 1) join-resource $lv_name $primary_dev"
-	injection_point
-	remote "$target_secondary" "marsadm $(call_hook ssh_port "$target_secondary" 1) join-resource $lv_name $secondary_dev"
-	injection_point
-    fi
+    done
 
     call_hook finish_hosts "$source_primary $target_primary $target_secondary"
 
@@ -2614,6 +2626,7 @@ function make_tmp_umount
     if [[ "$store" != "$hyper" ]]; then
 	sleep 1
 	call_hook disconnect "$store" "$lv_name$suffix"
+	injection_point
     fi
 }
 
