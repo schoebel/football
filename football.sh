@@ -3111,6 +3111,13 @@ function extend_stack
 
 ### combined operations
 
+## migrate_always_all
+# By default, migrate+shrink creates only 1 replica during the initial
+# migration.
+# When setting this, all replicas are created, which improves resilience,
+# but worsens network performance.
+migrate_always_all="${migrate_always_all:-0}"
+
 function migrate_plus_shrink
 {
     local go_back="${1:-0}"
@@ -3130,8 +3137,8 @@ function migrate_plus_shrink
     local old_target_secondary="$target_secondary"
     migrate_check
     if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
-	if (( migrate_two_phase )); then
-	    migrate 1 1
+	if (( migrate_two_phase || migrate_always_all )); then
+	    migrate 1 "$migrate_two_phase"
 	else
 	    # Less network traffic:
 	    # Migrate to only one target => new secondary will be created
