@@ -299,6 +299,42 @@ rsync_repeat_hot="${rsync_repeat_hot:-3}"
 # Number of rsync lines to skip in output (avoid overflow of logfiles).
 rsync_skip_lines="${rsync_skip_lines:-1000}"
 
+## use_tar
+# Use incremental Gnu tar in place of rsync:
+# 0 = don't use tar
+# 1 = only use for the first (full) data transfer, then use rsync
+# 2 = always use tar
+# Experience: tar has better performance on local data than rsync, but
+# it tends to produce false-positive failure return codes on online
+# filesystems which are altered during tar.
+# The combined mode 1 tries to find a good compromise between both
+# alternatives.
+use_tar="${use_tar:-1}"
+
+## tar_exe
+# Use this for activation of patched tar versions, such as the
+# 1&1-internal patched spacetools-tar.
+tar_exe="${tar_exe:-/bin/tar}"
+
+## tar_options_src and tar_options_dst
+# Here you may give different options for both sides of tar invocations
+# (source and destination), such as verbosity options etc.
+tar_options_src="${tar_options_src:-}"
+tar_options_dst="${tar_options_dst:-}"
+
+## tar_is_fixed
+# Tell whether your tar version reports false-positive transfer errors,
+# or not.
+tar_is_fixed="${tar_is_fixed:-0}"
+
+## tar_state_dir
+# This directory is used for keeping incremental tar state information.
+tar_state_dir="${tar_state_dir:-/var/tmp}"
+
+## buffer_cmd
+# Speed up tar by intermediate buffering.
+buffer_cmd="${buffer_cmd:-buffer -m 16m -S 1024m || cat}"
+
 ## wait_timeout
 # Avoid infinite loops upon waiting.
 wait_timeout="${wait_timeout:-$(( 24 * 60 ))}" # Minutes
@@ -2271,6 +2307,8 @@ function make_tmp_umount
     fi
 }
 
+declare -g copy_initial=0
+
 function copy_data
 {
     local hyper="$1"
@@ -2282,11 +2320,25 @@ function copy_data
 
     local time_cmd="/usr/bin/time -f 'rss=%M elapsed=%e'"
 
-    section "COPY DATA via rsync"
+    section "COPY DATA via rsync / tar"
 
     local mnt="$(call_hook get_mountpoint "$lv_name")"
 
-    remote "$hyper" "set -o pipefail; for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ | stdbuf --input=0 --output=L awk 'BEGIN{ RS=\"[\\r\\n]\"; } { if (\$0 ~ /xfr\#|\%.*[0-9]+:[0-9]+:[0-9]+ /) { if (c++ % $rsync_skip_lines == 0) { print \$0; } } else { print \$0; } }'; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
+    local cmd="set -o pipefail; for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ | stdbuf --input=0 --output=L awk 'BEGIN{ RS=\"[\\r\\n]\"; } { if (\$0 ~ /xfr\#|\%.*[0-9]+:[0-9]+:[0-9]+ /) { if (c++ % $rsync_skip_lines == 0) { print \$0; } } else { print \$0; } }'; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
+    if (( use_tar >= 3 || ( !copy_initial++ && use_tar) )); then
+	# Ignore so-called "fatal" errors only when use_tar == 1.
+	# In this case, the next round with rsync will fix any problems.
+	# When tar is the only transport, we cannot ignore fatal return codes,
+	# even of tar is tending to report false-positives.
+	local max_rc=1
+	if (( !tar_is_fixed && use_tar == 1 )); then
+	    max_rc=2
+	fi
+	local tar_cmd="(cd $mnt/ && $tar_exe -cS --hard-dereference $tar_options_src -g $tar_state_dir/tar.$lv_name -f - .) | (${buffer_cmd:-cat}) | (cd $mnt$suffix/ && $tar_exe -xp $tar_options_dst --incremental -f -)"
+	cmd="set -o pipefail; $tar_cmd; rc=\$?; echo rc=\$rc; if (( rc >= 0 && rc <= $max_rc )); then exit 0; fi; echo FAIL; exit -1"
+    fi
+
+    remote "$hyper" "$cmd"
     injection_point
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
     remote "$hyper" "sync"
@@ -2324,6 +2376,7 @@ function hot_phase
 
     section "Last online incremental rsync"
 
+    remote "$hyper" "rm -f $tar_state_dir/tar.$lv_name" 1
     copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
     # repeat for better dentry caching
     copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
@@ -2372,7 +2425,7 @@ function hot_phase
 	injection_point
     fi
 
-    section "Final rsync"
+    section "Final rsync / tar"
 
     call_hook resource_info "$lv_name"
     call_hook resource_info "$lv_name" "$suffix"
@@ -2454,6 +2507,7 @@ function hot_phase
     injection_point
 
     failure_handler=""
+    remote "$hyper" "rm -f $tar_state_dir/tar.$lv_name" 1
 
     section "Re-create the MARS replicas"
 
