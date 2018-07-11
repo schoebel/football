@@ -2210,7 +2210,9 @@ function transfer_quota
     local mnt1="$3" # needs to be already mounted
     local mnt2="$4" # needs to be already mounted
 
-    (( !do_quota )) && return
+    if (( !do_quota )); then
+	return
+    fi
 
     section "Checks for xfs quota transfer"
 
