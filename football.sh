@@ -888,7 +888,9 @@ function do_confirm
     local skip="$1"
     local response
 
-    (( !confirm )) && return 0
+    if (( !confirm )); then
+	return
+    fi
 
     [[ "$skip" != "" ]] && skip="S to skip, "
     echo -n "[CONFIRM: Press ${skip}Return to continue, ^C to abort] "
