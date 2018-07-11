@@ -1442,6 +1442,8 @@ function failure_restart_vm
 	    # Assume that the hypervisor is working and try to work there
 	    section "EMERGENCY try to restart hyper='$hyper' resource='$res'"
 
+	    lock_hosts 1 "$hyper" ALL 0
+
 	    # try to get a defined state
 	    call_hook 0 resource_stop_vm "$hyper" "$res" || echo IGNORE
 	    # try to start twice
@@ -1451,14 +1453,19 @@ function failure_restart_vm
 	    fi
 	    return
 	fi
+
+	lock_hosts 1 "$primary_list" ALL 0
+
 	local -A tried=()
 	local primary
 	for primary in $primary_list; do
 	    (( tried[$primary] )) && continue
 	    section "EMERGENCY check whether restart primary='$primary' resource='$res' is possible"
+
 	    if [[ "$(call_hook is_startable "$primary" "$res" | tee -a /dev/stderr | tail -1)" != "1" ]]; then
 		echo "Startup of $res is reported as not possible at $primary".
 		echo "If this is wrong, fix configs by hand."
+		lock_hosts 0 "$primary" ALL
 		continue
 	    fi
 	    (( tried[$primary]++ ))
@@ -1476,6 +1483,8 @@ function failure_restart_vm
 		    call_hook 0 resource_start "$primary" "$res"
 		fi
 		if (( !$? )); then
+		    echo "VM '$res' appears to be running"
+		    lock_hosts
 		    return
 		fi
 		# check whether the cluster config is recent
