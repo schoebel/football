@@ -1524,6 +1524,7 @@ function failure_rebuild_mars
 	    local primary
 	    for primary in $primary_list; do
 		section "EMERGENCY try to restart primary='$primary' resource='$res'"
+		lock_hosts 1 "$primary" ALL 0
 		local mars_resource_exists="$(remote "$primary" "marsadm view-disk-present $res" | grep '^[0-9]\+$')"
 		if (( !mars_resource_exists )); then
 		    local vg_name="$(get_vg "$primary")"
