@@ -1727,13 +1727,18 @@ function merge_cluster
 
     section "Ensure that \"marsadm merge-cluster\" has been executed."
 
-    lock_hosts 1 "$(get_augmented_host_list "$source_primary $source_secondary $target_primary $target_secondary")" ALL
+    local host_list="$(get_augmented_host_list "$source_primary $source_secondary $target_primary $target_secondary")"
+    echo "Augmented host list: $host_list"
+
+    lock_hosts 1 "$host_list" ALL
 
     # Safeguard operating errors
     local host
     for host in $source_primary $source_secondary $target_primary $target_secondary; do
 	remote "$host" "marsadm up $lv_name" 1
     done
+
+    call_hook prepare_hosts "$host_list"
 
     # This is idempotent.
     for host in $target_primary $target_secondary; do
@@ -1744,6 +1749,8 @@ function merge_cluster
 	    remote "$host" "marsadm $(call_hook ssh_port "$host" 1) merge-cluster $source_primary"
 	fi
     done
+
+    call_hook finish_hosts "$host_list"
 
     lock_hosts
 
@@ -1802,6 +1809,9 @@ function migration_prepare
     section "Join the resources"
 
     remote "$target_primary" "marsadm wait-cluster"
+
+    call_hook prepare_hosts "$source_primary $target_primary $target_secondary"
+
     if exists_hook join_resource; then
 	call_hook join_resource "$source_primary" "$target_primary" "$lv_name" "$primary_dev"
 	injection_point
@@ -1813,6 +1823,8 @@ function migration_prepare
 	remote "$target_secondary" "marsadm $(call_hook ssh_port "$target_secondary" 1) join-resource $lv_name $secondary_dev"
 	injection_point
     fi
+
+    call_hook finish_hosts "$source_primary $target_primary $target_secondary"
 
     lock_hosts
 
@@ -2633,13 +2645,10 @@ function migrate_prepare
     phase migrate_prepare
 
     call_hook tell_action migrate init
-    call_hook prepare_hosts "$primary $secondary_list $target_primary $target_secondary"
     call_hook tell_action migrate prepare
     call_hook update_ticket migrate_prepare running
 
     migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary"
-
-    call_hook finish_hosts "$primary $secondary_list $target_primary $target_secondary"
 }
 
 function migrate_wait
