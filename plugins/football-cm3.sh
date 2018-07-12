@@ -626,6 +626,11 @@ forbidden_flavours="${forbidden_flavours:-}"
 # The script will fail when some of these is encountered.
 forbidden_bz_ids="${forbidden_bz_ids:-}"
 
+## auto_two_phase
+# When this is set, override the global migrate_two_phase parameter
+# at runtime by ShaHoLin-specific checks
+auto_two_phase="${auto_two_phase:-1}"
+
 function cm3_check_host
 {
     local host_list="$1"
@@ -705,6 +710,30 @@ function cm3_check_host
 	local cmd="for i in \$(find /sys/devices/pci* -name nr_requests); do echo \"\$(cat \$i) \$i\"; echo 920 > \$i; done"
 	remote "$host" "$cmd"
     done
+
+    # Hack based on experience
+    if (( auto_two_phase )); then
+	local has_slow=0
+	local has_fast=0
+	local two_phase=1
+	for host in $host_list; do
+	    echo "Checking replication link speed of '$host'"
+	    local cmd_slow="ethtool eth1 | grep 'Speed: 1000Mb/s'"
+	    local cmd_fast="ethtool eth1 | grep 'Speed: 10000Mb/s'"
+	    if remote "$host" "$cmd_slow" 1; then
+		(( has_slow++ ))
+	    elif remote "$host" "$cmd_fast" 1; then
+		(( has_fast++ ))
+	    else
+		echo "Neither slow nor fast"
+		two_phase=0
+	    fi
+	done
+	if (( has_slow && has_fast )); then
+	    echo "Setting migrate_two_phase $migrate_two_phase => $two_phase"
+	    migrate_two_phase="$two_phase"
+	fi
+    fi
 }
 
 ###########################################
