@@ -1180,7 +1180,11 @@ function handover
 	return
     fi
 
+    lock_hosts 1 "$current $target" ALL
+
     call_hook check_handover "$current" "$target" "$res"
+
+    lock_hosts
 
     section "Handover '$res' $current => $target"
 
