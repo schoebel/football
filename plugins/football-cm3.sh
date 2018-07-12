@@ -550,7 +550,7 @@ function cm3_join_resource
 needed_marsadm="${needed_marsadm:-2.1 1.1}"
 needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0}"
 max_cluster_size="${max_cluster_size:-4}"
-max_syncs="${max_syncs:-2}"
+max_syncs="${max_syncs:-0}"
 
 function check_needed
 {
@@ -674,7 +674,7 @@ function cm3_check_host
     done
     echo "Total number of syncs: $actual_syncs"
     echo "Max   number of syncs: $max_syncs"
-    if (( max_syncs >= 0 && actual_syncs > max_syncs )); then
+    if (( max_syncs > 0 && actual_syncs > max_syncs )); then
 	fail "There are more than $max_syncs syncs running."
     fi
 

@@ -1856,6 +1856,10 @@ function migration_prepare
 	return
     fi
 
+    section "Wait when too many syncs are already running"
+
+    wait_for_syncs "$lv_name" "$target_primary $target_secondary"
+
     section "Re-determine and check all resource sizes for safety"
 
     local host_list="$(get_augmented_host_list "$source_primary $source_secondary $target_primary $target_secondary")"
@@ -2146,6 +2150,110 @@ function migrate_cleanup
 
     call_hook tell_action migrate done
     call_hook update_ticket migrate_cleanup finished
+}
+
+######################################################################
+
+# Waiting for conditions
+
+## condition_check_interval
+# How often conditions should be re-evaluated.
+condition_check_interval="${condition_check_interval:-180}" # Seconds
+
+function wait_for_condition
+{
+    local lock_list="$1"
+    local fn="$2"
+    local txt="$3"
+    local wait_time="${4:-$condition_check_interval}"
+
+    local total_round=0
+    echo "SCREENER_condition_WAIT $(date +%s) $(date) for condition: $(eval "echo \"$txt\"")"
+    while true; do
+	# Allow changes of config variables during runtime
+	if (( ! ( total_round % 60 ) )); then
+	    reconf
+	else
+	    reconf > /dev/null 2>&1
+	fi
+	reconf
+
+	lock_hosts 1 "$lock_list" ALL
+	local violated="$(eval "$fn")"
+	lock_hosts
+
+	echo "violated=$violated"
+	if (( !violated )); then
+	    echo "$(date) Condition is true: $(eval "echo \"$txt\"")"
+	    break
+	fi
+	echo "$(date) Condition is false: $(eval "echo \"$txt\"")"
+	local keypress=0
+	if [[ -t 0 ]]; then
+	    echo "Press RETURN to interrupt / shorten the wait for condition $(eval "echo \"$txt\"")"
+	    local i
+	    local dummy
+	    for (( i = 0; i < wait_time; i++ )); do
+		read -t 1 dummy
+		keypress=$(( !$? ))
+		(( keypress )) && break
+	    done
+	else
+	    sleep $wait_time
+	fi
+	if (( keypress )); then
+	    echo "KEYPRESS SCREENER_condition $(date +%s) $(date)"
+	    break
+	fi
+	(( total_round++ ))
+    done
+    echo "SCREENER_condition_RESUME $(date +%s) $(date) condition: $(eval "echo \"$txt\"")"
+}
+
+## limit_syncs
+# Limit the number of actually running syncs by waiting
+# until less than this number of syncs are running at any
+# target host.
+limit_syncs="${limit_syncs:-4}"
+
+function get_nr_syncs
+{
+    local host="$1"
+
+    local cmd="marsadm view-sync-rest all | grep '^[0-9]\+$' | grep -v '^0$' | wc -l"
+    local count="$(remote "$host" "$cmd" 1)"
+    echo "There are $count syncs running at $host" >> /dev/stderr
+    echo "$count"
+}
+
+function generic_syncs_locked
+{
+    local res="$1"
+    local host_list="$2"
+
+    local host
+    for host in $host_list; do
+	local count="$(get_nr_syncs "$host")"
+	if (( count > 0 )) && [[ "$operation" =~ prep ]]; then
+	    echo 2
+	    return
+	elif (( count >= limit_syncs )); then
+	    echo 1
+	    return
+	fi
+    done
+    echo 0
+}
+
+function wait_for_syncs
+{
+    local res="$1"
+    local host_list="$2"
+
+    wait_for_condition \
+	"$host_list" \
+	"generic_syncs_locked \"$res\" \"$host_list\"" \
+	"At most \$limit_syncs syncs at '$host_list'"
 }
 
 ######################################################################
