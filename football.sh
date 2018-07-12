@@ -103,6 +103,12 @@ football_confs="${football_confs:-/usr/lib/mars/confs /etc/mars/confs $script_di
 # List of directories where various credential files can be found.
 football_creds="${football_creds:-/usr/lib/mars/creds /etc/mars/creds $script_dir/creds $script_dir $HOME/.mars/creds ./creds}"
 
+## trap_signals
+# List of signal names which should be trapped.
+# Traps are importnatn for housekeeping, e.g. automatic
+# removal of locks.
+trap_signals="${trap_signals:-SIGINT}"
+
 declare -g -A files=()
 declare -g file
 declare -g module_list=""
@@ -567,13 +573,25 @@ function warn
     call_hook football_warning "$res" "$txt"
 }
 
+declare -g trap_context=""
+
 function fail
 {
-    local txt="${1:-Unkown failure}"
+    local txt="${1:-Unknown failure}"
     local status="${2:--1}"
 
     unset exit
+    local sig
+    for sig in $trap_signals; do
+	trap - $sig
+    done
+    echo "" >> /dev/stderr
     echo "=====================================================" >> /dev/stderr
+    if [[ "$trap_context" != "" ]]; then
+	txt="TRAP context=$trap_context"
+	echo "$txt" >> /dev/stderr
+	echo "CALL_CHAIN: ${FUNCNAME[@]}" >> /dev/stderr
+    fi
     echo "FAIL pid=$BASHPID status=$status '$txt'" >> /dev/stderr
 
     if (( recursive_failure )); then
@@ -612,12 +630,19 @@ function fail
     exit $status
 }
 
+for sig in $trap_signals; do
+    trap "trap_context=\"$sig INIT\" fail" $sig
+done
+
 # override the standard exit function for detection of recursion
 function exit
 {
     local status="${1:-0}"
 
     unset exit
+    for sig in $trap_signals; do
+	trap - $sig
+    done
     if (( status || recursive_failure )); then
 	fail "exit $status" "$status"
     fi
@@ -2940,6 +2965,10 @@ if ! git describe --tags; then
     echo "$0 version 2.0"
 fi
 
+for sig in $trap_signals; do
+    trap "trap_context=\"$sig MAIN\" fail" $sig
+done
+
 call_hook pre_init "$@"
 
 # special (manual) operations
@@ -3222,4 +3251,9 @@ phase done "$0 $*"
 call_hook football_finished 0 "$0" "$@"
 
 echo "DONE $(date)"
-} 2>&1 | log "$football_logdir" "logs$args_info.$start_stamp.$user_name.log"
+} 2>&1 | {
+    for sig in $trap_signals; do
+	trap "" $sig
+    done
+    log "$football_logdir" "logs$args_info.$start_stamp.$user_name.log"
+}
