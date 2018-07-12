@@ -3118,6 +3118,20 @@ function extend_stack
 # but worsens network performance.
 migrate_always_all="${migrate_always_all:-0}"
 
+## migrate_early_cleanup
+# Early cleanup of old replicas when using migrate_always_all or
+# migrate_two_phase.
+# Only reasonable when combined with migrate+shrink.
+# This is slightly less safe, but saves time when you want to
+# decommission old hardware as fast as popssible.
+# Early cleanup of the old replicase will only be done when
+# at least 2 replicas are available at the new (target) side.
+# These two new replicas can be created either by
+#  a) migrate_always_all=1 or
+#  b) migrate_two_phase=1 or automatically selected (or not) via
+#  c) auto_two_phase=1
+migrate_early_cleanup="${migrate_early_cleanup:-1}"
+
 function migrate_plus_shrink
 {
     local go_back="${1:-0}"
@@ -3139,6 +3153,13 @@ function migrate_plus_shrink
     if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
 	if (( migrate_two_phase || migrate_always_all )); then
 	    migrate 1 "$migrate_two_phase"
+	    if (( migrate_early_cleanup )); then
+		call_hook invalidate_caches
+		echo "EARLY_CLEANUP $res $old_primary $old_secondary => $target_primary $target_secondary"
+		wait_for_screener "$res" "early_cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"
+		migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res" 0
+		injection_point
+	    fi
 	else
 	    # Less network traffic:
 	    # Migrate to only one target => new secondary will be created
