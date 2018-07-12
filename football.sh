@@ -2256,6 +2256,62 @@ function wait_for_syncs
 	"At most \$limit_syncs syncs at '$host_list'"
 }
 
+## limit_shrinks
+# Limit the number of actually running shrinks by waiting
+# until less than this number of shrinks are running at any
+# target host.
+limit_shrinks="${limit_shrinks:-1}"
+
+## count_shrinks_by_tmp_mount
+# Only count the temporary mounts.
+# Otherwise, LVs are counted. The latter may yield false positives
+# because LVs may be created in advance (e.g. at another cluster member)
+count_shrinks_by_tmp_mount="${count_shrinks_by_tmp_mount:-1}"
+
+function generic_shrinks_locked
+{
+    local res="$1"
+    local host_list="$2"
+
+    local mnt="$(call_hook get_mountpoint "*")"
+    local host
+    for host in $host_list; do
+	# Always accept the _own_ shrink space, unconditionally
+	local cmd="lvs | grep '$res$tmp_suffix'"
+	if remote "$host" "$cmd" 1 >> /dev/stderr; then
+	    continue
+	fi
+	# Check for the number of other shrink spaces
+	cmd=""
+	if (( count_shrinks_by_tmp_mount )) && [[ "$mnt" != "" ]]; then
+	    echo "Counting shrinks by mountpoints" >> /dev/stderr
+	    cmd="for i in $mnt$tmp_suffix; do mountpoint \$i; done | grep -v '$res$tmp_suffix' | grep ' is a mountpoint' | wc -l"
+	fi
+	if [[ "$cmd" = "" ]]; then
+	    echo "Counting shrinks by LVs" >> /dev/stderr
+	    cmd="lvs | grep '.$tmp_suffix ' | grep -v '$res$tmp_suffix' | wc -l"
+	fi
+	local count="$(remote "$host" "$cmd" 1)"
+	echo "There are $count shrinks running at $host" >> /dev/stderr
+	if (( count >= limit_shrinks )); then
+	    echo 1
+	    return
+	fi
+    done
+    echo 0
+}
+
+function wait_for_shrinks
+{
+    local res="$1"
+    local host_list="$2"
+
+    wait_for_condition \
+	"$host_list" \
+	"generic_shrinks_locked \"$res\" \"$host_list\"" \
+	"At most \$limit_shrinks shrinks at $host"
+}
+
 ######################################################################
 
 # checks for FS shrinking
@@ -2900,8 +2956,17 @@ function shrink_prepare
 {
     phase shrink_prepare
 
+    section "Wait when too many shrinks are already running"
+
+    wait_for_shrinks "$res" "$primary"
+
+    section "Determine shrink space"
+
     call_hook tell_action shrink init
     determine_space
+
+    section "Start LVM and FS operations"
+
     call_hook tell_action shrink prepare
     call_hook update_ticket shrink_prepare running
     create_shrink_space_all "$primary $secondary_list" "$res" "$target_space"
