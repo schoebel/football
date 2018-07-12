@@ -727,7 +727,20 @@ function clustertool
 	cmd+=" \"$arg\""
     done
     echo "$cmd" | sed -u 's/\(curl .*\)-u *[^ ]*/\1/' >> /dev/stderr
-    eval "$cmd" || fail "failed REST command '$cmd'"
+    local output
+    local retry
+    for (( retry = 1; retry < 5; retry++ )); do
+	output="$(eval "$cmd")"
+	rc=$?
+	if (( !rc )) && ! [[ "$output" =~ \"fault\"\ : ]]; then
+	    echo "$output"
+	    return 0
+	fi
+	echo "PROBLEM with clusterwm:" >> /dev/stderr
+	echo "$output" >> /dev/stderr
+	sleep 10
+    done
+    fail "failed REST command '$cmd'"
 }
 
 function cm3_clustertool
