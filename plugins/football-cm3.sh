@@ -334,8 +334,16 @@ function cm3_prepare_hosts
 	    # Disabling is _necessary_ because of another security feature:
 	    # Otherwise the firewall would be automatically restarted
 	    # by a cron job.
-	    remote "$host" "systemctl disable ui-firewalling.service || echo IGNORE"
-	    remote "$host" "service ui-firewalling stop || /etc/init.d/firewalling stop"
+	    local retry
+	    for (( retry = 1; retry < 5; retry++ )); do
+		remote "$host" "systemctl disable ui-firewalling.service || echo IGNORE"
+		remote "$host" "service ui-firewalling stop || /etc/init.d/firewalling stop"
+		if ! remote "$host" "iptables -L -n | grep DROP" 1; then
+		    break
+		fi
+		echo "FIREWALL needs restart on $host" >> /dev/stderr
+		sleep 10
+	    done
 	done
     fi
 }
