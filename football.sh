@@ -1342,6 +1342,12 @@ function test_delete_resource
     echo "TEST DONE"
 }
 
+function reconf
+{
+    source_glob "$football_confs"    "football-*.reconf"  "Reconf" 0
+    source_glob "$football_includes" "football-*.reconf"  "Reconf" 0
+}
+
 function wait_for_screener
 {
     local res="$1"
@@ -1353,6 +1359,7 @@ function wait_for_screener
     local lapse_cmd="${7:-uptime}"
     shift 7
 
+    reconf
     local enable="enable_${situation}_${mode}"
     if (( !$enable )); then
 	echo "$enable is off"
@@ -1366,6 +1373,13 @@ function wait_for_screener
 	call_hook start_wait "$res" "$mode" "$situation: $msg"
     fi
     while true; do
+	# Allow changes of config variables during runtime
+	if (( ! ( total_round % 60 ) )); then
+	    reconf
+	else
+	    reconf > /dev/null 2>&1
+	fi
+
 	local locked="$(verbose=0 call_hook resource_locked "$res")"
 	local poll=0
 	if (( $enable )); then
