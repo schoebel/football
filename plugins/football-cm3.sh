@@ -1563,6 +1563,28 @@ function cm3_tell_action
 
 ###########################################
 
+function cm3_determine_variables
+{
+    location="$(call_hook get_location "$hyper" 2>/dev/null)"
+    echo "Determined the following           LOCATION: \"$location\""
+    res_flavour="$(call_hook get_flavour "$res" 2>/dev/null)"
+    echo "Determined the following resource   FLAVOUR: \"$res_flavour\""
+    hyper_flavour="$(call_hook get_flavour "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor FLAVOUR: \"$hyper_flavour\""
+    res_bz_id="$(call_hook get_bz_id "$res" 2>/dev/null)"
+    echo "Determined the following resource   BZ_ID: \"$res_bz_id\""
+    hyper_bz_id="$(call_hook get_bz_id "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor BZ_ID: \"$hyper_bz_id\""
+    res_hvt_id="$(call_hook get_hvt_id "$res" 2>/dev/null)"
+    echo "Determined the following resource   HVT_ID: \"$res_hvt_id\""
+    hyper_hvt_id="$(call_hook get_hvt_id "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor HVT_ID: \"$hyper_hvt_id\""
+    res_hwclass_id="$(call_hook get_hwclass_id "$res" 2>/dev/null)"
+    echo "Determined the following resource   HWCLASS_ID: \"$res_hwclass_id\""
+    hyper_hwclass_id="$(call_hook get_hwclass_id "$hyper" 2>/dev/null)"
+    echo "Determined the following hypervisor HWCLASS_ID: \"$hyper_hwclass_id\""
+}
+
 function cm3_invalidate_caches
 {
     declare -g -A ssh_hyper=()
