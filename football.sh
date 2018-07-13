@@ -1482,6 +1482,10 @@ function failure_restart_vm
 
     if (( enable_failure_restart_vm )) && \
 	[[ "$res" != "" ]]; then
+	if ping $ping_opts "$res"; then
+	    echo "Resource $res is working, no restart needed."
+	    return 0
+	fi
 	if [[ "$primary_list" = "" ]] && [[ "$hyper" != "" ]]; then
 	    # Last resort.
 	    # Assume that the hypervisor is working and try to work there
@@ -1560,6 +1564,10 @@ function failure_rebuild_mars
     [[ "$res" = "" ]] && return
 
     if (( enable_failure_rebuild_mars )); then
+	if ping $ping_opts "$res"; then
+	    echo "Resource $res is working, no restart needed."
+	    return 0
+	fi
 	# Assuption: at least some usable LV must exist.
 	# Don't try to rename anything. In case of emergency, just use
 	# everything which looks plausible.
