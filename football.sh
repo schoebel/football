@@ -393,6 +393,17 @@ shrink_suffix_old="${shrink_suffix_old:--preshrink}"
 
 
 # some constants
+
+## start_regex
+# At which \$operation the hook football_start
+# shoule be called
+start_regex="${start_regex:-^(migrate_prepare|migrate|migrate+|shrink_prepare|shrink)}"
+
+## finished_regex
+# At which \$operation the hook football_finished
+# shoule be called
+finished_regex="${finished_regex:-^(migrate_finish|migrate|migrate+|shrink_finish|shrink)}"
+
 commands_needed="${commands_needed:-ssh rsync grep sed awk stdbuf sort head tail tee cat ls basename dirname cut ping date mkdir rm wc bc}"
 
 ######################################################################
@@ -620,7 +631,9 @@ function fail
 	echo "FAILING with status=$status" >> /dev/stderr
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
-	(call_hook football_failed "$status" "$0" "$@")
+	if (( call_finished )); then
+	    (call_hook football_failed "$status" "$0" "$@")
+	fi
 	# unlock any locks
 	lock_hosts
 	echo "" >> /dev/stderr
@@ -647,7 +660,9 @@ function exit
 	fail "exit $status" "$status"
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
-	call_hook 0 football_finished "$status" "$0" "$@"
+	if [[ "${operation//-/_}" =~ $finished_regex ]]; then
+	    call_hook 0 football_finished "$status" "$0" "$@"
+	fi
 	# unlock any locks
 	lock_hosts
     fi
@@ -3146,7 +3161,9 @@ do_confirm
 # main: start the internal actions
 echo "START $(date) main_pid=$main_pid"
 
-call_hook football_start "$0" "$@"
+if [[ "${operation//-/_}" =~ $start_regex ]]; then
+    call_hook football_start "$0" "$@"
+fi
 
 case "${operation//-/_}" in
 migrate_prepare)
@@ -3229,7 +3246,10 @@ fi
 
 phase done "$0 $*"
 
-call_hook football_finished 0 "$0" "$@"
+if [[ "${operation//-/_}" =~ $finished_regex ]]; then
+    call_hook football_finished 0 "$0" "$@"
+    operation=""
+fi
 
 echo "DONE $(date)"
 } 2>&1 | {
