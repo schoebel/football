@@ -59,6 +59,14 @@ enable_1and1config="${enable_1and1config:-$(if [[ "$0" =~ tetris ]]; then echo 1
 
 commands_installed "ssh"
 
+## runstack_host
+# To be provided in a *.conf or *.preconf file.
+runstack_host="${runstack_host:-}"
+
+## runstack_cmd
+# Command to be provided in a *.conf file.
+runstack_cmd="${runstack_cmd:-}"
+
 function 1and1config_runstack
 {
     local source="$1"
@@ -68,6 +76,8 @@ function 1and1config_runstack
     [[ "$source" = "" ]] && return
     [[ "$target" = "" ]] && return
     [[ "$res" = "" ]]    && return
+    [[ "$runstack_host" = "" ]] && return
+    [[ "$runstack_cmd" = "" ]]  && return
 
     local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
     local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
@@ -75,9 +85,9 @@ function 1and1config_runstack
     if [[ "$source_cluster" != "$target_cluster" ]]; then
 	echo "Call runstack for deploying cluster config for example /etc/1und1/cm-infong.conf to '$res' in cluster '$target_cluster'"
 
-	local cmd="apply cluster/clusterconfig.git:master -- $target_cluster -l ${res}.schlund.de"
+	local cmd="$(eval "echo \"$runstack_cmd\"")"
 
-	remote "runstack@runstack.schlund.de" "$cmd "
+	remote "$runstack_host" "$cmd"
     fi
 }
 
