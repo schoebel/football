@@ -40,6 +40,20 @@ PLUGIN football-ticket
    Generic plugin for creating and updating tickets,
    e.g. Jira tickets.
 
+   You will need to hook in some external scripts which are
+   then creating / updating the tickets.
+
+   Comment texts may be provided with following conventions:
+
+     comment.\$ticket_state.txt
+     comment.\$ticket_phase.\$ticket_state.txt
+
+   Directories where comments may reside:
+
+     football_creds=$football_creds
+     football_confs=$football_confs
+     football_includes=$football_includes
+
 EOF
    show_vars "${files[ticket]}"
 }
@@ -64,25 +78,71 @@ ticket="${ticket:-}"
 ## ticket_get_cmd
 # Optional: when set, this script can be used for retrieving ticket IDs
 # in place of commandline option --ticket=
+# Retrieval should be unique by resource names.
+# You may use any defined bash varibale by escaping them like
+# \$res .
+# Example: ticket_get_cmd="my-ticket-getter-script.pl \"\$res\""
 ticket_get_cmd="${ticket_get_cmd:-}"
+
+## ticket_create_cmd
+# Optional: when set, this script can be used for creating new tickets.
+# It will be called when \$ticket_get_cmd does not retrieve anything.
+# Example: ticket_create_cmd="my-ticket-create-script.pl \"\$res\" \"\$target_primary\""
+# Afterwards, the new ticket needs to be retrievable via \$ticket_get_cmd.
+ticket_create_cmd="${ticket_create_cmd:-}"
 
 ## ticket_update_cmd
 # This can be used for calling an external command which updates
 # the ticket(s) given by the $ticket parameter.
+# Example: ticket_update_cmd="my-script.pl \"$ticket\" \"$res\" \"$ticket_phase\" \"$ticket_state\""
 ticket_update_cmd="${ticket_update_cmd:-}"
+
+## ticket_require_comment
+# Only update a ticket when a comment file exists in one of the
+# directories \$football_creds \$football_confs \$football_includes
+ticket_require_comment="${ticket_require_comment:-1}"
+
+function ticket_call_fn
+{
+    local cmd="$1"
+
+    [[ "$cmd" = "" ]] && return
+
+    cmd="$(eval "echo \"$cmd\"")"
+    echo "Calling ticket command: '$cmd'" >> /dev/stderr
+    (eval "$cmd")
+    echo "Ticket command rc=$?" >> /dev/stderr
+}
 
 function ticket_pre_init
 {
+    if [[ "$res" = "" ]]; then
+	return
+    fi
     if [[ "$ticket" = "" ]] &&\
 	[[ "$ticket_update_cmd" != "" ]] &&\
 	[[ "$ticket_get_cmd" != "" ]]; then
 	echo "Trying to get ticket ID for resource '$res'"
-	ticket="$($ticket_get_cmd $res)"
+	ticket="$(ticket_call_fn "$ticket_get_cmd")"
 	echo "Got ticket ID '$ticket'"
+	if [[ "$ticket" =~ ERROR ]]; then
+	    ticket=""
+	fi
+	if [[ "$ticket" = "" ]] &&\
+	    [[ "$ticket_create_cmd" != "" ]]; then
+	    echo "Trying to create a new ticket for resource '$res'"
+	    ticket_call_fn "$ticket_create_cmd"
+	    ticket="$(ticket_call_fn "$ticket_get_cmd")"
+	    echo "Got ticket ID '$ticket'"
+	    if [[ "$ticket" =~ ERROR ]]; then
+		ticket=""
+	    fi
+	fi
     fi
 }
 
-ticket_compensation=""
+fail_ticket_phase=""
+fail_ticket_state=""
 
 function ticket_update_ticket
 {
@@ -92,24 +152,44 @@ function ticket_update_ticket
     [[ "$ticket" = "" ]] && return
     [[ "$ticket_update_cmd" = "" ]] && return
 
-    local cmd="$ticket_update_cmd \"$ticket\" \"$res\" \"$ticket_phase\" \"$ticket_state\""
-    echo "ticket: $cmd"
-    if [[ "$ticket_state" =~ running ]]; then
-	ticket_compensation="${cmd//running/failed}"
-    else
-	ticket_compensation=""
+    local comment_glob="comment.$ticket_state.txt"
+    local comment_file="$(get_cred_file "$comment_glob")"
+    if [[ "$comment_file" = "" ]]; then
+	echo "There is no comment file '$comment_glob' in $football_creds $football_confs $football_includes"
+	comment_glob="comment.$ticket_phase.$ticket_state.txt"
+	comment_file="$(get_cred_file "$comment_glob")"
     fi
-    (eval "$cmd")
+    if [[ "$comment_file" = "" ]] && (( !ticket_require_comment )); then
+	echo "There is no comment file '$comment_glob' in $football_creds $football_confs $football_includes"
+	return
+    fi
+    echo "Using comment file '$comment_file'"
+    local comment=""
+    if [[ "$comment_file" != "" ]]; then
+	comment="$(< $comment_file)"
+	echo "Original comment is '$comment'"
+	comment="$(eval "echo \"$comment\"")"
+	echo "Evaluated comment is '$comment'"
+    fi
+
+    if [[ "$ticket_state" =~ running ]]; then
+	fail_ticket_phase="$ticket_phase"
+	fail_ticket_state="${ticket_state//running/failed}"
+    else
+	fail_ticket_phase=""
+	fail_ticket_state=""
+    fi
+    ticket_call_fn "$ticket_update_cmd"
     return 0
 }
 
 function ticket_football_failed
 {
-    if [[ "$ticket_compensation" != "" ]]; then
-	local cmd="$ticket_compensation"
-	ticket_compensation=""
-	echo "ticket: $cmd"
-	(eval "$cmd")
+    if [[ "$fail_ticket_phase" != "" ]]; then
+	echo "Reporting failure into ticket: '$fail_ticket_phase' '$fail_ticket_state'"
+	ticket_update_ticket "$fail_ticket_phase" "$fail_ticket_state"
+	fail_ticket_phase=""
+	fail_ticket_state=""
     fi
     return 0
 }
