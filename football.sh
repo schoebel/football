@@ -2932,7 +2932,12 @@ main_pid="$BASHPID"
 
 commands_installed "$commands_needed"
 
-scan_args "$@"
+declare -g -a argv=("$@")
+
+# This may be used for rewriting the global array $argv
+call_hook rewrite_args >> /dev/stderr
+
+scan_args "${argv[@]}"
 
 ssh-add -l >> /dev/stderr || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
 
@@ -2972,8 +2977,8 @@ fi
 
 for name in $plugin_command_list; do
     if [[ "${operation//-/_}" = "$name" ]]; then
-	shift
-	call_hook ${name#*_} "$@"
+	unset argv[0]
+	call_hook ${name#*_} "${argv[@]}"
 	exit $?
     fi
 done
@@ -2981,7 +2986,7 @@ done
 mkdir -p "$football_logdir"
 
 {
-echo "user_name=$user_name $0 $@"
+echo "user_name=$user_name $0 ${argv[@]}"
 main_pid="$BASHPID"
 
 if ! git describe --tags; then
@@ -2992,7 +2997,7 @@ for sig in $trap_signals; do
     trap "trap_context=\"$sig MAIN\" fail" $sig
 done
 
-call_hook pre_init "$@"
+call_hook pre_init "${argv[@]}"
 
 # special (manual) operations
 
@@ -3162,7 +3167,7 @@ do_confirm
 echo "START $(date) main_pid=$main_pid"
 
 if [[ "${operation//-/_}" =~ $start_regex ]]; then
-    call_hook football_start "$0" "$@"
+    call_hook football_start "$0" "${argv[@]}"
 fi
 
 case "${operation//-/_}" in
@@ -3247,7 +3252,7 @@ fi
 phase done "$0 $*"
 
 if [[ "${operation//-/_}" =~ $finished_regex ]]; then
-    call_hook football_finished 0 "$0" "$@"
+    call_hook football_finished 0 "$0" "${argv[@]}"
     operation=""
 fi
 
