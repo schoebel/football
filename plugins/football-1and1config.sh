@@ -125,6 +125,14 @@ function 1and1config_dastool
     fi
 }
 
+## update_host
+# To be provided in a *.conf or *.preconf file.
+update_host="${update_host:-}"
+
+## update_cmd
+# Command to be provided in a *.conf file.
+update_cmd="${update_cmd:-}"
+
 function 1and1config_update_action
 {
     local res="$1"
@@ -133,9 +141,9 @@ function 1and1config_update_action
 
     echo "Call efficiency_update_resource_tetris.pl for '$res'"
 
-    local cmd="/home/infongstats/bin/efficiency_update_resource_tetris.pl --resource $res"
+    local cmd="$(eval "echo \"$update_cmd\"")"
 
-    remote "infongstats@bkstool.schlund.de " "$cmd"
+    remote "$update_host" "$cmd"
 }
 
 register_module "1and1config"
