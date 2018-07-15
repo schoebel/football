@@ -91,6 +91,14 @@ function 1and1config_runstack
     fi
 }
 
+## dastool_host
+# To be provided in a *.conf or *.preconf file.
+dastool_host="${dastool_host:-}"
+
+## dastool_cmd
+# Command to be provided in a *.conf file.
+dastool_cmd="${dastool_cmd:-}"
+
 function 1and1config_dastool
 {
     local source="$1"
@@ -108,12 +116,12 @@ function 1and1config_dastool
 	echo "Call dastool for deploying cluster config for example /etc/1und1/infong.conf to '$res' "
 
 	# first try
-	local cmd="/home/spacetools/bin/dastool $res.schlund.de"
+	local cmd="$(eval "echo \"$dastool_cmd\"")"
 
 	# ssh with command only key bin/dastool
 	# local cmd="  $res.schlund.de
 	# at the moment there is no command only key
-	remote "spacetools@dastool6.schlund.de" "$cmd"
+	remote "$dastool_host" "$cmd"
     fi
 }
 
