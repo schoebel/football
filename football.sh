@@ -279,6 +279,10 @@ ping_opts="${ping_opts:--W 1 -c 1}"
 # Useful for customization to your ssh environment.
 ssh_opt="${ssh_opt:--4 -A -o StrictHostKeyChecking=no -o ForwardX11=no -o KbdInteractiveAuthentication=no -o VerifyHostKeyDNS=no}"
 
+## ssh_auth
+# Useful for extra -i options.
+ssh_auth="${ssh_auth:-}"
+
 ## rsync_opt
 # The rsync options in general.
 # IMPORTANT: some intermediate progress report is absolutely needed,
@@ -985,7 +989,7 @@ function remote
     done
 
     if (( !rc )); then
-	ssh $port $ssh_opt "$login" "$cmd"
+	ssh $port $ssh_auth $ssh_opt "$login" "$cmd"
 	rc=$?
     fi
     if (( !rc )); then

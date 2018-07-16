@@ -425,7 +425,7 @@ function cm3_ssh_indirect
     for hyper in $(_get_members "$cluster" 2>/dev/null); do
 	local hyper_port="$(cm3_ssh_port "$hyper" 2>/dev/null)"
 	if cm3_check_port "$hyper" "${hyper_port##* }" 1>&2; then
-	    local found="$(ssh $hyper_port $ssh_opt "root@$hyper" "lxc-ls -1" | grep "^$host$")"
+	    local found="$(ssh $hyper_port $ssh_auth $ssh_opt "root@$hyper" "lxc-ls -1" | grep "^$host$")"
 	    if [[ "$found" = "$host" ]]; then
 		ssh_hyper[$host]="$hyper"
 		echo "$hyper:lxc-attach -n $host -- bash -c '${cmd//'/\\'}'"
