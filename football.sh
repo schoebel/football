@@ -2259,6 +2259,11 @@ reuse_mount="${reuse_mount:-1}"
 # Assume that temporary LVs are reusable.
 reuse_lv="${reuse_lv:-1}"
 
+## reuse_lv_check
+# When set, this command is executed for checking whether
+# the LV can be reused.
+reuse_lv_check="${reuse_lv_check:-xfs_db -c sb -c print -r}"
+
 ## do_quota
 # Transfer xfs quota information.
 # 0 = off
@@ -2332,8 +2337,17 @@ function create_shrink_space
     if (( reuse_lv )); then
 	# check whether LV already exists
 	if remote "$host" "[[ -e /dev/$vg_name/${lv_name}$tmp_suffix ]]" 1; then
-	    echo "reusing already exists LV /dev/$vg_name/${lv_name}$tmp_suffix on '$host'"
-	    return
+	    if [[ "$reuse_lv_check" != "" ]]; then
+		local cmd="$reuse_lv_check /dev/$vg_name/${lv_name}$tmp_suffix"
+		echo "Checking: $cmd"
+		if remote "$host" "$cmd" 1; then
+		    echo "Checked: reusing already existing LV /dev/$vg_name/${lv_name}$tmp_suffix on '$host'"
+		    return
+		fi
+	    else
+		echo "Blindly reusing already existing LV /dev/$vg_name/${lv_name}$tmp_suffix on '$host'"
+		return
+	    fi
 	fi
     else
 	remote "$host" "if [[ -e /dev/$vg_name/${lv_name}$shrink_suffix_old ]]; then echo \"REFUSING to overwrite /dev/$vg_name/${lv_name}$shrink_suffix_old on $host - Do this by hand\"; exit -1; fi"
@@ -2347,6 +2361,7 @@ function create_shrink_space
 
     local extra="$(get_stripe_extra "$host" "$vg_name")"
     remote "$host" "lvcreate -L ${size}k $extra -n ${lv_name}$tmp_suffix $vg_name"
+    injection_point
     sleep 1
     remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}$tmp_suffix"
     injection_point
