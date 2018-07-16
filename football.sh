@@ -3167,6 +3167,7 @@ do_confirm
 echo "START $(date) main_pid=$main_pid"
 
 if [[ "${operation//-/_}" =~ $start_regex ]]; then
+    call_hook update_ticket "$operation" general.running
     call_hook football_start "$0" "${argv[@]}"
 fi
 
@@ -3253,6 +3254,7 @@ phase done "$0 $*"
 
 if [[ "${operation//-/_}" =~ $finished_regex ]]; then
     call_hook football_finished 0 "$0" "${argv[@]}"
+    call_hook update_ticket "$operation" general.finished
     operation=""
 fi
 
