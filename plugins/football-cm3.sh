@@ -1445,6 +1445,36 @@ function cm3_want_downtime
     $cmd || echo IGNORE
 }
 
+## shaholin_customer_report_cmd
+# Action script when the hardware has improved.
+shaholin_customer_report_cmd="${shaholin_customer_report_cmd:-}"
+
+## shaholin_min_cpus and shaholin_dst_cpus
+shaholin_src_cpus="${shaholin_src_cpus:-4}"
+shaholin_dst_cpus="${shaholin_dst_cpus:-32}"
+
+function cm3_get_cpu_count
+{
+    local host="$1"
+
+    local cmd="cat /proc/cpuinfo | grep '^processor' | wc -l"
+    local cpu_count="$(remote "$host" "$cmd" 1)"
+    echo "$cpu_count"
+}
+
+function cm3_football_start
+{
+    if [[ "$res" = "" ]]; then
+	return
+    fi
+    local cpu_count="$(cm3_get_cpu_count "$res")"
+    echo "Host '$res' has $cpu_count CPUs"
+    if (( cpu_count > 0 && cpu_count <= shaholin_src_cpus )); then
+	echo "Resource '$res' is on old hardware"
+	echo "$cpu_count" > $football_logdir/shaholin-cpus.$res
+    fi
+}
+
 ## shaholin_finished_log
 # ShaHoLin-specific logfile, reporting _only_ successful completion
 # of an action.
@@ -1457,6 +1487,21 @@ function cm3_football_finished
     local status="$1"
     shift
     local txt="$(echo "$@")"
+
+    if [[ "$res" != "" ]] && [[ -r $football_logdir/shaholin-cpus.$res ]]; then
+	local cpu_count="$(cm3_get_cpu_count "$res")"
+	echo "Host '$res' has $cpu_count CPUs"
+	if (( cpu_count >= shaholin_dst_cpus )); then
+	    echo "Resource '$res' is on new hardware"
+	    echo "$res $(date +%s) $(date)" >> $football_logdir/shaholin-migrations.log
+	    if [[ "$shaholin_customer_report_cmd" != "" ]]; then
+		local cmd="$(eval "echo \"$shaholin_customer_report_cmd\"")"
+		echo "Running command '$cmd'"
+		(eval "$cmd")
+	    fi
+	    rm -f $football_logdir/shaholin-cpus.$res
+	fi
+    fi
 
     if [[ "$shaholin_finished_log" = "" ]]; then
 	return
