@@ -570,6 +570,28 @@ General features:
     attaches to the sessions and presses the RETURN key.
 
 EOF
+   if (( verbose )); then
+     cat <<EOF
+Configuration:
+
+  You can place shell variable definitions for overriding any
+  tunables into the following locations:
+
+    football_includes=$football_includes
+
+    football_confs=$football_confs
+
+    football_creds=$football_creds
+
+  Filenames should match the following patterns:
+
+    football-*.preconf    Here you may change paths and enable_* variables.
+    football-*.conf       Inteded for main parameters.
+    football-*.postconf   For late overrides after sourcing modules.
+    football-*.reconf     Modify runtime parameters during waits.
+
+EOF
+   fi
    show_vars "$0"
    module_list="$description_list $module_list" call_hook describe_plugin
 }
