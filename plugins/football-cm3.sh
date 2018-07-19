@@ -1593,6 +1593,18 @@ function cm3_determine_variables
     echo "Determined the following hypervisor HWCLASS_ID: \"$hyper_hwclass_id\""
 }
 
+## auto_handover
+# Load-balancing accross locations.
+# Works only together with the new syntax "cluster123".
+# Depending on the number of syncs currently running, this
+# will internally add --pre-hand and --post_hand options
+# dynamically at runtime. This will spread much of the sync
+# traffic to per-datacenter local behaviour.
+# Notice: this may produce more total customer downtime when
+# running a high parallelism degree.
+# Thus it tries to reduce unnecessary handovers to other locations.
+auto_handover="${auto_handover:-1}"
+
 function cm3_rewrite_args
 {
     declare -g -a argv
@@ -1628,11 +1640,69 @@ function cm3_rewrite_args
 		fail "Cluster members of '$arg' cannot be determined"
 	    fi
 	    local host
+	    local best=""
+	    local best_syncs=999
+	    local best_loc=""
+	    local best_pre=""
+	    if (( auto_handover )); then
+		echo "AUTO_HANDOVER: determine the host with lowest number of running syncs..."
+		for host in $members; do
+		    host="${host%%.*}"
+		    local host_loc="$(cm3_get_location "$host")"
+		    echo "Host '$host' is at '$host_loc'"
+		    local syncs="$(get_nr_syncs "$host")"
+		    if [[ "$syncs" != "" ]] &&
+			( (( syncs < best_syncs )) ||
+			    ( (( syncs == best_syncs )) &&
+				[[ "$host_loc" = "$location" ]] ) ); then
+			echo "Better is '$host' at '$host_loc'"
+			best_syncs="$syncs"
+			best="$host"
+			best_loc="$host_loc"
+		    fi
+		done
+		echo "BEST host is '$best' running '$best_syncs' syncs at '$best_loc'."
+		if [[ "$best" != "" ]] && [[ "$best_loc" != "$location" ]]; then
+		    local pre_hyper="$(cm3_get_hyper "$res")"
+		    echo "Resource '$res' is currently on hypervisor '$pre_hyper'"
+		    local pre_cluster="$(_get_cluster_name "$pre_hyper")"
+		    echo "Host '$pre_hyper' is on cluster '$pre_cluster'"
+		    if [[ "$pre_cluster" = "" ]]; then
+			local pre_store="$(cm3_get_store "$res")"
+			echo "Resource '$res' is currently on storage '$pre_store'"
+			local pre_cluster="$(_get_cluster_name "$pre_store")"
+			echo "Host '$pre_store' is on cluster '$pre_cluster'"
+		    fi
+		    local pre_members="$(echo $(_get_members "$pre_cluster") )"
+		    echo "Cluster '$pre_cluster' has storages '$pre_members'"
+		    for host in $pre_members; do
+			local host_loc="$(cm3_get_location "$host")"
+			echo "Host '$host' is at '$host_loc', best is '$best_loc'"
+			if [[ "$host_loc" = "$best_loc" ]]; then
+			    echo "Better is '$host'"
+			    best_pre="$host"
+			fi
+		    done
+		    echo "BEST pre-handover host is '$best_pre'"
+		    if [[ "$best_pre" != "" ]]; then
+			new_argv[$(( index++ ))]="--pre-hand=$best_pre"
+		    fi
+		fi
+	    fi
 	    for host in $members; do
 		host="${host%%.*}"
 		local host_loc="$(cm3_get_location "$host")"
 		echo "Host '$host' is at '$host_loc'"
-		if [[ "$host_loc" = "$location" ]]; then
+		if [[ "$best_pre" != "" ]]; then
+		    if [[ "$host_loc" = "$best_loc" ]]; then
+			new_argv[$(( index++ ))]="$host"
+		    else
+			push_argv[$(( index++ ))]="$host"
+		    fi
+		    if [[ "$host_loc" = "$location" ]]; then
+			push_argv[$(( index++ ))]="--post_hand=$host"
+		    fi
+		elif [[ "$host_loc" = "$location" ]]; then
 		    new_argv[$(( index++ ))]="$host"
 		else
 		    push_argv[$(( index++ ))]="$host"
