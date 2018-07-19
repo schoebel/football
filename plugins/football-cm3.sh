@@ -53,6 +53,15 @@ Specific actions for plugin football-cm3:
     Call through to the clustertool via REST.
     Useful for manual inspection and repair.
 
+Specific features with plugin football-cm3:
+
+  - Parameter syntax "cluster123" instead of "icpu456 icpu457"
+    This is an alternate specification syntax, which is
+    automatically replaced with the real machine names.
+    It tries to minimize datacenter cross-traffic by
+    taking the new \$target_primary at the same datacenter
+    location where the container is currenty running.
+
 EOF
    show_vars "${files[cm3]}"
 }
@@ -1582,6 +1591,62 @@ function cm3_determine_variables
     echo "Determined the following resource   HWCLASS_ID: \"$res_hwclass_id\""
     hyper_hwclass_id="$(call_hook get_hwclass_id "$hyper" 2>/dev/null)"
     echo "Determined the following hypervisor HWCLASS_ID: \"$hyper_hwclass_id\""
+}
+
+function cm3_rewrite_args
+{
+    declare -g -a argv
+    echo "Old arguments: ${argv[@]}"
+    local res=""
+    local arg
+    local index=0
+    declare -a new_argv=()
+    declare -a push_argv=()
+    for arg in "${argv[@]}"; do
+	if [[ "$arg" =~ ^infong ]]; then
+	    res="$arg"
+	    new_argv[$(( index++ ))]="$arg"
+	elif [[ "$arg" =~ ^cluster ]] && [[ "$res" != "" ]]; then
+	    local location="$(cm3_get_location "$res")"
+	    echo "Container '$res' is at '$location'"
+	    if [[ "$location" = "" ]]; then
+		local hyper="$(cm3_get_hyper "$res")"
+		location="$(cm3_get_location "$hyper")"
+		echo "Hypervisor '$hyper' is at '$location'"
+	    fi
+	    if [[ "$location" = "" ]]; then
+		local store="$(cm3_get_store "$res")"
+		location="$(cm3_get_location "$store")"
+		echo "Storage '$store' is at '$location'"
+	    fi
+	    if [[ "$location" = "" ]]; then
+		fail "Cannot determine location of '$arg'"
+	    fi
+	    local members="$(echo $(_get_members "$arg") )"
+	    echo "Cluster '$arg' has members '$members'"
+	    if [[ "$members" = "" ]]; then
+		fail "Cluster members of '$arg' cannot be determined"
+	    fi
+	    local host
+	    for host in $members; do
+		host="${host%%.*}"
+		local host_loc="$(cm3_get_location "$host")"
+		echo "Host '$host' is at '$host_loc'"
+		if [[ "$host_loc" = "$location" ]]; then
+		    new_argv[$(( index++ ))]="$host"
+		else
+		    push_argv[$(( index++ ))]="$host"
+		fi
+	    done
+	    for host in "${push_argv[@]}"; do
+		new_argv[$(( index++ ))]="$host"
+	    done
+	else
+	    new_argv[$(( index++ ))]="$arg"
+	fi
+    done
+    echo "New arguments: ${new_argv[@]}"
+    argv=("${new_argv[@]}")
 }
 
 function cm3_invalidate_caches
