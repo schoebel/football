@@ -248,7 +248,7 @@ football_logdir="${football_logdir:-${logdir:-$HOME/football-logs}}"
 football_backup_dir="${football_backup_dir:-$football_logdir/backups}"
 
 ## screener
-# When enabled, handover execution to the screener.
+# When enabled, delegate execution to the screener.
 # Very useful for running Football in masses.
 screener="${screener:-0}"
 
@@ -504,6 +504,17 @@ Combined actions:
      Default percent value (when left out) is $target_percent.
 
 Actions for (manual) repair in emergency situations:
+
+  $0 manual_handover  <resource> <target_primary>
+     This is useful in place of going to the machines and starting
+     handover on their command line. You dont need to log in.
+     All hooks (e.g. for downtime / reporting / etc) are automatically
+     called.
+     Notice: it will only work when there is already a replica
+     at <target_primary>, and when further constraints such as
+     clustermanager constraints will allow it.
+     For a full Football game between different clusters, use
+     "migrate" instead.
 
   $0 manual_migrate_config  <resource> <target_primary> [<target_secondary>]
      Transfer only the cluster config, without changing the MARS replicas.
@@ -895,6 +906,8 @@ function scan_args
 		local -a params=(operation res target_primary target_secondary)
 	    elif [[ "$par" =~ shrink|extend|expand ]]; then
 		local -a params=(operation res target_percent)
+	    elif [[ "$par" =~ manual_handover ]]; then
+		local -a params=(operation res target_primary)
 	    elif [[ "$par" =~ manual_config_update ]]; then
 		local -a params=(operation host)
 	    elif [[ "$par" =~ manual_|plugin_|generic_ ]]; then
@@ -3422,6 +3435,11 @@ migrate)
   ;;
 migrate_cleanup)
   migrate_clean
+  ;;
+
+
+manual_handover)
+  handover "$target_primary" "$res"
   ;;
 
 manual_migrate_config)
