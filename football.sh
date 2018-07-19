@@ -1270,7 +1270,7 @@ function handover
     injection_point
     call_hook invalidate_caches
     call_hook resource_start "$target" "$res"
-    call_hook resource_check "$res"
+    call_hook resource_check "$res" "$current" "$target"
     failure_handler=""
 
     lock_hosts
@@ -2066,7 +2066,7 @@ function migrate_resource
 
     section "Checking new primary"
 
-    call_hook resource_check "$res"
+    call_hook resource_check "$res" "$source_primary" "$target_primary"
     failure_handler=""
     call_hook report_downtime "$res" 0
     call_hook want_downtime "$res" 0

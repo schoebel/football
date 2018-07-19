@@ -276,10 +276,18 @@ function cm3_resource_start_vm
 # not respond.
 check_ping_rounds="${check_ping_rounds:-5}"
 
+## additional_runstack
+# Do an additional runstack after startup of the new container.
+# In turn, this will only do something when source and target are
+# different.
+additional_runstack="${additional_runstack:-1}"
+
 function cm3_resource_check
 {
     local res="$1"
-    local timeout="${2:-$check_ping_rounds}"
+    local source="$2"
+    local target="$3"
+    local timeout="${4:-$check_ping_rounds}"
 
     local host="$res"
     echo "Checking whether $host is running...."
@@ -291,6 +299,11 @@ function cm3_resource_check
 	sleep 3
     done
     cm3_resource_info "$res"
+    if (( additional_runstack )) && [[ "$source" != "" ]] && [[ "$source" != "$target" ]]; then
+	echo "Additional runstack source='$source' target='$target'"
+	sleep 15
+	(call_hook runstack "$source" "$target" "$res")
+    fi
     echo "Checking $host via check_progs ...."
     sleep 15
     remote "$host" "check_progs -cvi" 1 || echo "ATTENTION SOMETHING DOES NOT WORK AT $host"
