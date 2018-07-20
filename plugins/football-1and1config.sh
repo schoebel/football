@@ -67,6 +67,10 @@ runstack_host="${runstack_host:-}"
 # Command to be provided in a *.conf file.
 runstack_cmd="${runstack_cmd:-}"
 
+## runstack_ping
+# Only call runstack when the container is pingable.
+runstack_ping="${runstack_ping:-1}"
+
 function 1and1config_runstack
 {
     local source="$1"
@@ -83,6 +87,13 @@ function 1and1config_runstack
     local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
 
     if [[ "$source_cluster" != "$target_cluster" ]]; then
+	if (( runstack_ping )); then
+	    echo "Check that '$res' is pingable"
+	    if ! ping $ping_opts "$res"; then
+		echo "Resource '$res' is not pingable"
+		return
+	    fi
+	fi
 	echo "Call runstack for deploying cluster config for example /etc/1und1/cm-infong.conf to '$res' in cluster '$target_cluster'"
 
 	local cmd="$(eval "echo \"$runstack_cmd\"")"
