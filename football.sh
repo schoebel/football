@@ -2681,6 +2681,12 @@ function copy_data
     remote "$hyper" "sync"
 }
 
+## merge_shrink_secondaries
+# This is only needed when targets are not yet pre-merged.
+merge_shrink_secondaries="${merge_shrink_secondaries:-0}"
+
+declare -g merged=0
+
 function hot_phase
 {
     local hyper="$1"
@@ -2845,6 +2851,10 @@ function hot_phase
 
     failure_handler=""
     remote "$hyper" "rm -f $tar_state_dir/tar.$lv_name" 1
+
+    if (( merge_shrink_secondaries )); then
+	merge_cluster "$lv_name" "$primary $secondary_list" "$secondary_list"
+    fi
 
     section "Re-create the MARS replicas"
 
