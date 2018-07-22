@@ -1229,17 +1229,33 @@ function safeguard_deleted
     wait
 }
 
+declare -g -A cluster_members=()
+
+function get_cluster_members
+{
+    local host="$1"
+
+    local cached="${cluster_members[$host]}"
+    if [[ "$cache" = "" ]]; then
+	cached="$(remote "$host" "marsadm view-cluster-members" 1)"
+	cluster_members[$host]="$cached"
+    fi
+    echo "$cached"
+}
+
 function get_full_list
 {
     local host_list="$1"
     local with_hyper="${2:-0}"
 
+    echo "Extending host list '$host_list'" >> /dev/stderr
     local full_list=""
     while true; do
-	full_list="$(echo $(for host in $host_list; do echo $host; if (( with_hyper )); then call_hook get_hyper $host; get_store $host; fi; remote "$host" "marsadm view-cluster-members" 1; done | sort -u) )"
+	full_list="$(echo $(for host in $host_list; do echo $host; if (( with_hyper )); then call_hook get_hyper $host; get_store $host; fi; get_cluster_members "$host"; done | sort -u) )"
 	[[ "$full_list" = "$host_list" ]] && break
 	host_list="$full_list"
     done
+    echo "Extended  host list '$full_list'" >> /dev/stderr
     echo $full_list
 }
 
@@ -1858,6 +1874,8 @@ function merge_cluster
 	return
     fi
     echo "New target list: '$target_list'"
+
+    declare -g -A cluster_members=()
 
     call_hook prepare_hosts "$host_list"
 
