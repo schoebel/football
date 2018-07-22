@@ -1831,6 +1831,8 @@ function merge_cluster
     local target_list="$3"
 
     section "Ensure that \"marsadm merge-cluster\" has been executed at '$host_list' => '$target_list'."
+    host_list="$(echo $(list_union "$host_list" "$target_list") )"
+    echo "New host list '$host_list'"
 
     local host
     if [[ "$lv_name" != "" ]]; then
@@ -1839,6 +1841,23 @@ function merge_cluster
 	    remote "$host" "marsadm up $lv_name" 1
 	done
     fi
+
+    local ok=1
+    for host in $host_list; do
+	local others="$(echo $(remote "$host" "marsadm view-cluster-members" 1) )"
+	echo "Host '$host' has partners '$others'"
+	local missing="$(echo $(list_minus "$host_list" "$others") )"
+	if [[ "$missing" != "" ]]; then
+	    echo "On host '$host', partners '$missing' are missing"
+	    target_list="$(echo $(list_union "$target_list" "$missing") )"
+	    ok=0
+	fi
+    done
+    if (( ok )) && [[ "$lv_name" != "" ]]; then
+	echo "No need for merge-cluster '$host_list' => '$target_list'"
+	return
+    fi
+    echo "New target list: '$target_list'"
 
     call_hook prepare_hosts "$host_list"
 
