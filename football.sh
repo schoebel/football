@@ -1964,6 +1964,7 @@ function migration_prepare
 
     for host in $target_primary $target_secondary; do
 	(( already[$host] )) && continue
+	cleanup_done[$host]=0
 	remote "$host" "marsadm wait-cluster"
 	local vg_name="$(get_vg "$host")"
 	local dev="/dev/$vg_name/${lv_name}"
@@ -2154,6 +2155,8 @@ function _split_cluster
     lock_hosts
 }
 
+declare -g -A cleanup_done=()
+
 function migrate_cleanup
 {
     local host_list="$1"
@@ -2163,10 +2166,7 @@ function migrate_cleanup
 
     phase migrate_cleanup
 
-    section "Cleanup migration data at $host_list"
-
-    call_hook tell_action migrate cleanup
-    call_hook update_ticket migrate_cleanup running
+    section "Check for cleanup at '$host_list' excluding '$host_list2'"
 
     local new_host_list=""
     local host
@@ -2176,17 +2176,45 @@ function migrate_cleanup
 	    echo "Skipping target $host"
 	    continue
 	fi
+	# Skip when already left
+	if (( cleanup_done[$host] )); then
+	    echo "Skipping already done '$host'"
+	    continue
+	fi
+	local vg_name="$(get_vg "$host")"
+	if ! remote "$host" "[[ -e /dev/$vg_name/$res ]] || [[ -e /dev/$vg_name/$res$tmp_suffix ]] || [[ -e /dev/$vg_name/$res$shrink_suffix_old ]]" 1; then
+	    echo "Skipping already pruned '$host'"
+	    cleanup_done[$host]=1
+	    continue
+	fi
+	echo "Host '$host' needs cleanup"
 	new_host_list+=" $host"
     done
+    if [[ "$new_host_list" = "" ]]; then
+	echo "All are already left from '$host_list'"
+	return
+    fi
+    echo "new_host_list='$new_host_list'"
+
+    section "Cleanup migration data at $new_host_list"
+
+    call_hook tell_action migrate cleanup
+    call_hook update_ticket migrate_cleanup running
+
     leave_resource "$res" "$new_host_list"
     injection_point
     for host in $host_list; do
+	if (( cleanup_done[$host] )); then
+	    echo "Clenup '$host' already done"
+	    continue
+	fi
 	echo "CLEANUP LVs $host"
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
 	    lv_remove "$host" "/dev/$vg_name/$res$tmp_suffix" 1
 	    lv_remove "$host" "/dev/$vg_name/$res-copy" 1
 	    lv_remove "$host" "/dev/$vg_name/$res$shrink_suffix_old" 1
+	    cleanup_done[$host]=1
 	fi
     done
     for host in $new_host_list; do
@@ -2195,6 +2223,7 @@ function migrate_cleanup
 	if [[ "$vg_name" != "" ]]; then
 	    lv_remove "$host" "/dev/$vg_name/$res" 1
 	    sleep 3
+	    cleanup_done[$host]=1
 	fi
     done
 
@@ -2878,6 +2907,7 @@ function hot_phase
     section "Re-create the MARS replicas"
 
     for host in $secondary_list; do
+	cleanup_done[$host]=0
 	vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
 	dev="/dev/$vg_name/${lv_name}"
 	if exists_hook join_resource; then
@@ -2905,10 +2935,14 @@ function cleanup_old_remains
     local host_list="$1"
     local lv_name="$2"
 
-    section "Cleanup any old LVs"
+    section "Cleanup any UNUSED LVs (retaining ordinary ones)"
 
     local host
     for host in $host_list; do
+	if (( cleanup_done[$host] )); then
+	    echo "Skipping already done '$host'"
+	    continue
+	fi
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
 	    make_tmp_umount "$host" "$host" "$lv_name" "$tmp_suffix"
