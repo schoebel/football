@@ -2185,6 +2185,7 @@ function _split_cluster
 }
 
 declare -g -A cleanup_done=()
+declare -g cleanup_asked=0
 
 function migrate_cleanup
 {
@@ -2192,6 +2193,7 @@ function migrate_cleanup
     local host_list2="$(echo $2)"
     local res="$3"
     local do_split="${4:-1}"
+    local situation="${5:-cleanup}"
 
     phase migrate_cleanup
 
@@ -2226,6 +2228,16 @@ function migrate_cleanup
     echo "new_host_list='$new_host_list'"
 
     section "Cleanup migration data at $new_host_list"
+
+    if (( wait_before_cleanup && !cleanup_asked )); then
+	wait_for_screener \
+	    "$res" \
+	    "$situation" \
+	    "delayed" \
+	    "cleanup at '$host_list' excluding '$host_list2'" \
+	    "$wait_before_cleanup"
+	cleanup_asked=1
+    fi
 
     call_hook tell_action migrate cleanup
     call_hook update_ticket migrate_cleanup running
@@ -2974,6 +2986,15 @@ function cleanup_old_remains
 	fi
 	local vg_name="$(get_vg "$host")"
 	if [[ "$vg_name" != "" ]]; then
+	    if (( wait_before_cleanup && !cleanup_asked )); then
+		wait_for_screener \
+		    "$lv_name" \
+		    "cleanup" \
+		    "delayed" \
+		    "cleanup old remains at '$host_list'" \
+		    "$wait_before_cleanup"
+		cleanup_asked=1
+	    fi
 	    make_tmp_umount "$host" "$host" "$lv_name" "$tmp_suffix"
 	    section "Removing LVs from $host"
 	    lv_remove "$host" "/dev/$vg_name/${lv_name}$tmp_suffix" 1
@@ -2982,7 +3003,7 @@ function cleanup_old_remains
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi
     done
-    injection_point
+    cleanup_asked=0
 }
 
 ######################################################################
@@ -3130,11 +3151,6 @@ function migrate
 	secondary_list="$old_secondary_list"
     fi
     if (( do_cleanup )); then
-	if (( wait_before_cleanup )); then
-	    wait_for_screener "$res" "cleanup" "delayed" "$res $primary => $target_primary" \
-		"" "" "" \
-		"$wait_before_cleanup"
-	fi
 	migrate_cleanup "$primary $secondary_list" "$target_primary $target_secondary" "$res"
 	cleanup_old_remains "$primary $secondary_list" "$res"
     fi
@@ -3248,8 +3264,7 @@ function migrate_plus_shrink
 	    if (( migrate_early_cleanup )); then
 		call_hook invalidate_caches
 		echo "EARLY_CLEANUP $res $old_primary $old_secondary => $target_primary $target_secondary"
-		wait_for_screener "$res" "early_cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"
-		migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res" 0
+		migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res" 1 "early_cleanup"
 		injection_point
 	    fi
 	else
@@ -3282,7 +3297,6 @@ function migrate_plus_shrink
 	    read old_primary old_secondary < "$status_file"
 	fi
 	echo "GO_BACK $target_primary[$target_hyper] => $old_primary[$old_hyper] $old_secondary"
-	wait_for_screener "$res" "cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"
 	migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res" 0
 	hyper="$old_hyper"
 	primary="$target_primary"
@@ -3297,9 +3311,6 @@ function migrate_plus_shrink
 	old_secondary=""
     else
 	migrate_wait 0
-    fi
-    if (( wait_before_cleanup )); then
-	wait_for_screener "$res" "cleanup" "delayed" "$operation $res $old_primary $old_secondary => $target_primary $target_secondary" "$wait_before_cleanup"
     fi
     migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res"
     cleanup_old_remains "$old_primary $old_secondary $target_primary $target_secondary" "$res"
