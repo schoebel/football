@@ -874,11 +874,10 @@ function lock_hosts
 
 args_info=""
 
-function scan_args
+function scan_vars
 {
-    local -a params
+    declare -g -a argv=()
     local index=0
-    local list=0
     local par
     for par in "$@"; do
 	if [[ "$par" = "--help" ]]; then
@@ -899,6 +898,22 @@ function scan_args
 	    eval "$par=1"
 	    continue
 	fi
+	argv[$index]="$par"
+	(( index++ ))
+    done
+    if [[ "$operation" = "help" ]]; then
+	helpme
+	exit 0
+    fi
+}
+
+function scan_args
+{
+    local -a params
+    local index=0
+    local list=0
+    local par
+    for par in "$@"; do
 	if (( !index )); then
 	    if [[ "$par" =~ migrate_cleanup|lv_cleanup ]]; then
 		local -a params=(operation res)	
@@ -956,10 +971,6 @@ function scan_args
 	    fail "stray parameter '$par'"
 	fi
     done
-    if [[ "$operation" = "help" ]]; then
-	helpme
-	exit 0
-    fi
 }
 
 function do_confirm
@@ -3333,10 +3344,14 @@ main_pid="$BASHPID"
 
 commands_installed "$commands_needed"
 
-declare -g -a argv=("$@")
+declare -g -a argv=()
+
+scan_vars "$@"
 
 # This may be used for rewriting the global array $argv
 call_hook rewrite_args >> /dev/stderr
+
+scan_vars "${argv[@]}"
 
 scan_args "${argv[@]}"
 
@@ -3387,7 +3402,7 @@ done
 mkdir -p "$football_logdir"
 
 {
-echo "user_name=$user_name $0 ${argv[@]}"
+echo "user_name=$user_name $0 $@ => ${argv[@]}"
 main_pid="$BASHPID"
 
 if ! git describe --tags; then
@@ -3569,7 +3584,7 @@ echo "START $(date) main_pid=$main_pid"
 
 if [[ "${operation//-/_}" =~ $start_regex ]]; then
     call_hook update_ticket "$operation" general.running
-    call_hook football_start "$0" "${argv[@]}"
+    call_hook football_start "$0" "$@"
 fi
 
 case "${operation//-/_}" in
@@ -3652,7 +3667,7 @@ fi
 phase done "$0 $*"
 
 if [[ "${operation//-/_}" =~ $finished_regex ]]; then
-    call_hook football_finished 0 "$0" "${argv[@]}"
+    call_hook football_finished 0 "$0" "$@"
     call_hook update_ticket "$operation" general.finished
     operation=""
 fi
