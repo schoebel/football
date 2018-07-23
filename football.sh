@@ -1298,6 +1298,8 @@ function handover
 
     wait_for_screener "$res" "handover" "waiting" "$res $current => $target"
 
+    wait_for_logfile "$res" "$target"
+
     call_hook want_downtime "$res" 1
 
     lock_hosts 1 "$current $target" ALL
@@ -2093,6 +2095,8 @@ function migrate_resource
 
     wait_for_screener "$res" "migrate" "waiting" "$res $source_primary => $target_primary"
 
+    wait_for_logfile "$res" "$target_primary"
+
     call_hook want_downtime "$res" 1
     call_hook tell_action migrate finish
     call_hook update_ticket migrate_finish running
@@ -2448,6 +2452,50 @@ function wait_for_shrinks
 	"generic_shrinks_locked \"$res\" \"$host_list\"" \
 	"At most \$limit_shrinks shrinks at $host"
 }
+
+## limit_mars_logfile
+# Dont handover when too much logfile data is missing at the
+# new primary site.
+limit_mars_logfile="${limit_mars_logfile:-1024}" # MiB
+
+function get_logfile_size
+{
+    local res="$1"
+    local host="$2"
+
+    local cmd="marsadm view-work-rest $res | grep '^[0-9]\+$'"
+    local amount="$(remote "$host" "$cmd" 1)"
+    echo "There is $amount KiB logfile data at $host resource $res" >> /dev/stderr
+    echo "$(( amount / 1024 ))"
+}
+
+function generic_logfile_locked
+{
+    local res="$1"
+    local host_list="$2"
+
+    local host
+    for host in $host_list; do
+	local amount="$(get_logfile_size "$res" "$host")"
+	if (( amount > limit_mars_logfile )) ; then
+	    echo 1
+	    return
+	fi
+    done
+    echo 0
+}
+
+function wait_for_logfile
+{
+    local res="$1"
+    local host_list="$2"
+
+    wait_for_condition \
+	"$host_list" \
+	"generic_logfile_locked \"$res\" \"$host_list\"" \
+	"At most \$limit_mars_logfile MiB logfile data at $res on '$host_list'"
+}
+
 
 ######################################################################
 
