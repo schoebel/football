@@ -250,7 +250,7 @@ football_backup_dir="${football_backup_dir:-$football_logdir/backups}"
 ## screener
 # When enabled, delegate execution to the screener.
 # Very useful for running Football in masses.
-screener="${screener:-0}"
+screener="${screener:-1}"
 
 ## min_space
 # When testing / debugging with extremely small LVs, it may happen
@@ -3393,8 +3393,8 @@ if [[ "$replace_ssh_id_file" != "" ]] && [[ "$replace_ssh_id_file" != "EMPTY" ]]
     export replace_ssh_id_file="EMPTY"
 fi
 
-if (( screener )); then
-    [[ "$res" = "" ]] && fail "cannot start screener on empty resource"
+# Delegate to screener when possible
+if (( screener )) && [[ "$res" != "" ]]; then
     # disallow endless recursion
     export screener=0
     export title="$operation"
