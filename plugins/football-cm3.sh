@@ -255,7 +255,8 @@ function cm3_resource_start
 
     remote "$host" "marsadm wait-cluster"
     remote "$host" "service clustermanager restart"
-    remote "$host" "marsadm primary $res"
+    sleep 2
+    remote "$host" "marsadm primary --ignore-sync $res; marsadm primary $res"
     remote "$host" "cm3 --stop $res; cm3 --start $res || { sleep 3; cm3 --stop $res; sleep 3; cm3 --start $res; } || false"
     echo "DOWNTIME END   $(date)"
     declare -g  downtime_begin

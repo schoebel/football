@@ -2894,7 +2894,7 @@ function hot_phase
 	call_hook resource_stop "$primary" "$lv_name"
 	injection_point
 
-	remote "$primary" "marsadm primary $lv_name"
+	remote "$primary" "marsadm primary --ignore-sync $lv_name; marsadm primary $lv_name" 1
 	if [[ "$primary" != "$hyper" ]]; then
 	# create remote devices instead
 	    mars_dev="$(call_hook connect "$primary" "$hyper" "$lv_name" 2>&1 | tee -a /dev/stderr | grep "^NEW_DEV" | cut -d: -f2)"
@@ -2976,7 +2976,7 @@ function hot_phase
     remote "$primary" "if ! [[ -e /dev/mars/$lv_name ]]; then marsadm create-resource --force $lv_name $dev; fi"
     injection_point
     call_hook restore_resource_state "$primary" "$lv_name"
-    remote "$primary" "marsadm primary $lv_name"
+    remote "$primary" "marsadm primary --ignore-sync $lv_name; marsadm primary $lv_name" 1
 
     section "IMPORTANT: go online again"
     echo "In case of failure, you can re-establish MARS resources by hand."
