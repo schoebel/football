@@ -1676,6 +1676,7 @@ function cm3_rewrite_args
 	    local best_pre=""
 	    if (( auto_handover )); then
 		echo "AUTO_HANDOVER: determine the host with lowest number of running syncs..."
+		lock_hosts 1 "$members" ALL
 		for host in $members; do
 		    host="${host%%.*}"
 		    local host_loc="$(cm3_get_location "$host")"
@@ -1741,6 +1742,7 @@ function cm3_rewrite_args
 	    for host in "${push_argv[@]}"; do
 		new_argv[$(( index++ ))]="$host"
 	    done
+	    lock_hosts
 	else
 	    new_argv[$(( index++ ))]="$arg"
 	fi

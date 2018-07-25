@@ -2325,10 +2325,10 @@ function wait_for_condition
 
 	echo "violated=$violated"
 	if (( !violated )); then
-	    echo "$(date) Condition is true: $(eval "echo \"$txt\"")"
+	    echo "SCREENER_condition_INFO: $(date) Condition is true: $(eval "echo \"$txt\"")"
 	    break
 	fi
-	echo "$(date) Condition is false: $(eval "echo \"$txt\"")"
+	echo "SCREENER_condition_INFO: $(date) Condition is false: $(eval "echo \"$txt\"")"
 	local keypress=0
 	if [[ -t 0 ]]; then
 	    echo "Press RETURN to interrupt / shorten the wait for condition $(eval "echo \"$txt\"")"
@@ -2357,13 +2357,51 @@ function wait_for_condition
 # target host.
 limit_syncs="${limit_syncs:-4}"
 
+## lease_time
+# Intents for creation of new resources are recorded.
+# This is needed for race avoidance, when multiple resources
+# are migrated in _parallel_ to the _same_ target.
+# This might lead to livelocks when there would be no lease time
+# after which the intents are regarded as "invalid".
+lease_time="${lease_time:-3600}" # seconds
+
 function get_nr_syncs
 {
     local host="$1"
+    local add_res="$2"
 
+    if [[ "$add_res" != "" ]]; then
+	local intent="$football_logdir/intent.$add_res"
+	echo "Adding intent '$intent'" >> /dev/stderr
+	echo "$host" > $intent
+    fi
     local cmd="marsadm view-sync-rest all | grep '^[0-9]\+$' | grep -v '^0$' | wc -l"
     local count="$(remote "$host" "$cmd" 1)"
-    echo "There are $count syncs running at $host" >> /dev/stderr
+    echo "There are '$count' syncs running at '$host'" >> /dev/stderr
+    cmd="marsadm view-my-resources all | grep ".---" | awk '{ print \$3; }'"
+    local check
+    for check in $(remote "$host" "$cmd"); do
+	local intent="$football_logdir/intent.$check"
+	echo "Checking intent '$intent'" >> /dev/stderr
+	if [[ -e "$intent" ]]; then
+	    echo "Removing doubled intent '$intent'" >> /dev/stderr
+	    rm -f $football_logdir/intent.$check
+	fi
+    done
+    local now="$(date +%s)"
+    echo "Now '$now' checking for lease_time='$lease_time'" >> /dev/stderr
+    for check in $football_logdir/intent.*; do
+	local intent_stamp="$(stat --printf='%Y' $check)"
+	echo "Intent '$check' has timestamp='$intent_check'" >> /dev/stderr
+	if (( intent_stamp + lease_time < now )); then
+	    echo "Skipping outdated lease '$check'" >> /dev/stderr
+	    rm -f $check
+	    continue
+	fi
+	echo "Counting intent '$check'" >> /dev/stderr
+	(( count++ ))
+    done
+    echo "Total intended _new_ count is / would be '$count' syncs" >> /dev/stderr
     echo "$count"
 }
 
@@ -2374,12 +2412,13 @@ function generic_syncs_locked
 
     local host
     for host in $host_list; do
-	local count="$(get_nr_syncs "$host")"
-	if (( count > 0 )) && [[ "$operation" =~ prep ]]; then
+	local count="$(get_nr_syncs "$host" "$res")"
+	if (( count > 1 )) && [[ "$operation" =~ prep ]]; then
 	    echo 2
 	    return
-	elif (( count >= limit_syncs )); then
+	elif (( count > limit_syncs )); then
 	    echo 1
+	    rm -f $football_logdir/intent.$res
 	    return
 	fi
     done
