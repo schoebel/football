@@ -207,6 +207,11 @@ function cm3_resource_info
     echo "---"
 }
 
+## cm3_stop_safeguard_cmd
+# Workaround for a bug.
+# Sometimes a systemd unit does not go away.
+cm3_stop_safeguard_cmd="${cm3_stop_safeguard_cmd:-{ sleep 2; try=0; while (( try++ < 10 )) && systemctl show \$res.scope | grep ActiveState | grep =active; do systemctl stop \$res.scope; sleep 6; done; if mountpoint /vol/\$res; then umount /vol/\$res; fi; }}"
+
 function cm3_resource_stop
 {
     local host="$1"
@@ -217,8 +222,13 @@ function cm3_resource_stop
     [[ "$downtime_begin" = "" ]] && downtime_begin="$(date +%s)"
     echo "DOWNTIME BEGIN $(date)"
     ssh_hyper[$host]=""
+    local safeguard="echo SEEMS_OK"
+    if [[ "$cm3_stop_safeguard_cmd" != "" ]]; then
+	local safeguard="$(eval "echo \"$cm3_stop_safeguard_cmd\"")"
+	echo "Safeguard: $safeguard"
+    fi
     # stop the whole stack
-    remote "$host" "cm3 --stop $res || cm3 --stop $res || { mountpoint /vol/$res && umount /vol/$res; } || false"
+    remote "$host" "{ cm3 --stop $res || cm3 --stop $res; } && $safeguard; cm3 --stop $res"
 }
 
 function cm3_resource_stop_vm
@@ -257,7 +267,12 @@ function cm3_resource_start
     remote "$host" "service clustermanager restart"
     sleep 2
     remote "$host" "marsadm primary --ignore-sync $res; marsadm primary $res"
-    remote "$host" "cm3 --stop $res; cm3 --start $res || { sleep 3; cm3 --stop $res; sleep 3; cm3 --start $res; } || false"
+    local safeguard="echo SEEMS_OK"
+    if [[ "$cm3_stop_safeguard_cmd" != "" ]]; then
+	local safeguard="$(eval "echo \"$cm3_stop_safeguard_cmd\"")"
+	echo "Safeguard: $safeguard"
+    fi
+    remote "$host" "cm3 --stop $res; cm3 --start $res || { sleep 3; cm3 --stop $res; sleep 3; $safeguard; cm3 --stop $res; sleep 3; cm3 --start $res --ignore-status; } || false"
     echo "DOWNTIME END   $(date)"
     declare -g  downtime_begin
     declare -g  downtime_end="$(date +%s)"
