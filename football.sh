@@ -1662,6 +1662,7 @@ function failure_rebuild_mars
 		section "EMERGENCY try to restart primary='$primary' resource='$res'"
 		lock_hosts 1 "$primary" ALL 0
 		local mars_resource_exists="$(remote "$primary" "marsadm view-disk-present $res" | grep '^[0-9]\+$')"
+		echo "Resource '$res' at '$primary' existing=$mars_resource_exists"
 		if (( !mars_resource_exists )); then
 		    local vg_name="$(get_vg "$primary")"
 		    (remote "$primary" "if ! [[ -e /dev/mars/$lv ]]; then marsadm create-resource --force $res /dev/$vg_name/$lv; fi")
@@ -1669,6 +1670,11 @@ function failure_rebuild_mars
 		fi
 		if (failure_restart_vm "$primary" "" "$res"); then
 		    return
+		fi
+		if (( !mars_resource_exists )); then
+		    echo "Trying to remove the stray resource '$res' from '$primary'"
+		    (_leave_resource "$res" "$primary")
+		    sleep 20
 		fi
 	    done
 	done
