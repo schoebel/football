@@ -3034,6 +3034,8 @@ function hot_phase
     failure_handler=""
     remote "$hyper" "rm -f $tar_state_dir/tar.$lv_name" 1
 
+    call_hook restore_local_quota "$hyper" "$lv_name"
+
     if (( merge_shrink_secondaries )); then
 	merge_cluster "$lv_name" "$primary $secondary_list" "$secondary_list"
     fi
@@ -3051,8 +3053,6 @@ function hot_phase
 	fi
 	injection_point
     done
-
-    call_hook restore_local_quota "$hyper" "$lv_name"
 
     lock_hosts
 
@@ -3251,8 +3251,33 @@ function migrate
 
 ### for shrinking
 
+function check_shrink_unnecessary
+{
+    local res="$1"
+    local host_list="$2"
+
+    local ok=0
+    local host
+    for host in $host_list; do
+	local cmd="lvs | grep '$res$shrink_suffix_old'"
+	local present="$(remote "$host" "$cmd")"
+	echo "Backup LVs at host $host: '$present'"
+	[[ "$present" = "" ]] && (( ok++ ))
+	local mars_resource_exists="$(remote "$host" "marsadm view-disk-present $res" | grep '^[0-9]\+$')"
+	echo "MARS replica at host $host: '$mars_resource_exists'"
+	(( !mars_resource_exists )) && (( ok++ ))
+    done
+    return $ok
+}
+
 function shrink_prepare
 {
+    if check_shrink_unnecessary "$res" "$primary $secondary_list"; then
+	echo "No need for shrink_prepare: backup LVs '$res$shrink_suffix_old' already present at '$primary $secondary_list'"
+	echo "If you want to force a shrink, run lv_cleanup first."
+	return
+    fi
+
     phase shrink_prepare
 
     section "Wait when too many shrinks are already running"
@@ -3281,6 +3306,12 @@ function shrink_prepare
 
 function shrink_finish
 {
+    if check_shrink_unnecessary "$res" "$primary $secondary_list"; then
+	echo "No need for shrink_finish: backup LVs '$res$shrink_suffix_old' already present at '$primary $secondary_list'"
+	echo "If you want to force a shrink, run lv_cleanup first."
+	return
+    fi
+
     phase shrink_finish
 
     hot_phase "$hyper" "$primary" "$secondary_list" "$res"
