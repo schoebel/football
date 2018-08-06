@@ -1529,6 +1529,10 @@ function cm3_get_cpu_count
     echo "$cpu_count"
 }
 
+## ip_renumber_cmd
+# Cross-call with another independent project.
+ip_renumber_cmd="${ip_renumber_cmd:-}"
+
 function cm3_football_start
 {
     if [[ "$res" = "" ]]; then
@@ -1539,6 +1543,12 @@ function cm3_football_start
     if (( cpu_count > 0 && cpu_count <= shaholin_src_cpus )); then
 	echo "Resource '$res' is on old hardware"
 	echo "$cpu_count" > $football_logdir/shaholin-cpus.$res
+    fi
+    if [[ "$ip_renumber_cmd" != "" ]]; then
+	local cmd="$ip_renumber_cmd $res"
+	echo "Calling IP renumbering script '$cmd'"
+	($cmd)
+	echo "Script rc='$?'"
     fi
 }
 
