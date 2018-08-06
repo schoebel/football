@@ -1493,6 +1493,15 @@ monitis_downtime_script="${monitis_downtime_script:-}"
 # ShaHoLin-internal
 monitis_downtime_duration="${monitis_downtime_duration:-20}" # Minutes
 
+## orwell_downtime_script
+# ShaHoLin-internal
+orewll_downtime_script="${orwell_downtime_script:-}"
+
+## monitis_downtime_duration
+# ShaHoLin-internal
+orwell_downtime_duration="${orwell_downtime_duration:-20}" # Minutes
+
+
 function cm3_want_downtime
 {
     local resource="$1"
@@ -1509,6 +1518,16 @@ function cm3_want_downtime
 	cmd="$monitis_downtime_script get $resource.schlund.de"
     fi
     echo "Calling Monitis script: $cmd"
+    $cmd || echo IGNORE
+
+    if (( down )); then
+	local now="$(date "+%d%m%Y %H:%M")"
+	cmd="$orwell_downtime_script set --start '$now' --duration $orwell_downtime_duration --host $resource.schlund.de"
+    else
+	cmd="$orwell_downtime_script get $resource.schlund.de"
+    fi
+
+    echo "Calling Orewll script: $cmd"
     $cmd || echo IGNORE
 }
 
