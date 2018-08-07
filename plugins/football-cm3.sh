@@ -1518,7 +1518,8 @@ function cm3_want_downtime
 	cmd="$monitis_downtime_script get $resource.schlund.de"
     fi
     echo "Calling Monitis script: $cmd"
-    $cmd || echo IGNORE
+    ($cmd)
+    echo "Script rc=$?"
 
     if (( down )); then
 	local now="$(date "+%d%m%Y %H:%M")"
@@ -1527,8 +1528,9 @@ function cm3_want_downtime
 	cmd="$orwell_downtime_script get $resource.schlund.de"
     fi
 
-    echo "Calling Orewll script: $cmd"
-    $cmd || echo IGNORE
+    echo "Calling Orwell script: $cmd"
+    ($cmd)
+    echo "Script rc=$?"
 }
 
 ## shaholin_customer_report_cmd
