@@ -3096,7 +3096,6 @@ function cleanup_old_remains
 	    echo "ERROR: cannot determine VG for host $host" >> /dev/stderr
 	fi
     done
-    cleanup_asked=0
 }
 
 ######################################################################
@@ -3390,6 +3389,7 @@ function migrate_plus_shrink
 		echo "EARLY_CLEANUP $res $old_primary $old_secondary => $target_primary $target_secondary"
 		migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res" 1 "early_cleanup"
 		injection_point
+		cleanup_asked=0
 	    fi
 	else
 	    # Less network traffic:
