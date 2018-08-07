@@ -103,7 +103,8 @@ function waiting_start_wait
     echo "SCREENER_${mode}_START $(date +%s) $(date) flagfile $flag_file $msg"
     echo "$msg" > "$flag_file"
     echo "0" > "$flag_file.count"
-    $script_dir/screener.sh cron
+    ($script_dir/screener.sh cron)
+    return 0
 }
 
 function waiting_poll_wait
