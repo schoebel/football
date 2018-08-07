@@ -171,6 +171,10 @@ function ticket_update_ticket
 	comment="$(eval "echo \"$comment\"")"
 	echo "Evaluated comment is '$comment'"
     fi
+    if [[ "$comment" = "" ]]; then
+	echo "Comment is empty."
+	return
+    fi
 
     if [[ "$ticket_state" =~ running ]]; then
 	fail_ticket_phase="$ticket_phase"
