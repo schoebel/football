@@ -1593,8 +1593,8 @@ function cm3_football_finished
 	    echo "Resource '$res' is on new hardware"
 	    echo "$res $(date +%s) $(date)" >> $football_logdir/shaholin-migrations.log
 	    if [[ "$shaholin_customer_report_cmd" != "" ]]; then
-		local cmd="$(eval "echo \"$shaholin_customer_report_cmd\"")"
-		echo "Running command '$cmd'"
+		local cmd="$(eval "echo \"$shaholin_customer_report_cmd \${res}.schlund.de \"")"
+		echo "Running command '$cmd \${res}.schlund.de '"
 		(eval "$cmd")
 	    fi
 	    rm -f $football_logdir/shaholin-cpus.$res
