@@ -1,0 +1,489 @@
+This is a subproject of the MARS project, see https://github.com/schoebel/mars
+
+Documentation is
+	(a) in the main project (mars-manual.pdf), and
+	(b) ./football.sh --help
+	(c) ./screener.sh --help
+
+The meaning of branch names is similar to the main project:
+
+master : stable branch
+	tag names: Football-2.0 etc
+
+WIP-* : development branches, may be forced, my be rebased onto
+	anything else at any time. They will disappear eventually.
+
+
+-----------------------------------------------------------
+
+branch master
+
+Football-2.0-RC1
+	Initial release.
+
+Usage:
+  ./tetris.sh --help [--verbose]
+     Show help
+  ./tetris.sh --variable=<value>
+     Override any shell variable
+
+Actions for resource migration:
+
+  ./tetris.sh migrate         <resource> <target_primary> [<target_secondary>]
+     Run the sequence
+     migrate_prepare ; migrate_wait ; migrate_finish; migrate_cleanup.
+
+Dto for testing (do not rely on it):
+
+  ./tetris.sh migrate_prepare <resource> <target_primary> [<target_secondary>]
+     Allocate LVM space at the targets and start MARS replication.
+
+  ./tetris.sh migrate_wait    <resource> <target_primary> [<target_secondary>]
+     Wait until MARS replication reports UpToDate.
+
+  ./tetris.sh migrate_finish  <resource> <target_primary> [<target_secondary>]
+     Call hooks for handover to the targets.
+
+  ./tetris.sh migrate_cleanup <resource>
+     Remove old / currently unused LV replicas from MARS and deallocate
+     from LVM.
+
+Actions for inplace FS shrinking:
+
+  ./tetris.sh shrink          <resource> <percent>
+     Run the sequence shrink_prepare ; shrink_finish ; shrink_cleanup.
+
+Dto for testing (do not rely on it):
+
+  ./tetris.sh shrink_prepare  <resource> [<percent>]
+     Allocate temporary LVM space (when possible) and create initial
+     raw FS copy.
+     Default percent value(when left out) is 85.
+
+  ./tetris.sh shrink_finish   <resource>
+     Incrementally update the FS copy, swap old <=> new copy with
+     small downtime.
+
+  ./tetris.sh shrink_cleanup  <resource>
+     Remove old FS copy from LVM.
+
+Actions for inplace FS extension:
+
+  ./tetris.sh expand          <resource> <percent>
+  ./tetris.sh extend          <resource> <percent>
+    Increase mounted filesystem size during operations.
+
+Combined actions:
+
+  ./tetris.sh migrate+shrink <resource> <target_primary> [<target_secondary>] [<percent>]
+     Similar to migrate ; shrink but produces less network traffic.
+     Default percent value (when left out) is 85.
+
+  ./tetris.sh migrate+shrink+back <resource> <tmp_primary> [<percent>]
+     Migrate temporarily to <tmp_primary>, then shrink there,
+     finally migrate back to old primary and secondaries.
+     Default percent value (when left out) is 85.
+
+Actions for (manual) repair in emergency situations:
+
+  ./tetris.sh manual_handover  <resource> <target_primary>
+     This is useful in place of going to the machines and starting
+     handover on their command line. You dont need to log in.
+     All hooks (e.g. for downtime / reporting / etc) are automatically
+     called.
+     Notice: it will only work when there is already a replica
+     at <target_primary>, and when further constraints such as
+     clustermanager constraints will allow it.
+     For a full Football game between different clusters, use
+     "migrate" instead.
+
+  ./tetris.sh manual_migrate_config  <resource> <target_primary> [<target_secondary>]
+     Transfer only the cluster config, without changing the MARS replicas.
+     This does no resource stopping / restarting.
+     Useful for reverting a failed migration.
+
+  ./tetris.sh manual_config_update <hostname>
+     Only update the cluster config, without changing anything else.
+     Useful for manual repair of failed migration.
+
+  ./tetris.sh manual_merge_cluster <hostname1> <hostname2>
+     Run "marsadm merge-cluster" for the given hosts.
+     Hostnames must be from different (former) clusters.
+
+  ./tetris.sh manual_split_cluster <hostname_list>
+     Run "marsadm split-cluster" at the given hosts.
+     Useful for fixing failed / asymmetric splits.
+     Hint: provide _all_ hostnames which have formerly participated
+     in the cluster.
+
+  ./tetris.sh repair_vm <resource> <primary_candidate_list>
+     Try to restart the VM <resource> on one of the given machines.
+     Useful during unexpected customer downtime.
+
+  ./tetris.sh repair_mars <resource> <primary_candidate_list>
+     Before restarting the VM like in repair_vm, try to find a local
+     LV where a stand-alone MARS resource can be found and built up.
+     Use this only when the MARS resources are gone, and when you are
+     desperate. Problem: this will likely create a MARS setup which is
+     not usable for production, and therefore must be corrected later
+     by hand. Use this only during an emergency situation in order to
+     get the customers online again, while buying the downsides of this
+     command.
+
+  ./tetris.sh manual_lock   <item> <host_list>
+  ./tetris.sh manual_unlock <item> <host_list>
+     Manually lock or unlock an item at all of the given hosts, in
+     an atomic fashion. In most cases, use "ALL" for the item.
+
+Global maintenance:
+
+  ./tetris.sh lv_cleanup      <resource>
+
+General features:
+
+  - Instead of <percent>, an absolute amount of storage with suffix
+    'k' or 'm' or 'g' can be given.
+
+  - When <resource> is currently stopped, login to the container is
+    not possible, and in turn the hypervisor node and primary storage node
+    cannot be automatically determined. In such a case, the missing
+    nodes can be specified via the syntax
+        <resource>:<hypervisor>:<primary_storage>
+
+  - The following LV suffixes are used (naming convention):
+    -tmp = currently emerging version for shrinking
+    -preshrink = old version before shrinking took place
+
+  - By adding the option --screener, you can handover football execution
+    to ./screener.sh .
+    When some --enable_*_waiting is also added, then the critical
+    sections involving customer downtime are temporarily halted until
+    some sysadmins says "screener.sh continue $resource" or
+    attaches to the sessions and presses the RETURN key.
+
+
+PLUGIN football-1and1config
+
+   1&1 specfic plugin for dealing with the cm3 clusters
+   and its concrete configuration.
+
+
+PLUGIN football-cm3
+
+   1&1 specfic plugin for dealing with the cm3 cluster manager
+   and its concrete operating enviroment (singleton instance).
+
+   Current maximum cluster size limit: 4
+
+   Maximum #syncs running before migration can start: 0
+
+   Following marsadm --version must be installed: 2.1 1.1
+
+   Following mars kernel modules must be loaded: 0.1stable49 0.1abeta0 mars0.1abeta0
+
+Specific actions for plugin football-cm3:
+
+  ./tetris.sh clustertool {GET|PUT} <url>
+    Call through to the clustertool via REST.
+    Useful for manual inspection and repair.
+
+Specific features with plugin football-cm3:
+
+  - Parameter syntax "cluster123" instead of "icpu456 icpu457"
+    This is an alternate specification syntax, which is
+    automatically replaced with the real machine names.
+    It tries to minimize datacenter cross-traffic by
+    taking the new $target_primary at the same datacenter
+    location where the container is currenty running.
+
+
+PLUGIN football-ticket
+
+   Generic plugin for creating and updating tickets,
+   e.g. Jira tickets.
+
+   You will need to hook in some external scripts which are
+   then creating / updating the tickets.
+
+   Comment texts may be provided with following conventions:
+
+     comment.$ticket_state.txt
+     comment.$ticket_phase.$ticket_state.txt
+
+   Directories where comments may reside:
+
+     football_creds=/usr/lib/mars/creds /etc/mars/creds /home/schoebel/mars/football-master.git/creds /home/schoebel/mars/football-master.git /home/schoebel/.mars/creds ./creds
+     football_confs=/usr/lib/mars/confs /etc/mars/confs /home/schoebel/mars/football-master.git/confs /home/schoebel/.mars/confs ./confs
+     football_includes=/usr/lib/mars/plugins /etc/mars/plugins /home/schoebel/mars/football-master.git/plugins /home/schoebel/.mars/plugins ./plugins
+
+
+PLUGIN football-1and1config
+
+   1&1 specfic plugin for dealing with the cm3 clusters
+   and its concrete configuration.
+
+
+PLUGIN football-cm3
+
+   1&1 specfic plugin for dealing with the cm3 cluster manager
+   and its concrete operating enviroment (singleton instance).
+
+   Current maximum cluster size limit: 4
+
+   Maximum #syncs running before migration can start: 0
+
+   Following marsadm --version must be installed: 2.1 1.1
+
+   Following mars kernel modules must be loaded: 0.1stable49 0.1abeta0 mars0.1abeta0
+
+Specific actions for plugin football-cm3:
+
+  ./tetris.sh clustertool {GET|PUT} <url>
+    Call through to the clustertool via REST.
+    Useful for manual inspection and repair.
+
+Specific features with plugin football-cm3:
+
+  - Parameter syntax "cluster123" instead of "icpu456 icpu457"
+    This is an alternate specification syntax, which is
+    automatically replaced with the real machine names.
+    It tries to minimize datacenter cross-traffic by
+    taking the new $target_primary at the same datacenter
+    location where the container is currenty running.
+
+
+PLUGIN football-downtime
+
+  Generic plugin for communication of customer downtime.
+
+
+PLUGIN football-motd
+
+  Generic plugin for motd. Communicate that Football is running
+  at login via motd.
+
+
+PLUGIN football-report
+
+  Generic plugin for communication of reports.
+
+
+PLUGIN football-ticket
+
+   Generic plugin for creating and updating tickets,
+   e.g. Jira tickets.
+
+   You will need to hook in some external scripts which are
+   then creating / updating the tickets.
+
+   Comment texts may be provided with following conventions:
+
+     comment.$ticket_state.txt
+     comment.$ticket_phase.$ticket_state.txt
+
+   Directories where comments may reside:
+
+     football_creds=/usr/lib/mars/creds /etc/mars/creds /home/schoebel/mars/football-master.git/creds /home/schoebel/mars/football-master.git /home/schoebel/.mars/creds ./creds
+     football_confs=/usr/lib/mars/confs /etc/mars/confs /home/schoebel/mars/football-master.git/confs /home/schoebel/.mars/confs ./confs
+     football_includes=/usr/lib/mars/plugins /etc/mars/plugins /home/schoebel/mars/football-master.git/plugins /home/schoebel/.mars/plugins ./plugins
+
+
+PLUGIN football-waiting
+
+  Generic plugig, interfacing with screener: when this is used
+  by your script and enabled, then you will be able to wait for
+  "screener.sh continue" operations at certain points in your
+  script.
+
+
+./screener.sh: Run _unattended_ processes in screen sessions.
+    Useful for MASS automation, running hundreds of unattended
+    commands in parallel.
+    HINT: for running more than ~500 sessions in parallel, you might need
+    some system tuning (e.g. rlimits, kernel patches etc) for creating
+    a huge number of file descritor / sockets / etc.
+    ADVANTAGE: You may attach to individual screens, kill them, or continue
+    some waiting commands.
+
+Synopsis:
+  ./screener.sh --help [--verbose]
+  ./screener.sh list-running
+  ./screener.sh list-waiting
+  ./screener.sh list-failed
+  ./screener.sh list-critical
+  ./screener.sh list-serious
+  ./screener.sh list-done
+  ./screener.sh list
+  ./screener.sh list-screens
+  ./screener.sh run <file.csv> [<condition_list>]
+  ./screener.sh start <screen_id> <cmd> <args...>
+  ./screener.sh [<options>] <operation> <screen_id>
+
+Inquiry operations:
+
+  ./screener.sh list-screens
+    Equivalent to screen -ls
+
+  ./screener.sh list-<type>
+    Show a list of currently running, waiting (for continuation), failed,
+    and done/completed screen sessions.
+
+  ./screener.sh list
+    First show a list of currently running screens, then
+    for each <type> a list of (old) failed / completed / sessions
+    (and so on).
+
+  ./screener.sh status <screen_id>
+    Like list-*, but filter <sceen_id> and dont report timestamps.
+
+  ./screener.sh show <screen_id>
+    Show the last logfile of <screen_id> at standard output.
+
+  ./screener.sh less <screen_id>
+    Show the last logfile of <screen_id> using "less -r".
+
+MASS starting of screen sessions:
+
+  ./screener.sh run <file.csv> <condition_list>
+    Commands are launched in screen sessions via "./screener.sh start" commands,
+    unless the same <screen_id> is already running,
+    or is in some error state, or is already done (see below).
+    The commands are given by a column with CSV header name
+    containing "command", or by the first column.
+    The <screen_id> needs to be given by a column with CSV header
+    name matching "screen_id|resource".
+    The number and type of commands to launch can be reduced via
+    any combination of the following filter conditions:
+
+      --max=<number>
+        Limit the number of _new_ sessions additionally started this time.
+
+      --<column_name>==<value>
+        Only select lines where an arbitrary CSV column (given by its
+        CSV header name in C identifier syntax) has the given value.
+
+      --<column_name>!=<value>
+        Only select lines where the colum has _not_ the given value.
+
+      --<column_name>=~<bash_regex>
+        Only select lines where the bash regular expression matches
+        at the given column.
+
+      --max-per=<number>
+        Limit the number per _distinct_ value of the column denoted by
+        the _next_ filter condition.
+        Example: ./screener.sh run test.csv --dry-run --max-per=2 --dst_network=~.
+        would launch only 2 Football processes per destination network.
+
+    Hint: filter conditions can be easily checked by giving --dry-run.
+
+Start / restart / kill / continue screen sessions:
+
+  ./screener.sh start <screen_id> <cmd> <args...>
+    Start a new screen session, running arbitrary <cmd> and <args...>
+    inside.
+
+  ./screener.sh restart <screen_id>
+    Works only when the last command for <screen_id> failed.
+    This will restart the old <cmd> and its <args...> as before.
+    Use only when you want to repeat the same command once again.
+
+  ./screener.sh kill <screen_id>
+    Terminate the running screen session forcibly.
+
+  ./screener.sh continue
+  ./screener.sh continue <screen_id> [<screen_id_list>]
+  ./screener.sh continue <number>
+    Useful for MASS automation of processes involving critical sections
+    such as customer downtime.
+    When giving a numerical <number> argument, up to that number
+    of sessions are resumed (ordered by age).
+    When no further arugment is given, _all_ currently waiting sessions
+    are continued.
+    When --auto-attach is given, it will sequentially resume the
+    sessions to be continued. By default, unless --force_attach is set,
+    it uses "screen -r" skipping those sessions which are already
+    attached to somebody else.
+    This feature works only with prepared scripts which are creating
+    an empty flagfile
+    /home/schoebel/mars/mars-migration.git/screener-logdir-testing/running/$screen_id.waiting
+    whenever they want to wait for manual intervention (for whatever reason).
+    Afterwards, the script must be polling this flagfile for removal.
+    This screener operation simply removes the flagfile, such that
+    the script will then continue afterwards.
+    Example: look into ./football.sh
+    and search for occurrences of substring "call_hook start_wait".
+
+  ./screener.sh wakeup
+  ./screener.sh wakeup <screen_id> [<screen_id_list>]
+  ./screener.sh wakeup <number>
+    Similar to continue, but refers to delayed commands waiting for
+    a timeout. This can be used to individually shorten the timeout
+    period.
+    Example: Football cleanup operations may be artificially delayed
+    before doing "lvremove", to keep some sort of 'backup' for a
+    limited time. When your project is under time pressure, these
+    delays may be hindering.
+    Use this for premature ending of such artificial delays.
+
+  ./screener.sh up <...>
+    Do both continue and wakeup.
+
+  ./screener.sh auto <...>
+    Equivalent to ./screener.sh --auto-attach up <...>
+    Remember that only session without current attachment will be
+    attached to.
+
+Attach to a running session:
+
+  ./screener.sh attach <screen_id>
+    This is equivalent to screen -x $screen_id
+
+  ./screener.sh resume <screen_id>
+    This is equivalent to screen -r $screen_id
+
+Communication:
+
+  ./screener.sh notify <screen_id> <txt>
+    May be called from external scripts to send emails etc.
+
+Locking (only when supported by <cmd>):
+
+  ./screener.sh lock
+  ./screener.sh unlock
+  ./screener.sh lock <screen_id>
+  ./screener.sh unlock <screen_id>
+
+Cleanup / bookkeeping:
+
+  ./screener.sh clear-critical <screen_id>
+  ./screener.sh clear-serious <screen_id>
+  ./screener.sh clear-failed  <screen_id>
+    Mark the status as "done" and move the logfile away.
+
+  ./screener.sh purge [<days>]
+    This will remove all old logfiles which are older than
+    <days>. By default, the variable $screener_log_purge_period
+    will be used, which is currently set to '30'.
+
+  ./screener.sh cron
+    You should call this regulary from a user cron job, in order
+    to purge old logfiles, or to detect hanging sessions, or to
+    automatically send pending emails, etc.
+
+Options:
+
+  --variable
+  --variable=$value
+    These must come first, in order to prevent mixup with
+    options of <cmd> <args...>.
+    Allows overriding of any internal shell variable.
+  --help --verbose
+    Show all overridable shell variables, also for plugins.
+
+
+PLUGIN screener-email
+
+  Generic plugin for sending emails (or SMS via gateways)
+  upon status changes, such as script failures.
+
