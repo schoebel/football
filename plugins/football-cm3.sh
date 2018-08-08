@@ -1458,6 +1458,7 @@ function cm3_connect
     # step2: import iSCSI on hypervisor
     remote "$hyper" "iscsiadm -m discovery -p $iscsi_ip --type sendtargets"
     tmp_list="/tmp/devlist.$$"
+    register_unlink "$tmp_list"
     remote "$hyper" "ls /dev/sd?" > $tmp_list
     remote "$hyper" "iscsiadm -m node -p $iscsi_ip -T $iqn -l"
     while true; do
@@ -1466,6 +1467,7 @@ function cm3_connect
 	[[ -n "$new_dev" ]] && break
     done
     rm -f $tmp_list
+    unregister_unlink "$tmp_list"
     echo "NEW_DEV:$new_dev"
 }
 
@@ -1563,6 +1565,7 @@ function cm3_football_start
     echo "Host '$res' has $cpu_count CPUs"
     if (( cpu_count > 0 && cpu_count <= shaholin_src_cpus )); then
 	echo "Resource '$res' is on old hardware"
+	register_unlink "$football_logdir/shaholin-cpus.$res"
 	echo "$cpu_count" > $football_logdir/shaholin-cpus.$res
     fi
     if [[ "$ip_renumber_cmd" != "" ]]; then
@@ -1598,6 +1601,7 @@ function cm3_football_finished
 		(eval "$cmd")
 	    fi
 	    rm -f $football_logdir/shaholin-cpus.$res
+	    unregister_unlink "$football_logdir/shaholin-cpus.$res"
 	fi
     fi
 

@@ -673,6 +673,7 @@ function fail
 	fi
 	# unlock any locks
 	lock_hosts
+	run_local_cleanup_operations
 	echo "" >> /dev/stderr
 	echo "EXIT status=$status" >> /dev/stderr
     fi
@@ -702,6 +703,7 @@ function exit
 	fi
 	# unlock any locks
 	lock_hosts
+	run_local_cleanup_operations
     fi
     echo ""
     echo "EXIT status=$status" >> /dev/stderr
@@ -758,6 +760,37 @@ function timeout_cmd
     local rc=$(( rc1 | rc2 ))
     #echo "RC=$rc" >> /dev/stderr
     return $rc
+}
+
+declare -g -A local_cleanup_operations=()
+
+function register_unlink
+{
+    local path="$1"
+
+    local_cleanup_operations[$path]="rm -f $path"
+}
+
+function unregister_unlink
+{
+    local path="$1"
+
+    local_cleanup_operations[$path]=""
+    unset local_cleanup_operations[$path]
+    unset -n local_cleanup_operations[$path]
+}
+
+function run_local_cleanup_operations
+{
+    echo "${FUNCNAME[@]}"
+    local cmd
+    for cmd in "${local_cleanup_operations[@]}"; do
+	[[ "$cmd" = "" ]] && continue
+	echo "local cleanup operation: '$cmd'"
+	($cmd)
+	echo "rc=$?"
+    done
+    declare -g -A local_cleanup_operations=()
 }
 
 ## lock_break_timeout
@@ -2379,6 +2412,7 @@ function get_nr_syncs
     if [[ "$add_res" != "" ]]; then
 	local intent="$football_logdir/intent.$add_res"
 	echo "Adding intent '$intent'" >> /dev/stderr
+	register_unlink "$intent"
 	echo "$host" > $intent
     fi
     local cmd="marsadm view-sync-rest all | grep '^[0-9]\+$' | grep -v '^0$' | wc -l"
@@ -2391,7 +2425,8 @@ function get_nr_syncs
 	echo "Checking intent '$intent'" >> /dev/stderr
 	if [[ -e "$intent" ]]; then
 	    echo "Removing doubled intent '$intent'" >> /dev/stderr
-	    rm -f $football_logdir/intent.$check
+	    rm -f $intent
+	    unregister_unlink "$intent"
 	fi
     done
     local now="$(date +%s)"
@@ -2402,6 +2437,7 @@ function get_nr_syncs
 	if (( intent_stamp + lease_time < now )); then
 	    echo "Skipping outdated lease '$check'" >> /dev/stderr
 	    rm -f $check
+	    unregister_unlink "$check"
 	    continue
 	fi
 	echo "Counting intent '$check'" >> /dev/stderr
@@ -2424,7 +2460,11 @@ function generic_syncs_locked
 	    return
 	elif (( count > limit_syncs )); then
 	    echo 1
-	    rm -f $football_logdir/intent.$res
+	    {
+		local intent="$football_logdir/intent.$res"
+		rm -f $intent
+		unregister_unlink "$intent"
+	    } >> /dev/stderr
 	    return
 	fi
     done
