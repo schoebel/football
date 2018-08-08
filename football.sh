@@ -2533,12 +2533,40 @@ limit_shrinks="${limit_shrinks:-1}"
 # because LVs may be created in advance (e.g. at another cluster member)
 count_shrinks_by_tmp_mount="${count_shrinks_by_tmp_mount:-1}"
 
+function get_nr_shrinks
+{
+    local host="$1"
+    local add_res="$2"
+
+    if [[ "$add_res" != "" ]]; then
+	local intent="$football_logdir/intent.shrinks.$add_res"
+	add_intent "$intent" "$host"
+    fi
+    # Check for the number of other shrink spaces
+    local cmd=""
+    local mnt="$(call_hook get_mountpoint "*")"
+    if (( count_shrinks_by_tmp_mount )) && [[ "$mnt" != "" ]]; then
+	echo "Counting shrinks at '$host' by mountpoints" >> /dev/stderr
+	cmd="for i in $mnt$tmp_suffix; do mountpoint \$i; done | grep -v '$res$tmp_suffix' | grep ' is a mountpoint' | wc -l"
+    fi
+    if [[ "$cmd" = "" ]]; then
+	echo "Counting shrinks at '$host' by LVs" >> /dev/stderr
+	cmd="lvs | grep '.$tmp_suffix ' | grep -v '$res$tmp_suffix' | wc -l"
+    fi
+    local count="$(remote "$host" "$cmd" 1)"
+    echo "There are $count shrinks running at $host" >> /dev/stderr
+    local sum=0
+    sum_and_timeout_intents "$football_logdir/intent.shrinks.*"
+    (( count += sum ))
+    echo "Total intended _new_ shrink count would be $count at $host" >> /dev/stderr
+    echo "$count"
+}
+
 function generic_shrinks_locked
 {
     local res="$1"
     local host_list="$2"
 
-    local mnt="$(call_hook get_mountpoint "*")"
     local host
     for host in $host_list; do
 	# Always accept the _own_ shrink space, unconditionally
@@ -2546,20 +2574,10 @@ function generic_shrinks_locked
 	if remote "$host" "$cmd" 1 >> /dev/stderr; then
 	    continue
 	fi
-	# Check for the number of other shrink spaces
-	cmd=""
-	if (( count_shrinks_by_tmp_mount )) && [[ "$mnt" != "" ]]; then
-	    echo "Counting shrinks by mountpoints" >> /dev/stderr
-	    cmd="for i in $mnt$tmp_suffix; do mountpoint \$i; done | grep -v '$res$tmp_suffix' | grep ' is a mountpoint' | wc -l"
-	fi
-	if [[ "$cmd" = "" ]]; then
-	    echo "Counting shrinks by LVs" >> /dev/stderr
-	    cmd="lvs | grep '.$tmp_suffix ' | grep -v '$res$tmp_suffix' | wc -l"
-	fi
-	local count="$(remote "$host" "$cmd" 1)"
-	echo "There are $count shrinks running at $host" >> /dev/stderr
-	if (( count >= limit_shrinks )); then
+	local count="$(get_nr_shrinks "$host" "$res")"
+	if (( count > limit_shrinks )); then
 	    echo 1
+	    remove_intent "$football_logdir/intent.shrinks.$res" >> /dev/stderr
 	    return
 	fi
     done
@@ -2569,12 +2587,12 @@ function generic_shrinks_locked
 function wait_for_shrinks
 {
     local res="$1"
-    local host_list="$2"
+    local host="$2"
 
     wait_for_condition \
-	"$host_list" \
-	"generic_shrinks_locked \"$res\" \"$host_list\"" \
-	"At most \$limit_shrinks shrinks at $host"
+	"$host" \
+	"generic_shrinks_locked \"$res\" \"$host\"" \
+	"At most \$limit_shrinks shrinks at '$host'"
 }
 
 ## limit_mars_logfile
@@ -2837,6 +2855,7 @@ function create_shrink_space
     injection_point
     sleep 1
     remote "$host" "$mkfs_cmd /dev/$vg_name/${lv_name}$tmp_suffix"
+    remove_intent "$football_logdir/intent.shrinks.$lv_name" >> /dev/stderr
     injection_point
 }
 
