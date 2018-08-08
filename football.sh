@@ -2045,6 +2045,7 @@ function migration_prepare
 	fi
 	injection_point
     done
+    remove_intent "$football_logdir/intent.syncs.$lv_name" >> /dev/stderr
 
     call_hook finish_hosts "$source_primary $target_primary $target_secondary"
 
@@ -2470,7 +2471,7 @@ function get_nr_syncs
     local add_res="$2"
 
     if [[ "$add_res" != "" ]]; then
-	local intent="$football_logdir/intent.$add_res"
+	local intent="$football_logdir/intent.syncs.$add_res"
 	add_intent "$intent" "$host"
     fi
     local cmd="marsadm view-sync-rest all | grep '^[0-9]\+$' | grep -v '^0$' | wc -l"
@@ -2479,13 +2480,13 @@ function get_nr_syncs
     cmd="marsadm view-my-resources all | grep ".---" | awk '{ print \$3; }'"
     local check
     for check in $(remote "$host" "$cmd"); do
-	local intent="$football_logdir/intent.$check"
+	local intent="$football_logdir/intent.syncs.$check"
 	check_intent "$intent"
     done
     local sum=0
-    sum_and_timeout_intents "$football_logdir/intent.*"
+    sum_and_timeout_intents "$football_logdir/intent.syncs.*"
     (( count += sum ))
-    echo "Total intended _new_ count is / would be '$count' syncs" >> /dev/stderr
+    echo "Total intended _new_ sync count is / would be '$count' syncs at '$host'" >> /dev/stderr
     echo "$count"
 }
 
@@ -2502,7 +2503,7 @@ function generic_syncs_locked
 	    return
 	elif (( count > limit_syncs )); then
 	    echo 1
-	    remove_intent "$football_logdir/intent.$res" >> /dev/stderr
+	    remove_intent "$football_logdir/intent.syncs.$res" >> /dev/stderr
 	    return
 	fi
     done
