@@ -2390,19 +2390,79 @@ function wait_for_condition
     echo "SCREENER_condition_RESUME $(date +%s) $(date) condition: $(eval "echo \"$txt\"")"
 }
 
-## limit_syncs
-# Limit the number of actually running syncs by waiting
-# until less than this number of syncs are running at any
-# target host.
-limit_syncs="${limit_syncs:-4}"
+function add_intent
+{
+    local intent="$1"
+    local info="$2"
+
+    echo "Adding intent '$intent' => '$info'" >> /dev/stderr
+    register_unlink "$intent"
+    echo "$info" > $intent
+}
+
+function check_intent
+{
+    local intent="$1"
+
+    echo "Checking intent '$intent'" >> /dev/stderr
+    if [[ -e "$intent" ]]; then
+	echo "Removing doubled intent '$intent'" >> /dev/stderr
+	rm -f $intent
+	unregister_unlink "$intent"
+    fi
+}
 
 ## lease_time
-# Intents for creation of new resources are recorded.
+# Any intents (e.g. for creation of new resources) are recorded.
 # This is needed for race avoidance, when multiple resources
 # are migrated in _parallel_ to the _same_ target.
 # This might lead to livelocks when there would be no lease time
 # after which the intents are regarded as "invalid".
 lease_time="${lease_time:-3600}" # seconds
+
+function sum_and_timeout_intents
+{
+    local pattern="$1"
+    # modifies $sum
+
+    local now="$(date +%s)"
+    echo "Now '$now' checking for lease_time='$lease_time'" >> /dev/stderr
+    local check
+    for check in $pattern; do
+	local intent_stamp="$(stat --printf='%Y' $check)"
+	echo "Intent '$check' has timestamp='$intent_stamp'" >> /dev/stderr
+	if (( intent_stamp + lease_time < now )); then
+	    echo "Skipping outdated lease '$check'" >> /dev/stderr
+	    rm -f $check
+	    unregister_unlink "$check"
+	    continue
+	fi
+	local value="$(< $check)"
+	if [[ "$value" =~ ^[0-9]+$ ]]; then
+	    echo "Adding intent '$check' value='$value'" >> /dev/stderr
+	    (( sum += value ))
+	else
+	    echo "Counting intent '$check'" >> /dev/stderr
+	    (( sum++ ))
+	fi
+    done
+    echo "Sum: '$sum'" >> /dev/stderr
+}
+
+function remove_intent
+{
+    local intent="$1"
+
+    echo "Removing intent '$intent' ('$(< $intent)')" >> /dev/stderr
+    rm -f $intent
+    unregister_unlink "$intent"
+}
+
+## limit_syncs
+# Limit the number of actually running syncs by waiting
+# until less than this number of syncs are running at any
+# target host.
+limit_syncs="${limit_syncs:-4}"
 
 function get_nr_syncs
 {
@@ -2411,9 +2471,7 @@ function get_nr_syncs
 
     if [[ "$add_res" != "" ]]; then
 	local intent="$football_logdir/intent.$add_res"
-	echo "Adding intent '$intent'" >> /dev/stderr
-	register_unlink "$intent"
-	echo "$host" > $intent
+	add_intent "$intent" "$host"
     fi
     local cmd="marsadm view-sync-rest all | grep '^[0-9]\+$' | grep -v '^0$' | wc -l"
     local count="$(remote "$host" "$cmd" 1)"
@@ -2422,27 +2480,11 @@ function get_nr_syncs
     local check
     for check in $(remote "$host" "$cmd"); do
 	local intent="$football_logdir/intent.$check"
-	echo "Checking intent '$intent'" >> /dev/stderr
-	if [[ -e "$intent" ]]; then
-	    echo "Removing doubled intent '$intent'" >> /dev/stderr
-	    rm -f $intent
-	    unregister_unlink "$intent"
-	fi
+	check_intent "$intent"
     done
-    local now="$(date +%s)"
-    echo "Now '$now' checking for lease_time='$lease_time'" >> /dev/stderr
-    for check in $football_logdir/intent.*; do
-	local intent_stamp="$(stat --printf='%Y' $check)"
-	echo "Intent '$check' has timestamp='$intent_check'" >> /dev/stderr
-	if (( intent_stamp + lease_time < now )); then
-	    echo "Skipping outdated lease '$check'" >> /dev/stderr
-	    rm -f $check
-	    unregister_unlink "$check"
-	    continue
-	fi
-	echo "Counting intent '$check'" >> /dev/stderr
-	(( count++ ))
-    done
+    local sum=0
+    sum_and_timeout_intents "$football_logdir/intent.*"
+    (( count += sum ))
     echo "Total intended _new_ count is / would be '$count' syncs" >> /dev/stderr
     echo "$count"
 }
@@ -2460,11 +2502,7 @@ function generic_syncs_locked
 	    return
 	elif (( count > limit_syncs )); then
 	    echo 1
-	    {
-		local intent="$football_logdir/intent.$res"
-		rm -f $intent
-		unregister_unlink "$intent"
-	    } >> /dev/stderr
+	    remove_intent "$football_logdir/intent.$res" >> /dev/stderr
 	    return
 	fi
     done
