@@ -1402,7 +1402,7 @@ function new_tid
 
     declare -g iscsi_tid
 
-    local old_tids="$(remote "$store" "cat /proc/net/iet/volume /proc/net/iet/session" | grep -o 'tid:[0-9]\+' | cut -d: -f2 | sort -u)"
+    local old_tids="$(remote "$store" "cat /proc/net/iet/volume /proc/net/iet/session" 1 | grep -o 'tid:[0-9]\+' | cut -d: -f2 | sort -u)"
     echo "old tids: " $old_tids >> /dev/stderr
     while echo $old_tids | grep "$iscsi_tid" 1>&2; do
 	(( iscsi_tid++ ))
@@ -1420,12 +1420,12 @@ function cm3_disconnect
 
     # safeguarding: retrieve any matching runtime session
     local hyper
-    for hyper in $(remote "$store" "grep -A1 'name:$iqn' < /proc/net/iet/session | grep 'initiator:' | grep -o 'icpu[0-9]\+'"); do
+    for hyper in $(remote "$store" "grep -A1 'name:$iqn' < /proc/net/iet/session | grep 'initiator:' | grep -o 'icpu[0-9]\+'" 1); do
 	remote "$hyper" "iscsiadm -m node -T $iqn -u || echo IGNORE iSCSI initiator logout"
     done
     # safeguarding: retrieve any matching tid
     local tid
-    for tid in $(remote "$store" "grep 'name:$iqn' < /proc/net/iet/volume | cut -d' ' -f1 | cut -d: -f2"); do
+    for tid in $(remote "$store" "grep 'name:$iqn' < /proc/net/iet/volume | cut -d' ' -f1 | cut -d: -f2" 1); do
 	echo "KILLING old tid '$tid' for iqn '$iqn' on '$store'"
 	remote "$store" "ietadm --op delete --tid=$tid || echo IGNORE iSCSI target deletion"
     done
