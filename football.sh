@@ -2535,10 +2535,11 @@ limit_shrinks="${limit_shrinks:-1}"
 # because LVs may be created in advance (e.g. at another cluster member)
 count_shrinks_by_tmp_mount="${count_shrinks_by_tmp_mount:-1}"
 
-function get_nr_shrinks
+function compute_nr_shrinks
 {
     local host="$1"
     local add_res="$2"
+    # return: $shrinks
 
     if [[ "$add_res" != "" ]]; then
 	local intent="$football_logdir/intent.shrinks.$add_res"
@@ -2561,7 +2562,7 @@ function get_nr_shrinks
     sum_and_timeout_intents "$football_logdir/intent.shrinks.*"
     (( count += sum ))
     echo "Total intended _new_ shrink count would be $count at $host" >> /dev/stderr
-    echo "$count"
+    shrinks="$count"
 }
 
 function generic_shrinks_locked
@@ -2576,8 +2577,9 @@ function generic_shrinks_locked
 	if remote "$host" "$cmd" 1 >> /dev/stderr; then
 	    continue
 	fi
-	local count="$(get_nr_shrinks "$host" "$res")"
-	if (( count > limit_shrinks )); then
+	local shrinks=0
+	compute_nr_shrinks "$host" "$res"
+	if (( shrinks > limit_shrinks )); then
 	    echo 1
 	    remove_intent "$football_logdir/intent.shrinks.$res" >> /dev/stderr
 	    return
