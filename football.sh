@@ -3616,12 +3616,23 @@ replace_ssh_id_file="${replace_ssh_id_file:-}"
 if [[ "$replace_ssh_id_file" != "" ]] && [[ "$replace_ssh_id_file" != "EMPTY" ]]; then
     echo "OLD ssh keys:"
     ssh-add -l
-    echo "Replacing new ssh users from file '$replace_ssh_id_file'"
-    eval $(ssh-agent)
-    ssh-add -D
-    ssh-add $replace_ssh_id_file || fail "ssh-add $replace_ssh_id_file status=$?"
-    echo "NEW ssh keys:"
-    ssh-add -l
+    echo "Replacing ssh agent"
+    unset SSH_AGENT_PID
+    agent_rc="$football_logdir/ssh-agent.rc"
+    if [[ -s $agent_rc ]]; then
+	echo "Reusing ssh-agent pid from '$agent_rc'"
+	echo "$(< $agent_rc)"
+	source $agent_rc
+    fi
+    if [[ "$SSH_AGENT_PID" = "" ]]; then
+	echo "Forking new ssh-agent into '$agent_rc'"
+	eval $(ssh-agent | tee $agent_rc)
+	echo "Replacing new ssh users from file '$replace_ssh_id_file'"
+	ssh-add -D
+	ssh-add $replace_ssh_id_file || fail "ssh-add $replace_ssh_id_file status=$?"
+	echo "NEW ssh keys:"
+	ssh-add -l
+    fi
     export replace_ssh_id_file="EMPTY"
 fi
 
