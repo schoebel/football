@@ -2465,10 +2465,11 @@ function remove_intent
 # target host.
 limit_syncs="${limit_syncs:-4}"
 
-function get_nr_syncs
+function compute_nr_syncs
 {
     local host="$1"
     local add_res="$2"
+    # return: $syncs
 
     if [[ "$add_res" != "" ]]; then
 	local intent="$football_logdir/intent.syncs.$add_res"
@@ -2487,7 +2488,7 @@ function get_nr_syncs
     sum_and_timeout_intents "$football_logdir/intent.syncs.*"
     (( count += sum ))
     echo "Total intended _new_ sync count is / would be '$count' syncs at '$host'" >> /dev/stderr
-    echo "$count"
+    syncs="$count"
 }
 
 function generic_syncs_locked
@@ -2497,11 +2498,12 @@ function generic_syncs_locked
 
     local host
     for host in $host_list; do
-	local count="$(get_nr_syncs "$host" "$res")"
-	if (( count > 1 )) && [[ "$operation" =~ prep ]]; then
+	local syncs=0
+	compute_nr_syncs "$host" "$res"
+	if (( syncs > 1 )) && [[ "$operation" =~ prep ]]; then
 	    echo 2
 	    return
-	elif (( count > limit_syncs )); then
+	elif (( syncs > limit_syncs )); then
 	    echo 1
 	    remove_intent "$football_logdir/intent.syncs.$res" >> /dev/stderr
 	    return

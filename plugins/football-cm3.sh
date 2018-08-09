@@ -1731,7 +1731,8 @@ function cm3_rewrite_args
 		    host="${host%%.*}"
 		    local host_loc="$(cm3_get_location "$host")"
 		    echo "Host '$host' is at '$host_loc'"
-		    local syncs="$(get_nr_syncs "$host")"
+		    local syncs=0
+		    compute_nr_syncs "$host" ""
 		    if [[ "$syncs" != "" ]] &&
 			( (( syncs < best_syncs )) ||
 			    ( (( syncs == best_syncs )) &&
