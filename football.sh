@@ -2360,7 +2360,11 @@ function wait_for_condition
 	reconf
 
 	lock_hosts 1 "$lock_list" ALL
-	local violated="$(eval "$fn")"
+	local violated=0
+	if ! eval "$fn"; then
+	    echo "eval '$fn' rc=$?"
+	    violated=1
+	fi
 	lock_hosts
 
 	echo "violated=$violated"
@@ -2371,7 +2375,7 @@ function wait_for_condition
 	echo "SCREENER_condition_INFO: $(date) Condition is false: $(eval "echo \"$txt\"")"
 	local keypress=0
 	if [[ -t 0 ]]; then
-	    echo "Press RETURN to interrupt / shorten the wait for condition $(eval "echo \"$txt\"")"
+	    echo "Press RETURN to interrupt / shorten the wait for condition: $(eval "echo \"$txt\"")"
 	    local i
 	    local dummy
 	    for (( i = 0; i < wait_time; i++ )); do
@@ -2495,21 +2499,22 @@ function generic_syncs_locked
 {
     local res="$1"
     local host_list="$2"
+    # return: $violated
 
     local host
     for host in $host_list; do
 	local syncs=0
 	compute_nr_syncs "$host" "$res"
 	if (( syncs > 1 )) && [[ "$operation" =~ prep ]]; then
-	    echo 2
+	    violated=2
 	    return
 	elif (( syncs > limit_syncs )); then
-	    echo 1
+	    violated=1
 	    remove_intent "$football_logdir/intent.syncs.$res" >> /dev/stderr
 	    return
 	fi
     done
-    echo 0
+    violated=0
 }
 
 function wait_for_syncs
@@ -2569,6 +2574,7 @@ function generic_shrinks_locked
 {
     local res="$1"
     local host_list="$2"
+    # return: $violated
 
     local host
     for host in $host_list; do
@@ -2580,12 +2586,12 @@ function generic_shrinks_locked
 	local shrinks=0
 	compute_nr_shrinks "$host" "$res"
 	if (( shrinks > limit_shrinks )); then
-	    echo 1
+	    violated=1
 	    remove_intent "$football_logdir/intent.shrinks.$res" >> /dev/stderr
 	    return
 	fi
     done
-    echo 0
+    violated=0
 }
 
 function wait_for_shrinks
