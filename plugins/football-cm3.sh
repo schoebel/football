@@ -577,7 +577,10 @@ function cm3_join_resource
     [[ "$target" = "" ]] && return
     [[ "$res" = "" ]] && return
 
-    remote "$target" "marsadm join-resource --force --ssh-port=24 $res $dev"
+    local cmd="marsadm wait-cluster"
+    cmd+="; marsadm join-resource --ssh-port=24 $res $dev"
+    cmd+="|| { sleep 10; marsadm join-resource --force --ssh-port=24 $res $dev; }"
+    remote "$target" "$cmd"
 }
 
 ###########################################
