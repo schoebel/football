@@ -1630,6 +1630,10 @@ update_cmd="${update_cmd:-}"
 # To be provided in a *.conf or *.preconf file.
 update_host="${update_host:-}"
 
+## parse_ticket
+# Regex for identifying tickets from script outputs or arguments
+parse_ticket="${parse_ticket:-TECCM-[0-9]\+}"
+
 function cm3_tell_action
 {
     local db_type="$1"
@@ -1655,10 +1659,26 @@ function cm3_tell_action
     local cmd="$(eval echo "$update_cmd")"
     echo "Action on '$update_host': '$cmd'"
 
-    (remote "$update_host" "$cmd" 1)
-    echo "Action rc=$?"
+    local tmp_output="/tmp/output.$$"
+    register_unlink "$tmp_output"
+    (
+	remote "$update_host" "$cmd" 1
+	echo "Action rc=$?"
+    ) 2>&1 | tee $tmp_output
+    local parsed="$(grep -o -e "$parse_ticket" < $tmp_output)"
+    echo "parsed='$parsed'"
+    unregister_unlink "$tmp_output"
 
     # Ticket update from plugin/football-ticket ....
+    echo "original ticket='$ticket'"
+    if [[ "$ticket" = "" ]]; then
+	ticket="$parsed"
+	echo "parsed ticket='$ticket'"
+    fi
+    if [[ "$ticket" = "" ]]; then
+	call_hook pre_init
+	echo "pre_init ticket='$ticket'"
+    fi
     call_hook update_ticket "$operation" "action.$db_type.$db_state"
     call_hook update_ticket "$operation" "action.$db_type"
     call_hook update_ticket "$operation" "action.$db_state"
