@@ -1622,14 +1622,14 @@ function cm3_football_finished
     fi
 }
 
-## shaholin_action
+## update_cmd
 # OPTIONAL: specific action script with parameters.
-shaholin_action="${shaholin_action:-}"
-# stolen from football-1and1-config -> 1and1config_update_action
+update_cmd="${update_cmd:-}"
+
+## update_host
 # To be provided in a *.conf or *.preconf file.
 update_host="${update_host:-}"
-## update_cmd
-update_cmd="${update_cmd:-}"
+
 function cm3_tell_action
 {
     local db_type="$1"
@@ -1639,7 +1639,8 @@ function cm3_tell_action
     local db_dstCluster="$(_get_cluster_name "$target_primary" 2>/dev/null)"
     local db_state="$2"
 
-    if [[ "$shaholin_action" = "" ]]; then
+    if [[ "$update_host" = "" ]] || [[ "$update_cmd" = "" ]]; then
+	echo "update_host='$update_host' update_cmd='$update_cmd'"
 	return
     fi
 
@@ -1651,14 +1652,18 @@ function cm3_tell_action
     fi
 
     # DB EfficiencyReport update
-    local cmd="$update_cmd --action=\"$db_type\" --resource=\"$db_resource\" --state=\"$db_state\""
-    echo "action: $cmd"
-    
-    remote "$update_host" "$cmd"
-    
+    local cmd="$(eval echo "$update_cmd")"
+    echo "Action on '$update_host': '$cmd'"
+
+    (remote "$update_host" "$cmd" 1)
+    echo "Action rc=$?"
+
     # Ticket update from plugin/football-ticket ....
-    call hook update_ticket "\$res" 
-    
+    call_hook update_ticket "$operation" "action.$db_type.$db_state"
+    call_hook update_ticket "$operation" "action.$db_type"
+    call_hook update_ticket "$operation" "action.$db_state"
+    call_hook update_ticket "$operation" "action"
+
     return 0
 }
 
