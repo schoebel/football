@@ -554,6 +554,10 @@ Actions for (manual) repair in emergency situations:
      Manually lock or unlock an item at all of the given hosts, in
      an atomic fashion. In most cases, use "ALL" for the item.
 
+Only for testing / development (no stable interfaces):
+
+  $0 manual_call_hook <name> <args>
+
 Global maintenance:
 
   $0 lv_cleanup      <resource>
@@ -3675,6 +3679,14 @@ case "${operation//-/_}" in
 test_delete_resource)
   test_delete_resource
   exit 0
+  ;;
+
+manual_call_hook)
+  hook="$2"
+  shift 2
+  echo "Hook '$hook' '$@'" >> /dev/stderr
+  call_hook "$hook" "$@"
+  exit $?
   ;;
 
 manual_config_update)
