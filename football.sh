@@ -3553,6 +3553,8 @@ function migrate_plus_shrink
     if (( go_back )); then
 	rm -f "$status_file"
     fi
+    call_hook tell_action migrate done
+    call_hook tell_action shrink done
 }
 
 ### global actions
