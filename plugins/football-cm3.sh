@@ -1634,6 +1634,18 @@ update_host="${update_host:-}"
 # Regex for identifying tickets from script outputs or arguments
 parse_ticket="${parse_ticket:-TECCM-[0-9]\+}"
 
+## translate_db_state
+# Whether to use the following mapping definitions.
+translate_db_state="${translate_db_state:-0}"
+
+## db_state_*
+# Map logical names to the ones in the database.
+db_state_init="${db_state_init:-}"
+db_state_prepare="${db_state_prepare:-}"
+db_state_finish="${db_state_finish:-}"
+db_state_cleanup="${db_state_cleanup:-}"
+db_state_done="${db_state_done:-}"
+
 function cm3_tell_action
 {
     local db_type="$1"
@@ -1653,6 +1665,19 @@ function cm3_tell_action
     fi
     if [[ "$db_dstCluster" = "" ]]; then
 	db_dstCluster="$db_srcCluster"
+    fi
+
+    # Translate to a different wording
+    local var="db_state_$db_state"
+    local val="$(eval echo "\${$var}")"
+    echo "Translated state for action '$db_type': $var='$val'"
+    if (( translate_db_state )); then
+	if [[ "$val" = "" ]]; then
+	    echo "No translation, ignoring this action"
+	    return
+	fi
+	echo "Using translated state name '$val'"
+	db_state="$val"
     fi
 
     # DB EfficiencyReport update
