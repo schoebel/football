@@ -3646,7 +3646,10 @@ fi
 if (( screener )) && [[ "$res" != "" ]]; then
     # disallow endless recursion
     export screener=0
-    export title="$operation"
+    export title="$operation $res"
+    if [[ "$3" != "" ]]; then
+	export title+=" $3"
+    fi
     shopt -s extglob
     exec $(dirname "$0")/screener.sh start "${res:-$1}" "$0" "${*//--screener?(=*)/}" --confirm=0
 fi
