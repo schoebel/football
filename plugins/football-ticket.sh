@@ -141,6 +141,15 @@ function ticket_pre_init
 	    fi
 	fi
     fi
+    mkdir -p $football_logdir/tickets
+    local ticket_file="$football_logdir/tickets/ticket.$operation.$res.txt"
+    if [[ "$ticket" = "" ]]; then
+	ticket="$(< $ticket_file)"
+	echo "Got ticket '$ticket' from file '$ticket_file'"
+    else
+	echo "Storing ticket '$ticket' into '$ticket_file'"
+	echo "$ticket" > "$ticket_file"
+    fi
 }
 
 fail_ticket_phase=""
