@@ -125,7 +125,9 @@ function ticket_pre_init
 	echo "Trying to get ticket ID for resource '$res'"
 	ticket="$(ticket_call_fn "$ticket_get_cmd")"
 	echo "Got ticket ID '$ticket'"
-	if [[ "$ticket" =~ ERROR ]]; then
+	if [[ "$parse_ticket" != "" ]] && echo "$ticket" | grep -o -e "$parse_ticket"; then
+	    ticket="$(echo "$ticket" | grep -o -e "$parse_ticket" | head -1)"
+	elif [[ "$ticket" =~ ERROR ]]; then
 	    ticket=""
 	fi
 	if [[ "$ticket" = "" ]] &&\
