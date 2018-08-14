@@ -1646,6 +1646,9 @@ db_state_finish="${db_state_finish:-}"
 db_state_cleanup="${db_state_cleanup:-}"
 db_state_done="${db_state_done:-}"
 
+# avoid multiple calls
+declare -g -A db_called=()
+
 function cm3_tell_action
 {
     local db_type="$1"
@@ -1679,6 +1682,14 @@ function cm3_tell_action
 	echo "Using translated state name '$val'"
 	db_state="$val"
     fi
+
+    # Check for doubled calls (e.g. might result from translations)
+    local index="${db_type}_${db_state}"
+    if (( db_called[$index] )); then
+	echo "Already called: '$index'"
+	return
+    fi
+    db_called[$index]=1
 
     # DB EfficiencyReport update
     local cmd="$(eval echo "$update_cmd")"
