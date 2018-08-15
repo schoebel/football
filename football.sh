@@ -678,9 +678,9 @@ function fail
 	# unlock any locks
 	lock_hosts
 	run_local_cleanup_operations
-	echo "" >> /dev/stderr
-	echo "EXIT status=$status" >> /dev/stderr
-    fi
+	echo ""
+	echo "EXIT status=$status"
+    fi >> /dev/stderr
     unset exit
     exit $status
 }
@@ -708,7 +708,7 @@ function exit
 	# unlock any locks
 	lock_hosts
 	run_local_cleanup_operations
-    fi
+    fi >> /dev/stderr
     echo ""
     echo "EXIT status=$status" >> /dev/stderr
     exit $status
