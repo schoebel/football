@@ -102,6 +102,16 @@ ticket_update_cmd="${ticket_update_cmd:-}"
 # directories \$football_creds \$football_confs \$football_includes
 ticket_require_comment="${ticket_require_comment:-1}"
 
+## ticket_for_migrate
+# Optional 1&1-specific: separate ticket for migrate.
+# Useful when migrate+shink need to post into separate tickets.
+ticket_for_migrate="${ticket_for_migrate:-}"
+
+## ticket_for_shrink
+# Optional 1&1-specific: separate ticket for migrate.
+# Useful when migrate+shink need to post into separate tickets.
+ticket_for_shrink="${ticket_for_shrink:-}"
+
 function ticket_call_fn
 {
     local cmd="$1"
@@ -114,42 +124,64 @@ function ticket_call_fn
     echo "Ticket command rc=$?" >> /dev/stderr
 }
 
+function _get_ticket_id
+{
+    local operation="$1"
+    local res="$2"
+    # output in $ticket
+
+    echo "Trying to get ticket ID for operation '$operation' resource '$res'"
+    ticket="$(ticket_call_fn "$ticket_get_cmd")"
+    echo "Got ticket ID '$ticket'"
+    if [[ "$parse_ticket" != "" ]] && echo "$ticket" | grep -o -e "$parse_ticket"; then
+	ticket="$(echo "$ticket" | grep -o -e "$parse_ticket" | head -1)"
+    elif [[ "$ticket" =~ ERROR ]]; then
+	ticket=""
+    fi
+    if [[ "$ticket" = "" ]] &&\
+	[[ "$ticket_create_cmd" != "" ]]; then
+	echo "Trying to create a new ticket for resource '$res'"
+	ticket_call_fn "$ticket_create_cmd"
+	ticket="$(ticket_call_fn "$ticket_get_cmd")"
+	echo "Got ticket ID '$ticket'"
+	if [[ "$ticket" =~ ERROR ]]; then
+	    ticket=""
+	fi
+    fi
+}
+
 function ticket_pre_init
 {
     if [[ "$res" = "" ]]; then
 	return
     fi
-    if [[ "$ticket" = "" ]] &&\
-	[[ "$ticket_update_cmd" != "" ]] &&\
-	[[ "$ticket_get_cmd" != "" ]]; then
-	echo "Trying to get ticket ID for resource '$res'"
-	ticket="$(ticket_call_fn "$ticket_get_cmd")"
-	echo "Got ticket ID '$ticket'"
-	if [[ "$parse_ticket" != "" ]] && echo "$ticket" | grep -o -e "$parse_ticket"; then
-	    ticket="$(echo "$ticket" | grep -o -e "$parse_ticket" | head -1)"
-	elif [[ "$ticket" =~ ERROR ]]; then
-	    ticket=""
+    local old_ticket="$ticket"
+    local old_operation="$operation"
+    local operation
+    for operation in ${old_operation//+/_} shrink migrate; do
+	if [[ "$(eval echo \${ticket_for_$operation})" != "" ]]; then
+	    echo "Ticket for operation '$operation' is '$(eval echo \${ticket_for_$operation})'"
+	    continue
 	fi
+	echo "Retrieving ticket for operation '$operation'"
+	ticket="$old_ticket"
 	if [[ "$ticket" = "" ]] &&\
-	    [[ "$ticket_create_cmd" != "" ]]; then
-	    echo "Trying to create a new ticket for resource '$res'"
-	    ticket_call_fn "$ticket_create_cmd"
-	    ticket="$(ticket_call_fn "$ticket_get_cmd")"
-	    echo "Got ticket ID '$ticket'"
-	    if [[ "$ticket" =~ ERROR ]]; then
-		ticket=""
-	    fi
+	    [[ "$ticket_update_cmd" != "" ]] &&\
+	    [[ "$ticket_get_cmd" != "" ]]; then
+	    _get_ticket_id "$operation" "$res"
 	fi
-    fi
-    mkdir -p $football_logdir/tickets
-    local ticket_file="$football_logdir/tickets/ticket.$operation.$res.txt"
-    if [[ "$ticket" = "" ]]; then
-	ticket="$(< $ticket_file)"
-	echo "Got ticket '$ticket' from file '$ticket_file'"
-    else
-	echo "Storing ticket '$ticket' into '$ticket_file'"
-	echo "$ticket" > "$ticket_file"
-    fi
+	mkdir -p $football_logdir/tickets
+	local ticket_file="$football_logdir/tickets/ticket.$operation.$res.txt"
+	if [[ "$ticket" = "" ]]; then
+	    ticket="$(< $ticket_file)"
+	    echo "Got ticket '$ticket' from file '$ticket_file'"
+	else
+	    echo "Storing ticket '$ticket' into '$ticket_file'"
+	    echo "$ticket" > "$ticket_file"
+	fi
+	eval "ticket_for_$operation=\"$ticket\""
+	echo "Ticket for operation '$operation' is now '$(eval echo \${ticket_for_$operation})'"
+    done
 }
 
 fail_ticket_phase=""
@@ -194,7 +226,16 @@ function ticket_update_ticket
 	fail_ticket_phase=""
 	fail_ticket_state=""
     fi
-    ticket_call_fn "$ticket_update_cmd"
+    if [[ "$ticket_phase" =~ migrate ]] && [[ "$ticket_for_migrate" != "" ]]; then
+	echo "Using ticket_for_migrate"
+	ticket="$ticket_for_migrate" ticket_call_fn "$ticket_update_cmd"
+    elif [[ "$ticket_phase" =~ shrink ]] && [[ "$ticket_for_shrink" != "" ]]; then
+	echo "Using ticket_for_shrink"
+	ticket="$ticket_for_shrink" ticket_call_fn "$ticket_update_cmd"
+    else
+	echo "Using default ticket"
+	ticket_call_fn "$ticket_update_cmd"
+    fi
     return 0
 }
 
