@@ -3640,7 +3640,7 @@ if [[ "$replace_ssh_id_file" != "" ]] && [[ "$replace_ssh_id_file" != "EMPTY" ]]
 	ssh-add -l
     fi
     export replace_ssh_id_file="EMPTY"
-fi
+fi >> /dev/stderr
 
 # Delegate to screener when possible
 if (( screener )) && [[ "$res" != "" ]]; then
