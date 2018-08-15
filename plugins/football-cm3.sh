@@ -1774,6 +1774,13 @@ function cm3_rewrite_args
 	elif [[ "$arg" =~ ^cluster ]] && [[ "$res" != "" ]]; then
 	    local location="$(cm3_get_location "$res")"
 	    echo "Container '$res' is at '$location'"
+	    if [[ "$pre_hand" != "" ]]; then
+		local other_location="$(cm3_get_location "$pre_hand")"
+		echo "Pre-handover '$pre_hand' location is at '$other_location'"
+		if [[ "$other_location" != "" ]]; then
+		    location="$other_location"
+		fi
+	    fi
 	    if [[ "$location" = "" ]]; then
 		local hyper="$(cm3_get_hyper "$res")"
 		location="$(cm3_get_location "$hyper")"
