@@ -3687,6 +3687,7 @@ test_delete_resource)
   ;;
 
 manual_call_hook)
+  scan_vars "$@"
   hook="$2"
   shift 2
   echo "Hook '$hook' '$@'" >> /dev/stderr
