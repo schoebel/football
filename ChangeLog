@@ -1,5 +1,10 @@
 This is a subproject of the MARS project, see https://github.com/schoebel/mars
 
+About 2/3 of the code is _generic_ and should be usable outside of 1&1.
+Currently, there is only the football-basic.sh plugin which works
+with systemd at generic level.
+More plugins for non-1&1 usage are planned.
+
 Documentation is
 	(a) in the main project (mars-manual.pdf), and
 	(b) ./football.sh --help
@@ -17,6 +22,11 @@ WIP-* : development branches, may be forced, my be rebased onto
 -----------------------------------------------------------
 
 branch master
+
+Football-2.0-RC3
+	* Generic hook testing.
+	* More verbose screener display.
+	* Some 1&1-specific improvements of ticketing.
 
 Football-2.0-RC2
 	* Fix ssh agent fork bomb when replace_ssh_id_file is used.
