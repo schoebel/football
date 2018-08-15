@@ -1658,11 +1658,6 @@ function cm3_tell_action
     local db_dstCluster="$(_get_cluster_name "$target_primary" 2>/dev/null)"
     local db_state="$2"
 
-    if [[ "$update_host" = "" ]] || [[ "$update_cmd" = "" ]]; then
-	echo "update_host='$update_host' update_cmd='$update_cmd'"
-	return
-    fi
-
     if [[ "$db_srcCluster" = "" ]]; then
 	db_srcCluster="$(_get_cluster_name "$primary" 2>/dev/null)"
     fi
@@ -1692,18 +1687,22 @@ function cm3_tell_action
     db_called[$index]=1
 
     # DB EfficiencyReport update
-    local cmd="$(eval echo "$update_cmd")"
-    echo "Action on '$update_host': '$cmd'"
+    if [[ "$update_host" = "" ]] || [[ "$update_cmd" = "" ]]; then
+	echo "update_host='$update_host' update_cmd='$update_cmd'"
+    else
+	local cmd="$(eval echo "$update_cmd")"
+	echo "Action on '$update_host': '$cmd'"
 
-    local tmp_output="/tmp/output.$$"
-    register_unlink "$tmp_output"
-    (
-	remote "$update_host" "$cmd" 1
-	echo "Action rc=$?"
-    ) 2>&1 | tee $tmp_output
-    local parsed="$(grep -o -e "$parse_ticket" < $tmp_output)"
-    echo "parsed='$parsed'"
-    unregister_unlink "$tmp_output"
+	local tmp_output="/tmp/output.$$"
+	register_unlink "$tmp_output"
+	(
+	    remote "$update_host" "$cmd" 1
+	    echo "Action rc=$?"
+	) 2>&1 | tee $tmp_output
+	local parsed="$(grep -o -e "$parse_ticket" < $tmp_output)"
+	echo "parsed='$parsed'"
+	unregister_unlink "$tmp_output"
+    fi
 
     # Ticket update from plugin/football-ticket ....
     echo "original ticket='$ticket'"
