@@ -1634,6 +1634,10 @@ update_host="${update_host:-}"
 # Regex for identifying tickets from script outputs or arguments
 parse_ticket="${parse_ticket:-TECCM-[0-9]\+}"
 
+## prefer_parsed_ticket
+# Workaround bugs from getting inconsistent ticket IDs from different sources.
+prefer_parsed_ticket="${prefer_parsed_ticket:-0}"
+
 ## translate_db_state
 # Whether to use the following mapping definitions.
 translate_db_state="${translate_db_state:-0}"
@@ -1710,13 +1714,17 @@ function cm3_tell_action
 
     # Ticket update from plugin/football-ticket ....
     echo "original ticket='$ticket'"
-    if [[ "$ticket" = "" ]]; then
+    if [[ "$ticket" = "" ]] && [[ "$parsed" != "" ]] && (( prefer_parsed_ticket )); then
 	ticket="$parsed"
 	echo "parsed ticket='$ticket'"
     fi
     if [[ "$ticket" = "" ]]; then
 	call_hook pre_init
 	echo "pre_init ticket='$ticket'"
+    fi
+    if [[ "$ticket" = "" ]] && [[ "$parsed" != "" ]]; then
+	ticket="$parsed"
+	echo "Last resort: use parsed ticket='$ticket'"
     fi
     local phase="$operation"
     if (( use_type_for_ticket )); then
