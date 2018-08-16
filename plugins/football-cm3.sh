@@ -1646,6 +1646,10 @@ db_state_finish="${db_state_finish:-}"
 db_state_cleanup="${db_state_cleanup:-}"
 db_state_done="${db_state_done:-}"
 
+## use_type_for_ticket
+# Internal ticketing convention.
+use_type_for_ticket="${use_type_for_ticket:-1}"
+
 # avoid multiple calls
 declare -g -A db_called=()
 
@@ -1714,10 +1718,15 @@ function cm3_tell_action
 	call_hook pre_init
 	echo "pre_init ticket='$ticket'"
     fi
-    call_hook update_ticket "$operation" "action.$db_type.$db_state"
-    call_hook update_ticket "$operation" "action.$db_type"
-    call_hook update_ticket "$operation" "action.$db_state"
-    call_hook update_ticket "$operation" "action"
+    local phase="$operation"
+    if (( use_type_for_ticket )); then
+	phase="$db_type"
+    fi
+    echo "Using ticket_phase='$phase'"
+    call_hook update_ticket "$phase" "action.$db_type.$db_state"
+    call_hook update_ticket "$phase" "action.$db_type"
+    call_hook update_ticket "$phase" "action.$db_state"
+    call_hook update_ticket "$phase" "action"
 
     return 0
 }
