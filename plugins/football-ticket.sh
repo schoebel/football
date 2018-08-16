@@ -150,6 +150,11 @@ function _get_ticket_id
     fi
 }
 
+## ticket_prefer_cached
+# Workaround a bug in ticket ID retrieval:
+# Trust my own cached values more than trust the "inconsistent read".
+ticket_prefer_cached="${ticket_prefer_cached:-1}"
+
 function ticket_pre_init
 {
     if [[ "$res" = "" ]]; then
@@ -163,15 +168,22 @@ function ticket_pre_init
 	    echo "Ticket for operation '$operation' is '$(eval echo \${ticket_for_$operation})'"
 	    continue
 	fi
-	echo "Retrieving ticket for operation '$operation'"
 	ticket="$old_ticket"
+	echo "Initial ticket='$ticket' for operation '$operation'"
+	mkdir -p $football_logdir/tickets
+	local ticket_file="$football_logdir/tickets/ticket.$operation.$res.txt"
+	if [[ "$ticket" != "" ]] && \
+	    [[ -s "$ticket_file" ]] && \
+	    (( ticket_prefer_cached )); then
+	    ticket="$(< $ticket_file)"
+	    echo "Preferring ticket '$ticket' from file '$ticket_file'"
+	fi
 	if [[ "$ticket" = "" ]] &&\
 	    [[ "$ticket_update_cmd" != "" ]] &&\
 	    [[ "$ticket_get_cmd" != "" ]]; then
+	    echo "Retrieving ticket for operation '$operation'"
 	    _get_ticket_id "$operation" "$res"
 	fi
-	mkdir -p $football_logdir/tickets
-	local ticket_file="$football_logdir/tickets/ticket.$operation.$res.txt"
 	if [[ "$ticket" = "" ]]; then
 	    ticket="$(< $ticket_file)"
 	    echo "Got ticket '$ticket' from file '$ticket_file'"
