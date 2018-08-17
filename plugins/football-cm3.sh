@@ -1502,7 +1502,7 @@ monitis_downtime_duration="${monitis_downtime_duration:-20}" # Minutes
 # ShaHoLin-internal
 orewll_downtime_script="${orwell_downtime_script:-}"
 
-## monitis_downtime_duration
+## orwell_downtime_duration
 # ShaHoLin-internal
 orwell_downtime_duration="${orwell_downtime_duration:-20}" # Minutes
 
