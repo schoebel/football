@@ -3632,6 +3632,7 @@ if [[ "$replace_ssh_id_file" != "" ]] && [[ "$replace_ssh_id_file" != "EMPTY" ]]
     fi
     if [[ "$SSH_AGENT_PID" = "" ]]; then
 	echo "Forking new ssh-agent into '$agent_rc'"
+	mkdir -p $football_logdir
 	eval $(ssh-agent | tee $agent_rc)
 	echo "Replacing new ssh users from file '$replace_ssh_id_file'"
 	ssh-add -D
