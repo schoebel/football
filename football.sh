@@ -80,7 +80,7 @@ function commands_installed
     local cmd
     for cmd in $cmd_list; do
 	if ! which $cmd > /dev/null; then
-	    fail "shell command '$cmd' is not installed"
+	    fail "shell command '$cmd' is not installed" "$illegal_status"
 	fi
     done
 }
@@ -373,6 +373,16 @@ critical_status="${critical_status:-199}"
 # of a failed command.
 serious_status="${serious_status:-198}"
 
+## interrupted_status
+# This is the "magic" exit code indicating a manual interruption
+# (e.g. keypress Ctl-c)
+interrupted_status="${interrupted_status:-190}"
+
+## illegal_status
+# This is the "magic" exit code indicating an illegal command
+# (e.g. syntax error, illegal arguments, etc)
+illegal_status="${illegal_status:-191}"
+
 ## pre_hand or --pre-hand=
 # Set this to do an ordinary handover to a new start position
 # (in the source cluster) before doing anything else.
@@ -643,6 +653,7 @@ function fail
 	txt="TRAP context=$trap_context"
 	echo "$txt" >> /dev/stderr
 	echo "CALL_CHAIN: ${FUNCNAME[@]}" >> /dev/stderr
+	status="$interrupted_status"
     fi
     echo "FAIL pid=$BASHPID status=$status '$txt'" >> /dev/stderr
 
@@ -979,7 +990,7 @@ function scan_args
 		    fi
 		done
 		helpme
-		fail "unknown operation '$1'"
+		fail "unknown operation '$1'" "$illegal_status"
 	    fi
 	fi
 	# Treat a single number always as target_percent
@@ -1005,7 +1016,7 @@ function scan_args
 	    fi
 	else
 	    helpme
-	    fail "stray parameter '$par'"
+	    fail "stray parameter '$par'" "$illegal_status"
 	fi
     done
 }
@@ -1206,7 +1217,7 @@ function get_hyper
     local hyper="${hypervisor_host[$res]}"
     if [[ "$hyper" = "" ]]; then
 	hyper="$(call_hook get_hyper "$res")" ||\
-	    fail "Cannot determine hypervisor hostname for resource '$res'"
+	    fail "Cannot determine hypervisor hostname for resource '$res'" "$illegal_status"
 	hypervisor_host[$res]="$hyper"
     fi
     [[ "$hyper" = "" ]] && return -1
@@ -1223,7 +1234,7 @@ function get_store
     local store="${storage_host[$res]}"
     if [[ "$store" = "" ]]; then
 	store="$(call_hook get_store "$res")" ||\
-	    fail "Cannot determine storage hostname for resource '$res'"
+	    fail "Cannot determine storage hostname for resource '$res'" "$illegal_status"
 	if [[ "$store" = "" ]]; then
 	    # assume local storage
 	    store="$(get_hyper "$res")"
@@ -1245,7 +1256,7 @@ function get_vg
     local vg="${vgs[$host]}"
     if [[ "$vg" = "" ]]; then
 	vg="$(call_hook get_vg "$host")" ||\
-	    fail "Cannot determine volume group for host '$host'"
+	    fail "Cannot determine volume group for host '$host'" "$illegal_status"
 	vgs[$host]="$vg"
     fi
     [[ "$vg" = "" ]] && return -1
@@ -1314,7 +1325,7 @@ function handover
 
     local current="$(get_store "$res")"
     if [[ "$current" = "" ]]; then
-	fail "cannot determine current store for '$res'"
+	fail "cannot determine current store for '$res'" "$illegal_status"
     fi
     if [[ "$current" = "$target" ]]; then
 	echo "No handover needed: resource '$res' is already running at '$target'"
@@ -1808,7 +1819,7 @@ function check_locked
 	elif (( startup_when_locked == 1 )); then
 	    wait_for_screener "$res" startup
 	else
-	    fail "Resource '$res' is locked at the moment => retry later"
+	    fail "Resource '$res' is locked at the moment => retry later" "$illegal_status"
 	fi
     fi
 }
@@ -1816,7 +1827,7 @@ function check_locked
 function check_migration
 {
     # works on global parameters
-    [[ "$target_primary" = "" ]] && fail "target hostname is not defined"
+    [[ "$target_primary" = "" ]] && fail "target hostname is not defined" "$illegal_status"
     if [[ "$target_primary" = "$primary" ]] ; then
 	echo "Nothing to do: source primary '$primary' is equal to the target primary"
     fi
@@ -1838,7 +1849,7 @@ function check_vg_space
 
     [[ "$host" = "" ]] && return
 
-    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'" "$illegal_status"
     local rest="$(remote "$host" "vgs --noheadings -o \"vg_free\" --units k $vg_name" | sed 's/\.[0-9]\+//' | sed 's/k//')" || fail "cannot determine VG rest space"
     echo "$vg_name REST space on '$host' : $rest"
     if [[ "$lv_name" != "" ]]; then
@@ -1852,7 +1863,7 @@ function check_vg_space
 	if (( force )); then
 	    echo "NOT ENOUGH SPACE on $host (needed: $min_size)"
 	else
-	    fail "NOT ENOUGH SPACE on $host (needed: $min_size)"
+	    fail "NOT ENOUGH SPACE on $host (needed: $min_size)" "$illegal_status"
 	fi
     fi
 }
@@ -1881,7 +1892,7 @@ function create_migration_space
 
     # some checks
     [[ "$host" = "" ]] && return
-    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+    local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'" "$illegal_status"
     if (( reuse_lv )); then
 	local dev="/dev/$vg_name/${lv_name}"
 	if [[ "$(remote "$host" "if [[ -e \"$dev\" ]]; then echo \"EXIST\"; fi")" = "EXIST" ]]; then
@@ -2676,14 +2687,14 @@ function determine_space
     lv_path="$(remote "$src_primary" "lvs --noheadings --separator ':' -o \"vg_name,lv_name\"" |\
        grep ":$res$" | sed 's/ //g' |\
        awk -F':' '{ printf("/dev/%s/%s", $1, $2); }')" ||\
-	fail "cannot determine lv_path"
+	fail "cannot determine lv_path" "$illegal_status"
 
-    vg_name="$(echo "$lv_path" | cut -d/ -f3)" || fail "cannot determine vg_name"
+    vg_name="$(echo "$lv_path" | cut -d/ -f3)" || fail "cannot determine vg_name" "$illegal_status"
 
     echo "Determined the following VG name: \"$vg_name\""
     echo "Determined the following LV path: \"$lv_path\""
 
-    df="$(remote "$src_hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data"
+    df="$(remote "$src_hyper" "df $mnt" | grep "/dev/")" || fail "cannot determine df data" "$illegal_status"
     local used_space="$(echo "$df" | awk '{print $3;}')"
     declare -g total_space="$(echo "$df" | awk '{print $2;}')"
     # absolute or relative space computation
@@ -2698,10 +2709,10 @@ function determine_space
 	target_space="$(( ${target_percent%g} * 1024 * 1024 ))"
 	;;
     [0-9]*)
-	target_space="${target_space:-$(( used_space * 100 / target_percent + 1 ))}" || fail "cannot compute target_space"
+	target_space="${target_space:-$(( used_space * 100 / target_percent + 1 ))}" || fail "cannot compute target_space" "$illegal_status"
 	;;
     *)
-	fail "illegal syntax \$target_percent='$target_percent'"
+	fail "illegal syntax \$target_percent='$target_percent'" "$illegal_status"
 	;;
     esac
     (( target_space < min_space )) && target_space=$min_space
@@ -3236,7 +3247,7 @@ function extend_fs
 
     local host
     for host in $primary $secondary_list; do
-	local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'"
+	local vg_name="$(get_vg "$host")" || fail "cannot determine VG for host '$host'" "$illegal_status"
 	local dev="/dev/$vg_name/$lv_name"
 	remote "$host" "lvresize -L ${size}k $dev"
     done
@@ -3607,7 +3618,7 @@ scan_vars "${argv[@]}"
 
 scan_args "${argv[@]}"
 
-ssh-add -l >> /dev/stderr || fail "You must use ssh-agent and ssh-add with the proper SSH identities"
+ssh-add -l >> /dev/stderr || fail "You must use ssh-agent and ssh-add with the proper SSH identities" "$illegal_status"
 
 ## user_name
 # Normally automatically derived from ssh agent or from $LOGNAME.
@@ -3760,7 +3771,7 @@ fi
 
 if [[ "$res" = "" ]]; then
     helpme
-    fail "No resource name parameter given"
+    fail "No resource name parameter given" "$illegal_status"
 fi
 
 if [[ "$pre_hand" != "" ]]; then
@@ -3777,18 +3788,18 @@ if [[ "$pre_hand" != "" ]]; then
     phase main "$0 $*"
 fi
 
-hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be determined"
+hyper="$(get_hyper "$res")" || fail "No current hypervisor hostname can be determined" "$illegal_status"
 
 echo "Determined the following CURRENT hypervisor: \"$hyper\""
 
-primary="$(get_store "$res")" || fail "No current primary hostname can be determined"
+primary="$(get_store "$res")" || fail "No current primary hostname can be determined" "$illegal_status"
 
 echo "Determined the following CURRENT primary: \"$primary\""
 
 call_hook determine_variables
 
 for host in $hyper $primary; do
-    ping $ping_opts "$host" > /dev/null || fail "Host '$host' is not pingable"
+    ping $ping_opts "$host" > /dev/null || fail "Host '$host' is not pingable" "$illegal_status"
 done
 
 remote "$primary" "mountpoint /mars"
@@ -3797,7 +3808,7 @@ remote "$primary" "marsadm view $res"
 
 if ! [[ "$operation" =~ manual ]]; then
     if (( $(remote "$primary" "marsadm view-is-primary $res") <= 0 )); then
-	fail "Resource '$res' on host '$primary' is not in PRIMARY role"
+	fail "Resource '$res' on host '$primary' is not in PRIMARY role" "$illegal_status"
     fi
     mnt="$(call_hook get_mountpoint "$res")"
     if [[ "$mnt" != "" ]]; then
@@ -3805,13 +3816,13 @@ if ! [[ "$operation" =~ manual ]]; then
     fi
 fi
 
-secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" | grep -v "^$target_primary$"  | grep -v "^$target_secondary$"|| true; })" || fail "cannot determine secondary_list"
+secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" | grep -v "^$target_primary$"  | grep -v "^$target_secondary$"|| true; })" || fail "cannot determine secondary_list" "$illegal_status"
 secondary_list="$(echo $secondary_list)"
 
 echo "Determined the following secondaries: '$secondary_list'"
 
 for host in $secondary_list; do
-    ping $ping_opts "$host" || fail "Host '$host' is not pingable"
+    ping $ping_opts "$host" || fail "Host '$host' is not pingable" "$illegal_status"
     remote "$host" "mountpoint /mars > /dev/null"
     remote "$host" "[[ -d /mars/ips/ ]]"
 done
@@ -3929,7 +3940,7 @@ migrate+shrink+back)
 
 *)
   helpme
-  fail "Unknown operation '$operation'"
+  fail "Unknown operation '$operation'" "$illegal_status"
   ;;
 esac
 

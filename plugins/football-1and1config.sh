@@ -83,8 +83,8 @@ function 1and1config_runstack
     [[ "$runstack_host" = "" ]] && return
     [[ "$runstack_cmd" = "" ]]  && return
 
-    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
-    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster" "$illegal_status"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster" "$illegal_status"
 
     if [[ "$source_cluster" != "$target_cluster" ]]; then
 	if (( runstack_ping )); then
@@ -120,8 +120,8 @@ function 1and1config_dastool
     [[ "$target" = "" ]] && return
     [[ "$res" = "" ]]    && return
 
-    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
-    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster" "$illegal_status"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster" "$illegal_status"
 
     if [[ "$source_cluster" != "$target_cluster" ]]; then
 	echo "Call dastool for deploying cluster config for example /etc/1und1/infong.conf to '$res' "

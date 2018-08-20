@@ -625,7 +625,7 @@ function check_needed
 	    return
 	fi
     done
-    fail "$type actual version '$actual' does not match one of '$needed_list'"
+    fail "$type actual version '$actual' does not match one of '$needed_list'" "$illegal_status"
 }
 
 ## forbidden_hosts
@@ -659,32 +659,32 @@ function cm3_check_host
 	echo "Checking host '$host'..."
 	if [[ "$forbidden_hosts" != "" ]]; then
 	    if [[ "$host" =~ $forbidden_hosts ]]; then
-		fail "Host '$host' is forbidden by regex '$forbidden_hosts'"
+		fail "Host '$host' is forbidden by regex '$forbidden_hosts'" "$illegal_status"
 	    fi
 	fi
 	# check that clustermw is working
 	local cluster="$(_get_cluster_name "$host")"
 	if [[ "$cluster" = "" ]]; then
-	    fail "cannot determine cluster from host '$host'"
+	    fail "cannot determine cluster from host '$host'" "$illegal_status"
 	fi
 	echo "Host '$host' is on cluster '$cluster'"
 	if [[ "$forbidden_flavours" != "" ]]; then
 	    local flavour="$(call_hook get_flavour "$host" 2>/dev/null)"
 	    echo "Host '$host' has flavour '$flavour'"
 	    if [[ "$flavour" =~ $forbidden_flavours ]]; then
-		fail "Flavour '$flavour' is forbidden by regex '$forbidden_flavours'"
+		fail "Flavour '$flavour' is forbidden by regex '$forbidden_flavours'" "$illegal_status"
 	    fi
 	fi
 	if [[ "$forbidden_bz_ids" != "" ]]; then
 	    local bz_id="$(call_hook get_bz_id "$host" 2>/dev/null)"
 	    echo "Host '$host' has bz_id '$bz_id'"
 	    if [[ "$bz_id" =~ $forbidden_bz_ids ]]; then
-		fail "Bz_Id '$bz_id' is forbidden by regex '$forbidden_bz_ids'"
+		fail "Bz_Id '$bz_id' is forbidden by regex '$forbidden_bz_ids'" "$illegal_status"
 	    fi
 	fi
 	local serial="$(clustertool GET "/clusters/$cluster/properties/CLUSTERCONF_SERIAL")"
 	if [[ "$serial" = "" ]]; then
-	    fail "Suspected misconfiguration: cannot determine serial for cluster '$cluster'"
+	    fail "Suspected misconfiguration: cannot determine serial for cluster '$cluster'" "$illegal_status"
 	fi
 	echo "Cluster '$cluster' has serial '$serial'"
 	local marsadm_version="$(remote "$host" "marsadm --version" | grep -o 'Version: [0-9.]*' | awk '{ print $2; }')"
@@ -693,7 +693,7 @@ function cm3_check_host
 
 	local mars_version="$(remote "$host" "cat /sys/module/mars/version" | awk '{ print $1; }')"
 	if [[ "$mars_version" = "" ]]; then
-	    fail "MARS kernel module is not loaded at $host"
+	    fail "MARS kernel module is not loaded at $host" "$illegal_status"
 	fi
 	check_needed "mars kernel module" "[a-z]*[0-9.]*[a-z]*" "$mars_version" "$needed_mars"
     done
@@ -704,11 +704,11 @@ function cm3_check_host
             remote "$host" "marsadm lowlevel-ls-host-ips" 2>/dev/null
         done | sort -u | wc -l)"
     if (( new_cluster_size < 2 )); then
-	fail "Implausible new cluster size $new_cluster_size"
+	fail "Implausible new cluster size $new_cluster_size" "$illegal_status"
     fi
     echo "New cluster size: $new_cluster_size"
     if (( new_cluster_size > max_cluster_size )); then
-	fail "Cluster size limit $max_cluster_size will be exceeded, aborting."
+	fail "Cluster size limit $max_cluster_size will be exceeded, aborting." "$illegal_status"
     fi
 
     # Check that not too much syncs are already running
@@ -721,7 +721,7 @@ function cm3_check_host
     echo "Total number of syncs: $actual_syncs"
     echo "Max   number of syncs: $max_syncs"
     if (( max_syncs > 0 && actual_syncs > max_syncs )); then
-	fail "There are more than $max_syncs syncs running."
+	fail "There are more than $max_syncs syncs running." "$illegal_status"
     fi
 
     # Workaround missing performance tuning which has not been rolled out for months now
@@ -983,27 +983,27 @@ function _check_migrate
     [[ "$target" = "" ]] && return
     [[ "$res" = "" ]] && return
 
-    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
-    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster" "$illegal_status"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster" "$illegal_status"
 
     echo "source_cluster='$source_cluster'"
     echo "target_cluster='$target_cluster'"
 
-    [[ "$source_cluster" = "" ]] && fail "cm3 source cluster is undefined"
-    [[ "$target_cluster" = "" ]] && fail "cm3 target cluster is undefined"
+    [[ "$source_cluster" = "" ]] && fail "cm3 source cluster is undefined" "$illegal_status"
+    [[ "$target_cluster" = "" ]] && fail "cm3 target cluster is undefined" "$illegal_status"
 
     if [[ "$source_cluster" != "$target_cluster" ]]; then
 	if (( check_segments )); then
 	    # At the moment, cross-segment migrations won't work.
 	    # TBD.
-	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment"
-	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment"
+	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment" "$illegal_status"
+	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment" "$illegal_status"
 	    echo "source_segment='$source_segment'"
 	    echo "target_segment='$target_segment'"
 	    if (( check_segments > 1 )); then
-		[[ "$source_segment" = "" ]] && fail "cannot determine source segment"
-		[[ "$target_segment" = "" ]] && fail "cannot determine target segment"
-		[[ "$source_segment" != "$target_segment" ]] && fail "source_segment '$source_segment' != target_segment '$target_segment'"
+		[[ "$source_segment" = "" ]] && fail "cannot determine source segment" "$illegal_status"
+		[[ "$target_segment" = "" ]] && fail "cannot determine target segment" "$illegal_status"
+		[[ "$source_segment" != "$target_segment" ]] && fail "source_segment '$source_segment' != target_segment '$target_segment'" "$illegal_status"
 	    fi
 	fi
     fi
@@ -1066,14 +1066,14 @@ function cm3_check_handover
     local target="$2"
     local res="$3"
 
-    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
-    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster" "$illegal_status"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster" "$illegal_status"
     echo "Source '$source' is at cluster '$source_cluster'"
     echo "Target '$target' is at cluster '$target_cluster'"
-    [[ "$source_cluster" = "" ]] && fail "Cannot determine source cluster"
-    [[ "$target_cluster" = "" ]] && fail "Cannot determine target cluster"
+    [[ "$source_cluster" = "" ]] && fail "Cannot determine source cluster" "$illegal_status"
+    [[ "$target_cluster" = "" ]] && fail "Cannot determine target cluster" "$illegal_status"
     if [[ "$source_cluster" != "$target_cluster" ]]; then
-	fail "Cannot handover from '$source' to '$target': cluster names are different"
+	fail "Cannot handover from '$source' to '$target': cluster names are different" "$illegal_status"
     fi
     if [[ "$(cm3_is_startable "$target" "$res")" != "1" ]]; then
 	fail "According to 'cm3 -us', resource '$res' is not startable at '$target'"
@@ -1111,8 +1111,8 @@ function cm3_migrate_cm3_config
     [[ "$target" = "" ]] && return
     [[ "$res" = "" ]] && return
 
-    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster"
-    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster"
+    local source_cluster="$(_get_cluster_name "$source")" || fail "cannot get source_cluster" "$illegal_status"
+    local target_cluster="$(_get_cluster_name "$target")" || fail "cannot get target_cluster" "$illegal_status"
     if (( always_migrate )) || [[ "$source_cluster" != "$target_cluster" ]]; then
 	echo "Moving config from cluster '$source_cluster' to cluster '$target_cluster'"
 
@@ -1129,7 +1129,7 @@ function cm3_migrate_cm3_config
 	    log "$backup" "$res.old.pp.json"
 
 	if ! [[ -s "$backup/$res.old.raw.json" ]]; then
-	    fail "cluster config for vm '$res' is empty"
+	    fail "cluster config for vm '$res' is empty" "$illegal_status"
 	fi
 
 	local old_url="/clusters/$source_cluster/vms/$res.schlund.de"
@@ -1160,8 +1160,8 @@ function cm3_migrate_cm3_config
 	    echo "$new_val" | json_pp
 	fi
 	if (( enable_segment_move )); then
-	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment"
-	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment"
+	    local source_segment="$(_get_segment "$source_cluster")" || fail "cannot get source_segment" "$illegal_status"
+	    local target_segment="$(_get_segment "$target_cluster")" || fail "cannot get target_segment" "$illegal_status"
 	    echo "source_segment='$source_segment'"
 	    echo "target_segment='$target_segment'"
 	    if [[ "$source_segment" != "" ]] && [[ "$target_segment" != "" ]] ; then
@@ -1262,7 +1262,7 @@ function cm3_determine_old_replicas
     local res="$2"
 
     local primary_cluster="$(_get_cluster_name "$primary")"
-    local secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list"
+    local secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list" "$illegal_status"
     local host
     for host in $secondary_list; do
 	local cluster="$(_get_cluster_name "$host")"
@@ -1278,7 +1278,7 @@ function cm3_determine_new_replicas
     local res="$2"
 
     local primary_cluster="$(_get_cluster_name "$primary")"
-    local secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list"
+    local secondary_list="$(remote "$primary" "marsadm view-resource-members $res" | { grep -v "^$primary$" || true; })" || fail "cannot determine secondary_list" "$illegal_status"
     local host
     for host in $primary $secondary_list; do
 	local cluster="$(_get_cluster_name "$host")"
@@ -1443,7 +1443,7 @@ function cm3_connect
     # for safety, kill any old session
     cm3_disconnect "$store" "$res"
 
-    local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'"
+    local vg_name="$(get_vg "$store")" || fail "cannot determine VG for host '$store'" "$illegal_status"
     local dev="/dev/$vg_name/$res"
     local iqn="$iqn_base.$res.tmp"
     local iscsi_ip="$(remote "$store" "ifconfig $iscsi_eth" | grep "inet addr:" | cut -d: -f2 | awk '{print $1;}')"
@@ -1813,12 +1813,12 @@ function cm3_rewrite_args
 		echo "Storage '$store' is at '$location'"
 	    fi
 	    if [[ "$location" = "" ]]; then
-		fail "Cannot determine location of '$arg'"
+		fail "Cannot determine location of '$arg'" "$illegal_status"
 	    fi
 	    local members="$(echo $(_get_members "$arg") )"
 	    echo "Cluster '$arg' has members '$members'"
 	    if [[ "$members" = "" ]]; then
-		fail "Cluster members of '$arg' cannot be determined"
+		fail "Cluster members of '$arg' cannot be determined" "$illegal_status"
 	    fi
 	    local host
 	    local best=""
