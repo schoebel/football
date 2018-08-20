@@ -1783,6 +1783,13 @@ function cm3_determine_variables
 # Thus it tries to reduce unnecessary handovers to other locations.
 auto_handover="${auto_handover:-1}"
 
+## preferred_location
+# When set, override any other pre-handover to this location.
+# Useful for maintenance of a whole datacenter.
+preferred_location="${preferred_location:-}"
+
+check_cluster=""
+
 function cm3_rewrite_args
 {
     declare -g -a argv
@@ -1797,8 +1804,22 @@ function cm3_rewrite_args
 	    res="$arg"
 	    new_argv[$(( index++ ))]="$arg"
 	elif [[ "$arg" =~ ^cluster ]] && [[ "$res" != "" ]]; then
+	    check_cluster="$arg"
 	    local location="$(cm3_get_location "$res")"
 	    echo "Container '$res' is at '$location'"
+	    if [[ "$preferred_location" != "" ]]; then
+		echo "Preferred location is '$preferred_location'"
+		local check
+		for check in $(_get_members "$check_cluster" 2>/dev/null); do
+		    local other_location="$(cm3_get_location "$check")"
+		    echo "Cluster '$check_cluster' member '$check' is at '$other_location'"
+		    if [[ "$other_location" = "$preferred_location" ]] ||\
+			[[ "$other_location" =~ ^($preferred_location)$ ]]; then
+			echo "Host '$check' is at '$preferred_location'"
+			pre_hand="$check"
+		    fi
+		done
+	    fi
 	    if [[ "$pre_hand" != "" ]]; then
 		local other_location="$(cm3_get_location "$pre_hand")"
 		echo "Pre-handover '$pre_hand' location is at '$other_location'"
