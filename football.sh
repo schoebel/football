@@ -2959,6 +2959,11 @@ function make_tmp_umount
 
 declare -g copy_initial=0
 
+## shortcut_tar_percent
+# Percentage when a shrink space should no longer be considered
+# as "inital" (or empty).
+shortcut_tar_percent="${shortcut_tar_percent:-5}"
+
 function copy_data
 {
     local hyper="$1"
@@ -2973,6 +2978,12 @@ function copy_data
     section "COPY DATA via rsync / tar"
 
     local mnt="$(call_hook get_mountpoint "$lv_name")"
+    local percent="$(remote "$hyper" "mountpoint $mnt$suffix/ && df $mnt$suffix/" 1 | grep -o "[0-9]\+%" | sed 's/%//')"
+    echo "Mountpoint '$mnt$suffix/' is filled by '$percent' percent"
+    if (( shortcut_tar_percent > 0 && percent > shortcut_tar_percent )); then
+	echo "Treat as non-initial rsync"
+	(( copy_initial++ ))
+    fi
 
     local cmd="set -o pipefail; for i in {1..$repeat_count}; do echo round=\$i; $nice $time_cmd rsync $rsync_opt $add_opt $mnt/ $mnt$suffix/ | stdbuf --input=0 --output=L awk 'BEGIN{ RS=\"[\\r\\n]\"; } { if (\$0 ~ /xfr\#|\%.*[0-9]+:[0-9]+:[0-9]+ /) { if (c++ % $rsync_skip_lines == 0) { print \$0; } } else { print \$0; } }'; rc=\$?; echo rc=\$rc; if (( !rc || rc == 24 )); then exit 0; fi; echo RESTARTING \$(date); done; echo FAIL; exit -1"
     if (( use_tar >= 3 || ( !copy_initial++ && use_tar) )); then
