@@ -196,6 +196,7 @@ function ticket_pre_init
     done
 }
 
+last_ticket_phase=""
 fail_ticket_phase=""
 fail_ticket_state=""
 
@@ -204,7 +205,19 @@ function ticket_update_ticket
     local ticket_phase="$1"
     local ticket_state="$2"
 
-    [[ "$ticket" = "" ]] && return
+    if [[ "$ticket_phase" = "" ]]; then
+	echo "Using last_ticket_phase '$last_ticket_phase'"
+	ticket_phase="$last_ticket_phase"
+    fi
+    if [[ "$ticket_phase" = "" ]]; then
+	echo "Using phase '$phase'"
+	ticket_phase="$phase"
+    fi
+    echo "ticket_phase='$ticket_phase' ticket_state='$ticket_state'"
+    if [[ "$ticket_phase" != "" ]]; then
+	last_ticket_phase="$ticket_phase"
+    fi
+
     [[ "$ticket_update_cmd" = "" ]] && return
 
     local comment_glob="comment.$ticket_state.txt"
@@ -245,7 +258,7 @@ function ticket_update_ticket
 	echo "Using ticket_for_shrink"
 	ticket="$ticket_for_shrink" ticket_call_fn "$ticket_update_cmd"
     else
-	echo "Using default ticket"
+	echo "Using default ticket '$ticket'"
 	ticket_call_fn "$ticket_update_cmd"
     fi
     return 0
