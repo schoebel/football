@@ -1355,6 +1355,9 @@ function handover
     lock_hosts
 
     call_hook want_downtime "$res" 0
+
+    local location="$(call_hook get_location "$target" 2>/dev/null)"
+    echo "SCREENER_LOCATION=$location"
 }
 
 function _leave_resource
