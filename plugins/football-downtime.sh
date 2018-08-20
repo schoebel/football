@@ -79,4 +79,9 @@ function downtime_report_downtime
     fi
 }
 
+function downtime_pre_init
+{
+    echo "SCREENER_CRITICAL=0 $(date +%s) $(date)" >> /dev/stderr
+}
+
 register_module "downtime"
