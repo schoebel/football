@@ -218,6 +218,16 @@ critical_status="${critical_status:-199}"
 # of a failed command.
 serious_status="${serious_status:-198}"
 
+## interrupted_status
+# This is the "magic" exit code indicating a manual interruption
+# (e.g. keypress Ctl-c)
+interrupted_status="${interrupted_status:-190}"
+
+## illegal_status
+# This is the "magic" exit code indicating an illegal command
+# (e.g. syntax error, illegal arguments, etc)
+illegal_status="${illegal_status:-191}"
+
 ## less_cmd
 # Used at $0 less $id
 less_cmd="${less_cmd:-less -r}"
@@ -361,6 +371,8 @@ Synopsis:
   $0 --help [--verbose]
   $0 list-running
   $0 list-waiting
+  $0 list-interrupted
+  $0 list-illegal
   $0 list-failed
   $0 list-critical
   $0 list-serious
@@ -510,6 +522,8 @@ Cleanup / bookkeeping:
 
   $0 clear-critical <screen_id>
   $0 clear-serious <screen_id>
+  $0 clear-interrupted <screen_id>
+  $0 clear-illegal <screen_id>
   $0 clear-failed  <screen_id>
     Mark the status as "done" and move the logfile away.
 
@@ -558,7 +572,7 @@ function fail
 
 # status handling
 
-status_dir_list="running critical serious failed done"
+status_dir_list="running critical serious interrupted illegal failed done"
 
 for i in $status_dir_list; do
     mkdir -p "$screener_logdir/$i"
@@ -661,11 +675,17 @@ function get_status
 		change_status "$id" failed done
 		change_status "$id" critical done
 		change_status "$id" serious done
+		change_status "$id" interrupted done
+		change_status "$id" illegal done
 		change_status "$id" running done
 	    elif (( status == critical_status )); then
 		change_status "$id" running critical
 	    elif (( status == serious_status )); then
 		change_status "$id" running serious
+	    elif (( status == interrupted_status )); then
+		change_status "$id" running interrupted
+	    elif (( status == illegal_status )); then
+		change_status "$id" running illegal
 	    else
 		change_status "$id" running failed
 	    fi
@@ -885,7 +905,7 @@ function screen_restart
 {
     local id="$1"
 
-    local fail_list="critical serious failed"
+    local fail_list="critical serious interrupted failed"
     local status="$(has_status "$id" "$fail_list")"
     if [[ "$status" = "" ]]; then
 	fail "cannot restart '$id': not ${fail_list// /|}."
@@ -1257,6 +1277,16 @@ list-serious)
     list_status serious
     ;;
 
+list-interrupted)
+    screen_cron
+    list_status interrupted
+    ;;
+
+list-illegal)
+    screen_cron
+    list_status illgegal
+    ;;
+
 list-done)
     screen_cron
     list_status done
@@ -1307,6 +1337,16 @@ clear-critical)
 clear-serious)
     screen_cron
     change_status "$id" serious done
+    ;;
+
+clear-interrupted)
+    screen_cron
+    change_status "$id" interrupted done
+    ;;
+
+clear-illegal)
+    screen_cron
+    change_status "$id" illegal done
     ;;
 
 purge)
