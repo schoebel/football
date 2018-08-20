@@ -1533,9 +1533,13 @@ function cm3_want_downtime
 	cmd="$orwell_downtime_script get $resource.schlund.de"
     fi
 
-    echo "Calling Orwell script: $cmd"
-    ($cmd)
-    echo "Script rc=$?"
+    if [[ "$orwell_downtime_script" != "" ]]; then
+	echo "Calling Orwell script: $cmd"
+	($cmd)
+	echo "Script rc=$?"
+    fi
+
+    call_hook update_ticket "" "downtime.$down"
 }
 
 ## shaholin_customer_report_cmd
