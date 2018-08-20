@@ -1741,9 +1741,13 @@ function cm3_tell_action
 
 ###########################################
 
+orig_location=""
+
 function cm3_determine_variables
 {
     location="$(call_hook get_location "$hyper" 2>/dev/null)"
+    echo "SCREENER_LOCATION=$location"
+    orig_location="$location"
     echo "Determined the following           LOCATION: \"$location\""
     res_flavour="$(call_hook get_flavour "$res" 2>/dev/null)"
     echo "Determined the following resource   FLAVOUR: \"$res_flavour\""
