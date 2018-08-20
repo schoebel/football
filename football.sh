@@ -1566,7 +1566,9 @@ function wait_for_screener
 	(( hot_round++ ))
 	if (( repeat_lapse > 0 && hot_round >= repeat_lapse )); then
 	    hot_round=0
-	    $lapse_cmd "$@"
+	    if [[ "$lapse_cmd" != "" ]]; then
+		$lapse_cmd "$@"
+	    fi
 	    reset_freq=1
 	fi
 	if (( !locked )); then
@@ -1581,6 +1583,9 @@ function wait_for_screener
 	    break
 	fi
     done
+    if [[ "$lapse_cmd" != "" ]]; then
+	$lapse_cmd "$@"
+    fi
 }
 
 # debugging: failure injection for testing of idempotence
