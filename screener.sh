@@ -744,6 +744,10 @@ function list_status
 	    local phase="$(grep -o "PHASE [^ ]\+" < "$name" | tail -1 | awk '{ print $2; }')"
 	    [[ "$phase" != "" ]] && title+=" $phase"
 	    [[ "$title" != "" ]] && title="'$title'"
+	    local location=""$(grep -o "^SCREENER_LOCATION=.*" < "$name" | tail -1 | cut -d= -f2-)""
+	    if [[ "$location" != "" ]]; then
+		title+=" ($location)"
+	    fi
 	    local critical_section=""$(grep -o "^SCREENER_CRITICAL=[0-9]" < "$name" | tail -1 | cut -d= -f2-)""
 	    if (( critical_section )); then
 		status+=" in-critical-section"
