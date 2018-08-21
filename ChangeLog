@@ -23,6 +23,14 @@ WIP-* : development branches, may be forced, my be rebased onto
 
 branch master
 
+Football-2.0-RC5
+	* Safeguard shrink customer downtime by extra probe rsync.
+	* Discriminate failure reasons: illegal, interrupted.
+	* Report datacenter locations.
+	* Preferred datacenter location at startup.
+	* Screener logfile archiving.
+	* Several smaller fixes and improvements.
+
 Football-2.0-RC4
 	* Fix some output going to stdout instead of stderr.
 	* Update distinct tickets in parallel.
