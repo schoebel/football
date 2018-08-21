@@ -3951,6 +3951,7 @@ shrink_cleanup)
 shrink)
   shrink_prepare
   shrink_finish
+  target_primary="$primary" target_secondary="$secondary_list" migrate_wait 0
   if (( wait_before_cleanup )); then
       wait_for_screener "$res" "cleanup" "delayed" "shrink $res"  "$wait_before_cleanup"
   fi
