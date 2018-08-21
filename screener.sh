@@ -172,6 +172,11 @@ screener_cron_log="${screener_cron_log:-$screener_logdir/cron.log}"
 # from $screener_logdir/*/ when this period is exceeded.
 screener_log_purge_period="${screener_log_purge_period:-30}" # Days
 
+## screener_log_purge_archive
+# When set, the logfiles will be moved to $screener_logdir/archive/
+# Otherwise they will be deleted.
+screener_log_purge_archive="${screener_log_purge_archive:-1}"
+
 ## dry_run
 # Dont actually start screen sessions when set.
 dry_run="${dry_run:-0}"
@@ -378,6 +383,7 @@ Synopsis:
   $0 list-serious
   $0 list-done
   $0 list
+  $0 list-archive
   $0 list-screens
   $0 run <file.csv> [<condition_list>]
   $0 start <screen_id> <cmd> <args...>
@@ -574,7 +580,7 @@ function fail
 
 status_dir_list="running critical serious interrupted illegal failed done"
 
-for i in $status_dir_list; do
+for i in $status_dir_list archive; do
     mkdir -p "$screener_logdir/$i"
 done
 
@@ -1007,12 +1013,13 @@ function screen_lock
 function screen_purge
 {
     local period="${1:-$screener_log_purge_period}"
-    local args="${2:--ls -exec rm -f {\} +}"
+    local args="${2:--ls -exec $(if (( screener_log_purge_archive )); then echo "mv {} $screener_logdir/archive/"; else echo "rm -f {}"; fi) \;}"
 
-    if [[ "$period" = "" ]]; then
+    if [[ "$period" = "" ]] || (( period <= 0 )); then
+	echo "No purge period given."
 	return
     fi
-    local cmd="find \"$screener_logdir/\" -name \"*.log\" -mtime \"$period\" ${args//\\/\\\\}"
+    local cmd="find \"$screener_logdir/\" -path \"$screener_logdir/archive\" -prune -o -name \"*.log\" -mtime +$period ${args}"
     if (( verbose )); then
 	echo "$cmd"
     fi
@@ -1290,6 +1297,11 @@ list-illegal)
 list-done)
     screen_cron
     list_status done
+    ;;
+
+list-archive)
+    screen_cron
+    list_status archive
     ;;
 
 list)
