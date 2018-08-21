@@ -3005,6 +3005,14 @@ function copy_data
     remote "$hyper" "sync"
 }
 
+## max_rsync_downtime
+# When set, check the _expected_ duration of customer downtime.
+# if it takes longer than this limit, abort without causing
+# customer downtime.
+# Afterward, sysadmins need to decide what to do:
+# For example, move the resource to faster hardware with more RAM, or similar.
+max_rsync_downtime="${max_rsync_downtime:-0}" # seconds
+
 ## merge_shrink_secondaries
 # This is only needed when targets are not yet pre-merged.
 merge_shrink_secondaries="${merge_shrink_secondaries:-0}"
@@ -3058,6 +3066,17 @@ function hot_phase
     # repeat for better dentry caching
     wait_for_screener "$res" "shrink" "waiting" "$hyper $lv_name" "" "$cache_repeat_lapse" \
 	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
+
+    if (( max_rsync_downtime > 0 )); then
+	local start_stamp="$(date +%s)"
+	copy_data "$hyper" "$lv_name" "$suffix" "time" "$rsync_opt_prepare" "$rsync_repeat_prepare"
+	local end_stamp="$(date +%s)"
+	local elapsed=$(( end_stamp - start_stamp ))
+	echo "Probing took '$elapsed' seconds from '$start_stamp' to '$end_stamp'"
+	if (( elapsed > max_rsync_downtime )); then
+	    fail "Probed rsync took too long: $elapsed seconds"
+	fi
+    fi
 
     call_hook want_downtime "$res" 1
     call_hook tell_action shrink finish
