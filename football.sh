@@ -635,6 +635,10 @@ function warn
     call_hook football_warning "$res" "$txt"
 }
 
+## call_finished
+# Whether to call the hook football_failed at failures.
+call_finished="${call_finished:-1}"
+
 declare -g trap_context=""
 
 function fail
