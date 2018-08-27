@@ -2770,7 +2770,12 @@ function check_shrinking
 	echo "No need for shrinking the LV space of $res"
 	(( !force )) && exit 0
     fi
-    for host in $src_primary $secondary_list; do
+    local list="$target_primary $target_secondary"
+    if ! [[ "$list" =~ [A-Za-z0-9_] ]]; then
+	list="$primary $secondary_list"
+    fi
+    for host in $list; do
+	echo "Checking shrink precondtions at '$host'"
 	check_vg_space "$host" "$target_space" "$res$tmp_suffix"
 	if (( shrink_min_ram_gb > 0 )); then
 	    local ram_gb="$(get_ram_gb "$host")"
@@ -3932,7 +3937,7 @@ elif [[ "$operation" = lv_cleanup ]]; then
 fi
 
 # determine sizes and available space (only for extending / shrinking)
-if [[ "$operation" =~ ^(shrink|shrink_prepare|move\+shrink)$ ]]; then
+if [[ "$operation" =~ ^(shrink|shrink_prepare|migrate\+shrink)$ ]]; then
     check_shrinking
 elif [[ "$operation" =~ extend|expand ]]; then
     check_extending
