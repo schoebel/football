@@ -3683,6 +3683,13 @@ if [[ "$replace_ssh_id_file" != "" ]] && [[ "$replace_ssh_id_file" != "EMPTY" ]]
 	echo "$(< $agent_rc)"
 	source $agent_rc
     fi
+    if [[ "$SSH_AGENT_PID" != "" ]]; then
+	echo "Check whether the common ssh agent process $SSH_AGENT_PID works"
+	if ! ssh-add -l; then
+	    echo "Did not work, will then fork a new one."
+	    SSH_AGENT_PID=""
+	fi
+    fi
     if [[ "$SSH_AGENT_PID" = "" ]]; then
 	echo "Forking new ssh-agent into '$agent_rc'"
 	mkdir -p $football_logdir
