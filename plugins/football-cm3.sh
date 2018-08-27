@@ -149,11 +149,13 @@ function cm3_lv_remove
     return $rc
 }
 
-## date_lock
-# Don't enter critical sections at certain days of the week,
-# and/or during certain hours.
-# This is a regex matching against "date +%u_%H"
-date_lock="${date_lock:-}"
+## business_hours
+# When set, critical sections are only entered during certain
+# days of the week, and/or during certain hours.
+# This is a regex matching against "date +%u_%H".
+# Example regex: [1-5]_(0[8-9]|1[0-8])
+# This means Monday to Friday from 8 to 18 o'clock.
+business_hours="${business_hours:-}"
 
 function cm3_resource_locked
 {
@@ -171,11 +173,11 @@ function cm3_resource_locked
 	echo 1
 	return
     fi
-    # 3. date lock
-    if [[ "$date_lock" != "" ]]; then
+    # 3. obey business hours
+    if [[ "$business_hours" != "" ]]; then
 	local date_spec="$(date +%u_%H)"
-	if [[ "$date_spec" =~ $date_lock ]]; then
-	    echo "RESOURCE_LOCK $(date +%s) $(date) $date_spec =~ $date_lock LOCK" >> /dev/stderr
+	if ! [[ "$date_spec" =~ ^($business_hours)$ ]]; then
+	    echo "RESOURCE_LOCK $(date +%s) $(date) business_hours '$date_spec' !=~ '$business_hours' LOCK" >> /dev/stderr
 	    echo 1
 	    return
 	fi
