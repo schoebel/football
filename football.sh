@@ -1280,6 +1280,18 @@ function get_cpu_count
     echo "$cpu_count"
 }
 
+function get_ram_gb
+{
+    local host="$1"
+
+    local cmd="cat /proc/meminfo | grep '^MemTotal:'| grep -o '[0-9]\+' "
+    local ram_kb="$(remote "$host" "$cmd" 1)"
+    echo "Host '$host' has '$ram_kb' kiB RAM" >> /dev/stderr
+    local ram_gb="$(( ram_kb / 1024 / 1024 ))"
+    echo "Host '$host' has '$ram_gb' GiB RAM" >> /dev/stderr
+    echo "$ram_gb"
+}
+
 safeguard_delete_resource="${safeguard_delete_resource:-2}"
 
 function safeguard_deleted
@@ -2740,6 +2752,16 @@ function determine_space
     echo "Computed TARGET  filesystem space at $dst_primary: $target_space"
 }
 
+## shrink_min_ram_gb
+# When set, check that the target machines for shrinking
+# have enough RAM.
+# Rationale: even incremental rsync needs the Dentry cache of the
+# kernel. When there is not enough RAM, and when there are some millions
+# of inodes, the customer downtime may rise to some hours or even some days
+# instead of some minutes (only when the detnry+inode cache does not
+# fit into kernel memory <<<=== this is the cruscial point)
+shrink_min_ram_gb="${shrink_min_ram_gb:-0}" # GiB
+
 function check_shrinking
 {
     # works on global variables
@@ -2750,6 +2772,12 @@ function check_shrinking
     fi
     for host in $src_primary $secondary_list; do
 	check_vg_space "$host" "$target_space" "$res$tmp_suffix"
+	if (( shrink_min_ram_gb > 0 )); then
+	    local ram_gb="$(get_ram_gb "$host")"
+	    if (( ram_gb < shrink_min_ram_gb )); then
+		fail "Cannot shrink: host '$host' has less RAM than '$shrink_min_ram_gb' GiB" $illegal_status
+	    fi
+	fi
     done
 }
 
