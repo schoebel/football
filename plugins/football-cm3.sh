@@ -1552,15 +1552,6 @@ shaholin_customer_report_cmd="${shaholin_customer_report_cmd:-}"
 shaholin_src_cpus="${shaholin_src_cpus:-4}"
 shaholin_dst_cpus="${shaholin_dst_cpus:-32}"
 
-function cm3_get_cpu_count
-{
-    local host="$1"
-
-    local cmd="cat /proc/cpuinfo | grep '^processor' | wc -l"
-    local cpu_count="$(remote "$host" "$cmd" 1)"
-    echo "$cpu_count"
-}
-
 ## ip_renumber_cmd
 # Cross-call with another independent project.
 ip_renumber_cmd="${ip_renumber_cmd:-}"
@@ -1570,7 +1561,7 @@ function cm3_football_start
     if [[ "$res" = "" ]]; then
 	return
     fi
-    local cpu_count="$(cm3_get_cpu_count "$res")"
+    local cpu_count="$(get_cpu_count "$res")"
     echo "Host '$res' has $cpu_count CPUs"
     if (( cpu_count > 0 && cpu_count <= shaholin_src_cpus )); then
 	echo "Resource '$res' is on old hardware"
@@ -1599,7 +1590,7 @@ function cm3_football_finished
     local txt="$(echo "$@")"
 
     if [[ "$res" != "" ]] && [[ -r $football_logdir/shaholin-cpus.$res ]]; then
-	local cpu_count="$(cm3_get_cpu_count "$res")"
+	local cpu_count="$(get_cpu_count "$res")"
 	echo "Host '$res' has $cpu_count CPUs"
 	if (( cpu_count >= shaholin_dst_cpus )); then
 	    echo "Resource '$res' is on new hardware"

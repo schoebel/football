@@ -1271,6 +1271,15 @@ function get_vg
 
 # further helpers
 
+function get_cpu_count
+{
+    local host="$1"
+
+    local cmd="cat /proc/cpuinfo | grep '^processor' | wc -l"
+    local cpu_count="$(remote "$host" "$cmd" 1)"
+    echo "$cpu_count"
+}
+
 safeguard_delete_resource="${safeguard_delete_resource:-2}"
 
 function safeguard_deleted
