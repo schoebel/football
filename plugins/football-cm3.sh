@@ -1732,6 +1732,10 @@ function cm3_tell_action
 	ticket="$parsed"
 	echo "Last resort: use parsed ticket='$ticket'"
     fi
+    if [[ "$ticket" != "" ]]; then
+	local msg="SCREENER_LOCATION=$location,$ticket"
+	echo "$msg"
+    fi
     local phase="$operation"
     if (( use_type_for_ticket )); then
 	phase="$db_type"

@@ -253,9 +253,11 @@ function ticket_update_ticket
     fi
     if [[ "$ticket_phase" =~ migrate ]] && [[ "$ticket_for_migrate" != "" ]]; then
 	echo "Using ticket_for_migrate"
+	echo "SCREENER_LOCATION=$location,$ticket/$ticket_for_migrate"
 	ticket="$ticket_for_migrate" ticket_call_fn "$ticket_update_cmd"
     elif [[ "$ticket_phase" =~ shrink ]] && [[ "$ticket_for_shrink" != "" ]]; then
 	echo "Using ticket_for_shrink"
+	echo "SCREENER_LOCATION=$location,$ticket/$ticket_for_shrink"
 	ticket="$ticket_for_shrink" ticket_call_fn "$ticket_update_cmd"
     else
 	echo "Using default ticket '$ticket'"
