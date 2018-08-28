@@ -1111,10 +1111,14 @@ function log
     fi
 }
 
+declare -g phase="starting"
+
 function phase
 {
     local name="${1:-DEFAULT}"
     local txt="${2:-}"
+
+    phase="$name"
 
     echo ""
     echo ""
