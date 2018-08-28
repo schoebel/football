@@ -600,6 +600,41 @@ function has_status
     return 1
 }
 
+## screener_break_timeout
+# Avoid deadlocks by breaking a screener lock after this timeout has elapsed.
+# NOTICE: these type of locks are only intended for short-term locking.
+screener_break_timeout="${screener_break_timeout:-30}" # seconds
+
+function screener_lock
+{
+    local id="$1"
+
+    local lock_file="$screener_logdir/SCREENER_LOCK"
+    while ! (set -o noclobber; echo "$id" > $lock_file); do
+	local stamp="$(stat --format=%Y $lock_file)"
+	local now="$(date +%s)"
+	if [[ "$stamp" != "" ]] &&\
+	    (( stamp )) &&\
+	    (( stamp + screener_break_timeout < now )); then
+	    echo "stamp=$stamp"
+	    echo "now  =$now"
+	    echo "BREAKING LOCK '$lock_file'"
+	    rm -f $lock_file
+	    continue
+	fi
+	echo "Screener is locked... please wait"
+	sleep 10
+    done >> /dev/stderr
+}
+
+function screener_unlock
+{
+    local id="$1"
+
+    local lock_file="$screener_logdir/SCREENER_LOCK"
+    rm -f $lock_file
+}
+
 function change_status
 {
     local id="$1"
@@ -610,10 +645,14 @@ function change_status
 	return
     fi
 
+    screener_lock "$id"
+
     local src_log="$screener_logdir/$src_state/$id.log"
     local dst_log="$screener_logdir/$dst_state/$id.log"
 
     if ! [[ -e "$src_log" ]]; then
+	echo "Logfile '$src_log' does not exist" >> /dev/stderr
+	screener_unlock "$id"
 	return
     fi
 
@@ -633,6 +672,7 @@ function change_status
 	mv "$src_log" "$dst_log"
     fi
     rm -f $screener_logdir/$src_state/$id.wait*
+    screener_unlock "$id"
 }
 
 function get_status
