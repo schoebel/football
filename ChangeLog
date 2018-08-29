@@ -23,6 +23,13 @@ WIP-* : development branches, may be forced, my be rebased onto
 
 branch master
 
+Football-2.0-RC6
+	* Fix ssh-agent when dead.
+	* Improved business hour downtime handling.
+	* Better screener reporting (tickets).
+	* Screener locking against races.
+	* Several smaller fixes and improvements.
+
 Football-2.0-RC5
 	* Safeguard shrink customer downtime by extra probe rsync.
 	* Discriminate failure reasons: illegal, interrupted.
