@@ -69,10 +69,12 @@ function _report
     local cmd="$1"
     local txt="$2"
 
-    [[ "$cmd" = "" ]] && return
+    [[ "$cmd" = "" ]] && return 0
+    echo "Executing report command '$cmd'"
     (
 	eval "$cmd"
     )
+    echo "Report rc=$?"
 }
 
 function report_football_start
