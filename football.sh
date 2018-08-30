@@ -2167,9 +2167,10 @@ resource_pre_check="${resource_pre_check:-0}"
 function migrate_resource
 {
     local source_primary="$1"
-    local target_primary="$2"
-    local target_secondary="$3"
-    local res="$4"
+    local source_secondary="$2"
+    local target_primary="$3"
+    local target_secondary="$4"
+    local res="$5"
 
     if [[ "$source_primary" = "$target_primary" ]]; then
 	echo "Nothing to do: source primary '$source_primary' is equal to the target primary"
@@ -2204,6 +2205,15 @@ function migrate_resource
     call_hook report_downtime "$res" 1
     call_hook resource_stop "$source_primary" "$res"
     injection_point
+
+    # Safeguard against some "byzantinian errors" ...
+    local host
+    for host in $source_secondary; do
+	echo "Stopping also '$host' for safety"
+	if ! (call_hook resource_stop "$host" "$res"); then
+	    echo "Stop rc=$?, continuing anyway"
+	fi
+    done
 
     section "Migrate cluster config"
 
@@ -3399,7 +3409,7 @@ function migrate_finish
 {
     phase migrate_finish
 
-    migrate_resource "$primary" "$target_primary" "$target_secondary" "$res"
+    migrate_resource "$primary" "$secondary_list" "$target_primary" "$target_secondary" "$res"
     injection_point
 }
 
