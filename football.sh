@@ -3387,11 +3387,11 @@ function migrate_prepare
     migration_prepare "$res" "$primary" "$secondary_list" "$target_primary" "$target_secondary" "$extra_secondary"
 }
 
-function migrate_wait
+function wait_uptodate
 {
     local update_ticket="${1:-1}"
 
-    phase migrate_wait
+    phase wait_uptodate
 
     wait_resource_uptodate "$target_primary $target_secondary" "$res"
     if (( update_ticket )); then
@@ -3449,7 +3449,7 @@ function migrate
 	target_secondary=""
     fi
     migrate_prepare
-    migrate_wait
+    wait_uptodate
     migrate_finish
     if (( two_phase )) && [[ "$old_target_secondary" != "" ]]; then
 	echo "Migrating in two phases"
@@ -3650,12 +3650,12 @@ function migrate_plus_shrink
 	target_secondary="$old_secondary"
 	call_hook invalidate_caches
 	migrate_prepare
-	migrate_wait
+	wait_uptodate
 	migrate_finish
 	old_primary="$tmp_primary"
 	old_secondary=""
     else
-	migrate_wait 0
+	wait_uptodate 0
     fi
     migrate_cleanup "$old_primary $old_secondary" "$target_primary $target_secondary" "$res"
     cleanup_old_remains "$old_primary $old_secondary $target_primary $target_secondary" "$res"
@@ -3981,7 +3981,7 @@ migrate_prepare)
   migrate_prepare
   ;;
 migrate_wait)
-  migrate_wait
+  wait_uptodate
   ;;
 migrate_finish)
   migrate_check
@@ -4018,7 +4018,7 @@ shrink_cleanup)
 shrink)
   shrink_prepare
   shrink_finish
-  target_primary="$primary" target_secondary="$secondary_list" migrate_wait 0
+  target_primary="$primary" target_secondary="$secondary_list" wait_uptodate 0
   if (( wait_before_cleanup )); then
       wait_for_screener "$res" "cleanup" "delayed" "shrink $res"  "$wait_before_cleanup"
   fi
