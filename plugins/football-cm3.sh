@@ -138,7 +138,7 @@ function cm3_lv_remove
     # Assumption: old istores will never become targets anymore.
     # Therefore, keep old LVs as a backup.
     if [[ "$host" =~ istore ]]; then
-	remote "$host" "lvrename $lvremove_opt $path.old" 1
+	remote "$host" "lvrename $path $path.old" 1
     else
 	remote "$host" "lvremove $lvremove_opt $path" 1
     fi
