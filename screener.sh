@@ -794,7 +794,7 @@ function list_status
 	    if [[ "$status" = running ]] && [[ "$type" =~ waiting|delayed|condition ]]; then
 		continue
 	    fi
-	    if [[ "$status" != "$type" ]]; then
+	    if [[ "$status" != "$type" ]] && ! [[ "$type" =~ ^archive ]]; then
 		if [[ "$type" != "$real_type" ]]; then
 		    continue
 		fi
