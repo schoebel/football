@@ -23,6 +23,9 @@ WIP-* : development branches, may be forced, my be rebased onto
 
 branch master
 
+Football-2.0-RC7
+	* Several smaller fixes and improvements.
+
 Football-2.0-RC6
 	* Fix ssh-agent when dead.
 	* Improved business hour downtime handling.
