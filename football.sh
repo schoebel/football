@@ -2419,6 +2419,70 @@ function migrate_cleanup
 
 ######################################################################
 
+# Generic background progress reporting
+
+## enable_background_reporting
+# Progress reporting to screener.
+# Runs in the background, in parallel to forground processes
+# like rsync or tar.
+enable_background_reporting="${enable_background_reporting:-1}"
+
+declare -g progress_flag=""
+
+function start_background_progress_reporting
+{
+    local res="$1"
+    local host="$2"
+    local cmd="$3"
+
+    if (( !enable_background_reporting )); then
+	return
+    fi
+
+    # Multiple progress flags do not make sense in our use case.
+    if [[ "$progress_flag" != "" ]]; then
+	echo "Unexpected old value of progress_flag: '$progress_flag'"
+	rm -f "$progress_flag"
+	sleep 3
+    fi
+    echo "SCREENER_INFO="
+    progress_flag="$football_logdir/progress.$res"
+    register_unlink "$progress_flag"
+    echo "" > "$progress_flag"
+
+    local old_msg=""
+    while [[ -e "$progress_flag" ]]; do
+	verbose=0
+	local msg="$(remote "$host" "$cmd")" || break
+	(
+	    set -o noclobber
+	    echo "$(date +%s) $msg" >> "$progress_flag"
+	)
+	if [[ "$msg" != "$old_msg" ]]; then
+	    echo -e "\nSCREENER_INFO=$msg"
+	    old_msg="$msg"
+	fi
+	local i
+	for i in {1..60}; do
+	    [[ -e "$progress_flag" ]] || break
+	    sleep 1
+	done
+    done >> /dev/stderr 2>&1 &
+}
+
+function stop_background_progress_reporting
+{
+    if [[ "$progress_flag" != "" ]]; then
+	echo "Removing progress_flag: '$progress_flag'"
+	rm -f "$progress_flag"
+	unregister_unlink "$progress_flag"
+	progress_flag=""
+	wait
+    fi
+}
+
+######################################################################
+
 # Waiting for conditions
 
 ## condition_check_interval
@@ -3081,8 +3145,10 @@ function copy_data
 	cmd="set -o pipefail; $tar_cmd; rc=\$?; echo rc=\$rc; if (( rc >= 0 && rc <= $max_rc )); then exit 0; fi; echo FAIL; exit -1"
     fi
 
+    start_background_progress_reporting "$lv_name" "$hyper" "df $mnt$suffix | grep -o '[0-9]\+%'"
     remote "$hyper" "$cmd"
     injection_point
+    stop_background_progress_reporting
     transfer_quota "$hyper" "$lv_name" "$mnt" "$mnt$suffix"
     remote "$hyper" "sync"
 }
