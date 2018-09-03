@@ -1504,6 +1504,10 @@ monitis_downtime_duration="${monitis_downtime_duration:-60}" # Minutes
 # ShaHoLin-internal
 orwell_downtime_script="${orwell_downtime_script:-}"
 
+## orwell_tz
+# Deal with differences in clock timezones.
+orwell_tz="${orwell_tz:-Europe/Berlin}"
+
 ## orwell_downtime_duration
 # ShaHoLin-internal
 orwell_downtime_duration="${orwell_downtime_duration:-20}" # Minutes
@@ -1513,11 +1517,12 @@ function cm3_want_downtime
 {
     local resource="$1"
     local down="${2:-0}"
+    local comment="${3:-Tetris2 ${operation/+/-} $ticket}"
 
     if [[ "$monitis_downtime_script" = "" ]]; then
 	return
     fi
-    local cmd
+    local cmd=""
     if (( down )); then
 	local now="$(date "+%Y%m%d-%H:%M")"
 	cmd="$monitis_downtime_script set --start $now --duration $monitis_downtime_duration $resource.schlund.de"
@@ -1529,16 +1534,41 @@ function cm3_want_downtime
     echo "Script rc=$?"
 
     if (( down )); then
-	local now="$(date "+%d%m%Y %H:%M")"
-	cmd="$orwell_downtime_script set --start '$now' --duration $orwell_downtime_duration --host $resource.schlund.de"
+	local now="$(date +%s)"
+	local cmd=""
+	if [[ "$orwell_tz" != "" ]]; then
+	    cmd="TZ=\"$orwell_tz\" "
+	fi
+	cmd+="date --date=@\$now \"+%d/%m/%Y %H:%M\""
+	echo "Date command: '$cmd'"
+	local start_time="$(eval "$cmd")"
+	echo "Orwell-specific start time is '$start_time'"
+	(( now += orwell_downtime_duration * 60 ))
+	local end_time="$(eval "$cmd")"
+	echo "Orwell-specific end   time is '$end_time'"
+	cmd="$orwell_downtime_script hdowntime_add $resource.schlund.de '$start_time' '$end_time' '${comment//_/-}'"
+	if [[ "$orwell_downtime_script" != "" ]]; then
+	    echo "Calling Orwell script: $cmd"
+	    ($cmd)
+	    echo "Script rc=$?"
+	fi
     else
-	cmd="$orwell_downtime_script get $resource.schlund.de"
-    fi
-
-    if [[ "$orwell_downtime_script" != "" ]]; then
-	echo "Calling Orwell script: $cmd"
-	($cmd)
-	echo "Script rc=$?"
+	cmd="$orwell_downtime_script hdowntime_list"
+	if [[ "$orwell_downtime_script" != "" ]]; then
+	    echo "Calling Orwell script: $cmd"
+	    local result="$($cmd)"
+	    local rc=$?
+	    echo "Script rc=$rc"
+	    echo "$result"
+	    local id
+	    for id in $(echo "$result" | grep " $resource.schlund.de" | grep -o "^[0-9]\+"); do
+		echo "Canceling downtime id '$id'"
+		cmd="$orwell_downtime_script hdowntime_delete $id"
+		echo "Calling Orwell script: $cmd"
+		($cmd)
+		echo "Script rc=$?"
+	    done
+	fi
     fi
 
     call_hook update_ticket "" "downtime.$down"
