@@ -2117,9 +2117,16 @@ function wait_resource_uptodate
     for host in $host_list; do
 	remote "$host" "marsadm wait-cluster"
     done
-    (( verbose )) && echo "$(date) sync rests for '$host_list':"
+    local percent=-1
+    local size="$(verbose=0 remote "$host" "marsadm view-resource-size $res")"
+    if (( verbose )); then
+	echo "Resource '$res' size: '$size'"
+	echo "SCREENER_INFO="
+	echo "$(date) sync rests for '$host_list':"
+    fi
     local max_wait=15
     while true; do
+	local min_percent=101
 	(( verbose )) && echo -n "$(date) sync rests:"
 	local syncing=0
 	local total_rest=0
@@ -2146,8 +2153,20 @@ function wait_resource_uptodate
 		fi
 	    fi
 	    (( total_rest += rest ))
+	    if (( size > 0 )); then
+		local this_percent=$(( ( size - rest ) * 100 / size ))
+		if (( this_percent < min_percent )); then
+		    min_percent=$this_percent
+		fi
+	    fi
 	done
-	(( verbose )) && echo ""
+	if (( verbose )); then
+	    echo ""
+	    if (( min_percent != percent && min_percent <= 100 )); then
+		echo "SCREENER_INFO=$min_percent%"
+		percent=$min_percent
+	    fi
+	fi
 	(( !syncing )) && break
 	if (( total_rest > 0 )); then
 	    sleep 60
@@ -2156,7 +2175,10 @@ function wait_resource_uptodate
 	    sleep 1
 	fi
     done
-    (( verbose )) && echo "$(date) sync appears to have finished at '$host_list'"
+    if (( verbose )); then
+	echo "SCREENER_INFO="
+	echo "$(date) sync appears to have finished at '$host_list'"
+    fi
 }
 
 ## resource_pre_check
@@ -3970,6 +3992,9 @@ do_confirm
 
 # main: start the internal actions
 echo "START $(date) main_pid=$main_pid"
+
+echo "SCREENER_LOCATION="
+echo "SCREENER_INFO="
 
 if [[ "${operation//-/_}" =~ $start_regex ]]; then
     call_hook update_ticket "$operation" general.running
