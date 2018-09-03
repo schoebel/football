@@ -814,6 +814,10 @@ function list_status
 	    if [[ "$location" != "" ]]; then
 		title+=" ($location)"
 	    fi
+	    local info=""$(grep -o "^SCREENER_INFO=.*" < "$name" | tail -1 | cut -d= -f2-)""
+	    if [[ "$info" != "" ]]; then
+		title+=" [$info]"
+	    fi
 	    local critical_section=""$(grep -o "^SCREENER_CRITICAL=[0-9]" < "$name" | tail -1 | cut -d= -f2-)""
 	    if (( critical_section )); then
 		status+=" in-critical-section"
