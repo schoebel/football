@@ -239,10 +239,6 @@ function ticket_update_ticket
 	comment="$(eval "echo \"$comment\"")"
 	echo "Evaluated comment is '$comment'"
     fi
-    if [[ "$comment" = "" ]]; then
-	echo "Comment is empty."
-	return
-    fi
 
     if [[ "$ticket_state" =~ running ]]; then
 	fail_ticket_phase="$ticket_phase"
@@ -251,6 +247,12 @@ function ticket_update_ticket
 	fail_ticket_phase=""
 	fail_ticket_state=""
     fi
+
+    if [[ "$comment" = "" ]]; then
+	echo "Comment is empty."
+	return
+    fi
+
     if [[ "$ticket_phase" =~ migrate ]] && [[ "$ticket_for_migrate" != "" ]]; then
 	echo "Using ticket_for_migrate"
 	echo "SCREENER_LOCATION=$location,$ticket/$ticket_for_migrate"
@@ -283,7 +285,7 @@ function ticket_football_failed
 	    ticket_state="${fail_ticket_state//failed/illegal}"
 	fi
 	echo "Reporting failure into ticket: '$fail_ticket_phase' '$ticket_state'"
-	ticket_update_ticket "$fail_ticket_phase" "$ticket_state"
+	ticket_update_ticket "$fail_ticket_phase" "general.$ticket_state"
 	fail_ticket_phase=""
 	fail_ticket_state=""
     fi
