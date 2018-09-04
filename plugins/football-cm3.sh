@@ -1512,6 +1512,12 @@ orwell_tz="${orwell_tz:-Europe/Berlin}"
 # ShaHoLin-internal
 orwell_downtime_duration="${orwell_downtime_duration:-20}" # Minutes
 
+## orwell_workaround_sleep
+# Workaround for a race condition in Orwell.
+# Try to ensure that another check has been executed before
+# the downtime is removed.
+# 0 = dont remove the downtime at all.
+orwell_workaround_sleep="${orwell_workaround_sleep:-300}" # Seconds
 
 function cm3_want_downtime
 {
@@ -1552,7 +1558,7 @@ function cm3_want_downtime
 	    ($cmd)
 	    echo "Script rc=$?"
 	fi
-    else
+    elif (( orwell_workaround_sleep > 0 )); then
 	cmd="$orwell_downtime_script hdowntime_list"
 	if [[ "$orwell_downtime_script" != "" ]]; then
 	    echo "Calling Orwell script: $cmd"
@@ -1560,8 +1566,13 @@ function cm3_want_downtime
 	    local rc=$?
 	    echo "Script rc=$rc"
 	    echo "$result"
+	    local id_list="$(echo "$result" | grep " $resource.schlund.de" | grep -o "^[0-9]\+")"
+	    if [[ "$id_list" != "" ]]; then
+		echo "Workaround: sleeping for '$orwell_workaround_sleep' seconds"
+		sleep $orwell_workaround_sleep
+	    fi
 	    local id
-	    for id in $(echo "$result" | grep " $resource.schlund.de" | grep -o "^[0-9]\+"); do
+	    for id in $id_list; do
 		echo "Canceling downtime id '$id'"
 		cmd="$orwell_downtime_script hdowntime_delete $id"
 		echo "Calling Orwell script: $cmd"
