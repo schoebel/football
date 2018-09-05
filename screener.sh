@@ -1056,14 +1056,15 @@ function screen_lock
 
 function screen_purge
 {
-    local period="${1:-$screener_log_purge_period}"
-    local args="${2:--ls -exec $(if (( screener_log_purge_archive )); then echo "mv {} $screener_logdir/archive/"; else echo "rm -f {}"; fi) \;}"
+    local dir="${1:-$screener_logdir}"
+    local period="${2:-$screener_log_purge_period}"
+    local args="${3:--ls -exec $(if (( screener_log_purge_archive )); then echo "bash -c \"mkdir -p $dir/archive/\\\$(dirname {}) && mv {} $dir/archive/\\\$(dirname {})/\""; else echo "rm -f {}"; fi) \;}"
 
     if [[ "$period" = "" ]] || (( period <= 0 )); then
 	echo "No purge period given."
 	return
     fi
-    local cmd="find \"$screener_logdir/\" -path \"$screener_logdir/archive\" -prune -o -name \"*.log\" -mtime +$period ${args}"
+    local cmd="(cd \"$dir/\" && find . -path \"./archive\" -prune -o -type f -mtime +$period ${args})"
     if (( verbose )); then
 	echo "$cmd"
     fi
