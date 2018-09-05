@@ -1525,6 +1525,8 @@ function cm3_want_downtime
     local down="${2:-0}"
     local comment="${3:-Tetris2 ${operation/+/-} $ticket}"
 
+    call_hook update_ticket "" "downtime.$down"
+
     if [[ "$monitis_downtime_script" = "" ]]; then
 	return
     fi
@@ -1581,8 +1583,6 @@ function cm3_want_downtime
 	    done
 	fi
     fi
-
-    call_hook update_ticket "" "downtime.$down"
 }
 
 ## shaholin_customer_report_cmd
