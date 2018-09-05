@@ -4193,6 +4193,11 @@ if [[ "${operation//-/_}" =~ $finished_regex ]]; then
     operation=""
 fi
 
+if [[ -d "$football_logdir" ]]; then
+    echo "Purging '$football_logdir'"
+    ($(dirname "$0")/./screener.sh purge "$football_logdir")
+fi
+
 echo "DONE $(date)"
 } 2>&1 | {
     for sig in $trap_signals; do
