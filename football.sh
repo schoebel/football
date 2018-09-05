@@ -1536,6 +1536,38 @@ function reconf
     source_glob "$football_includes" "football-*.reconf"  "Reconf" 0
 }
 
+function compute_timeout_after
+{
+    local res="$1"
+    local host_list="$2"
+    local timeout="${3:-$wait_timeout}"
+
+    local last_stamp=0
+    local host
+    for host in $host_list; do
+	local cmd="stat --printf='%Y' /mars/resource-$res/data-$host"
+	local stamp="$(remote "$host" "$cmd" 1)"
+	echo "Host '$host' resource '$res' was created at '$stamp'"
+	if (( stamp > last_stamp )); then
+	    last_stamp="$stamp"
+	fi
+    done >> /dev/stderr 2>&1
+    local now="$(date +%s)"
+    if (( !last_stamp )); then
+	echo "Using the full timeout '$timeout'" >> /dev/stderr
+	echo "$timeout"
+	return
+    fi
+    local diff=$(( timeout - ( now - last_stamp ) / 60 ))
+    echo "Computed rest timeout: '$diff' minutes" >> /dev/stderr
+    if (( diff <= 0 )); then
+	# Shortest possible wait is 1 minute (0 would disable it completely)
+	echo "1"
+    else
+	echo "$diff"
+    fi
+}
+
 function wait_for_screener
 {
     local res="$1"
@@ -2363,7 +2395,7 @@ function migrate_cleanup
 	    "$situation" \
 	    "delayed" \
 	    "cleanup at '$host_list' excluding '$host_list2'" \
-	    "$wait_before_cleanup"
+	    "$(compute_timeout_after "$res" "$new_host_list $host_list $host_list2" "$wait_before_cleanup")"
 	cleanup_asked=1
     fi
 
@@ -3394,7 +3426,7 @@ function cleanup_old_remains
 		    "cleanup" \
 		    "delayed" \
 		    "cleanup old remains at '$host_list'" \
-		    "$wait_before_cleanup"
+		    "$(compute_timeout_after "$lv_name" "$host_list" "$wait_before_cleanup")"
 		cleanup_asked=1
 	    fi
 	    make_tmp_umount "$host" "$host" "$lv_name" "$tmp_suffix"
@@ -4111,7 +4143,7 @@ shrink)
   shrink_finish
   target_primary="$primary" target_secondary="$secondary_list" wait_uptodate 0
   if (( wait_before_cleanup )); then
-      wait_for_screener "$res" "cleanup" "delayed" "shrink $res"  "$wait_before_cleanup"
+      wait_for_screener "$res" "cleanup" "delayed" "shrink $res" "$(compute_timeout_after "$res" "$primary $secondary_list" "$wait_before_cleanup")"
   fi
   shrink_cleanup
   ;;

@@ -51,8 +51,13 @@ enable_shrink_waiting="${enable_shrink_waiting:-0}"
 # By setting this, you can delay the cleanup operations for some time.
 # This way, you are keeping the old LV contents as a kind of "backup"
 # for some limited time.
-# HINT: dont set to wait_before_cleanuplarge values, because it can
-# seriously slow down Football.
+#
+# HINT1: dont set wait_before_cleanup to very large values, because it can
+#   seriously slow down Football.
+#
+# HINT2: the waiting time starts when the last MARS replica was created.
+#   Only when the syncing times are _smaller_ than this value,
+#   an _additional_ delay will be produced.
 enable_cleanup_delayed="${enable_cleanup_delayed:-0}"
 wait_before_cleanup="${wait_before_cleanup:-180}" # Minutes
 
