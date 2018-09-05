@@ -1587,6 +1587,7 @@ function wait_for_screener
     echo "$enable is on"
 
     local hot_round=0
+    local lock_round=0
     local total_round=0
     local reset_freq=0
     if (( $enable )); then
@@ -1601,6 +1602,12 @@ function wait_for_screener
 	fi
 
 	local locked="$(verbose=0 call_hook resource_locked "$res")"
+	if (( locked )); then
+	    (( lock_round++ ))
+	    if (( ! ( total_round % 10 ) )); then
+		echo "SCREENER_INFO=locked for $lock_round minutes"
+	    fi
+	fi
 	local poll=0
 	if (( $enable )); then
 	    poll="$(verbose=0 call_hook poll_wait "$res" "$mode" 0 $reset_freq)"
@@ -1644,6 +1651,7 @@ function wait_for_screener
 	    break
 	fi
     done
+    echo "SCREENER_TIME_LOCKED=$lock_round"
     if [[ "$lapse_cmd" != "" ]]; then
 	$lapse_cmd "$@"
     fi
