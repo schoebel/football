@@ -245,7 +245,6 @@ function ticket_update_ticket
 	fail_ticket_state="${ticket_state//running/failed}"
     else
 	fail_ticket_phase=""
-	fail_ticket_state=""
     fi
 
     if [[ "$comment" = "" ]]; then
@@ -272,9 +271,18 @@ function ticket_football_failed
 {
     local status="$1"
 
-    echo "Ticket for exit status=$status"
-    if [[ "$fail_ticket_phase" != "" ]]; then
+    echo "sub_operation='$sub_operation' fail_ticket_phase='$fail_ticket_phase' fail_ticket_state='$fail_ticket_state'"
+    local ticket_phase="${fail_ticket_phase//[+_]*/}"
+    if [[ "$sub_operation" != "" ]]; then
+	ticket_phase="$sub_operation"
+    fi
+    echo "Ticket ticket_phase='$ticket_phase' for exit status=$status"
+    if [[ "$ticket_phase" != "" ]]; then
 	local ticket_state="$fail_ticket_state"
+	echo "ticket_state='$ticket_state'"
+	if [[ "$ticket_state" = "" ]]; then
+	    local ticket_state="failed"
+	fi
 	if (( status == critical_status )); then
 	    ticket_state="${fail_ticket_state//failed/critical}"
 	elif (( status == serious_status )); then
@@ -284,10 +292,8 @@ function ticket_football_failed
 	elif (( status == illegal_status )); then
 	    ticket_state="${fail_ticket_state//failed/illegal}"
 	fi
-	echo "Reporting failure into ticket: '$fail_ticket_phase' '$ticket_state'"
-	ticket_update_ticket "$fail_ticket_phase" "general.$ticket_state"
-	fail_ticket_phase=""
-	fail_ticket_state=""
+	echo "Reporting failure into ticket: '$ticket_phase' '$ticket_state'"
+	ticket_update_ticket "$ticket_phase" "general.${ticket_state//general./}"
     fi
     return 0
 }

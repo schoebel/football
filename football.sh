@@ -3738,6 +3738,7 @@ function migrate_plus_shrink
 	fi
     fi
     local old_target_secondary="$target_secondary"
+    sub_operation="migrate"
     migrate_check
     if [[ "$primary" != "$target_primary" ]] && [[ "$primary" != "$target_secondary" ]]; then
 	if (( migrate_two_phase || migrate_always_all )); then
@@ -3767,6 +3768,7 @@ function migrate_plus_shrink
     else
 	echo "Skipping the 'migrate' part, continue with 'shrink'"
     fi
+    sub_operation="shrink"
     target_hyper="$(get_hyper "$res")" || fail "New hypervisor hostname canot be determined"
     echo "SWAP $old_primary[$old_hyper] $old_secondary => $target_primary[$target_hyper] $target_secondary"
     hyper="$target_hyper"
@@ -3786,6 +3788,7 @@ function migrate_plus_shrink
 	target_primary="$old_primary"
 	target_secondary="$old_secondary"
 	call_hook invalidate_caches
+	sub_operation="migrate"
 	migrate_prepare
 	wait_uptodate
 	migrate_finish
@@ -3929,6 +3932,8 @@ fi
 for sig in $trap_signals; do
     trap "trap_context=\"$sig MAIN\" fail" $sig
 done
+
+sub_operation="${operation//[+_]*/}"
 
 call_hook pre_init "${argv[@]}"
 
