@@ -822,6 +822,12 @@ function list_status
 	    if (( critical_section )); then
 		status+=" in-critical-section"
 	    fi
+	    if [[ "$type" =~ critical|serious|illegal|failed ]]; then
+		local cause="$(grep '^FAILURE (' < "$name" | tail -1 | cut -d: -f2- | sed 's/^ *//')"
+		if [[ "$cause" != "" ]]; then
+		    status+=" <$cause>"
+		fi
+	    fi
 	    echo "$stamp  $id: $title $status"
 	done |\
 	    sort -n |\
