@@ -1920,6 +1920,7 @@ function check_vg_space
     local host="$1"
     local min_size="$2"
     local lv_name="$3"
+    local suffix="$4"
 
     [[ "$host" = "" ]] && return
 
@@ -1927,9 +1928,17 @@ function check_vg_space
     local rest="$(remote "$host" "vgs --noheadings -o \"vg_free\" --units k $vg_name" | sed 's/\.[0-9]\+//' | sed 's/k//')" || fail "cannot determine VG rest space"
     echo "$vg_name REST space on '$host' : $rest"
     if [[ "$lv_name" != "" ]]; then
-	local dev="/dev/$vg_name/$lv_name"
+	local dev="/dev/$vg_name/$lv_name$suffix"
 	if remote "$host" "[[ -b $dev ]]" 1; then
 	    echo "Device $dev already exists at '$host'"
+	    return
+	fi
+	local cmd="lvs | grep '$lv_name$shrink_suffix_old' | wc -l"
+	local present="$(remote "$host" "$cmd" 1)"
+	echo "Backup LV '$lv_name$shrink_suffix_old' present at host $host: '$present'"
+	if (( present )); then
+	    echo "Assuming that shrink is already done at '$host'."
+	    echo "If you want to start another shrink, first cleanup the old backup LV '$lv_name$shrink_suffix_old'."
 	    return
 	fi
     fi
@@ -2916,7 +2925,7 @@ function check_shrinking
     fi
     for host in $list; do
 	echo "Checking shrink precondtions at '$host'"
-	check_vg_space "$host" "$target_space" "$res$tmp_suffix"
+	check_vg_space "$host" "$target_space" "$res" "$tmp_suffix"
 	if (( shrink_min_ram_gb > 0 )); then
 	    local ram_gb="$(get_ram_gb "$host")"
 	    if (( ram_gb < shrink_min_ram_gb )); then
