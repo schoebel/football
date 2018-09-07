@@ -23,6 +23,11 @@ WIP-* : development branches, may be forced, my be rebased onto
 
 branch master
 
+Football-2.0-RC10
+	* New screener category 'timeouted'.
+	* Report failure reason in ./screener.sh list.
+	* Several smaller fixes and improvements.
+
 Football-2.0-RC9
 	* Speed up overall throughput by _relative_ wait_before_cleanup
 	  where syncing times are subtracted now.
