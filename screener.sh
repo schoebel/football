@@ -667,7 +667,6 @@ function change_status
     echo "CHANGE $id: $src_state => $dst_state" >> /dev/stderr
 
     call_hook leave  "$id" "$src_state"
-    call_hook notify "$id" "$dst_state"
 
     if [[ -e "$dst_log" ]]; then
 	echo "Appending $src_log to $dst_log" >> /dev/stderr
@@ -680,6 +679,7 @@ function change_status
 	mv "$src_log" "$dst_log"
     fi
     rm -f $screener_logdir/$src_state/$id.wait*
+    call_hook notify "$id" "$dst_state"
     screener_unlock "$id"
 }
 
