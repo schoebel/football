@@ -149,7 +149,8 @@ drop_shell="${drop_shell:-0}"
 
 ## session_timeout
 # Detect hanging sessions when they don't produce any output anymore
-# for a longer time. Hanging sessions are then marked as failed or critical.
+# for a longer time. Hanging sessions are then marked as either
+# 'timeout' or 'critical'.
 session_timeout="${session_timeout:-$(( 3600 * 3 ))}" # seconds
 
 ## screener_logdir or logdir
@@ -232,6 +233,11 @@ interrupted_status="${interrupted_status:-190}"
 # This is the "magic" exit code indicating an illegal command
 # (e.g. syntax error, illegal arguments, etc)
 illegal_status="${illegal_status:-191}"
+
+## timeouted_status
+# This is the "magic" internal code indicating a
+# hanging session (see $session_timeout).
+timeouted_status="${timeouted_status:-195}"
 
 ## less_cmd
 # Used at $0 less $id
@@ -378,6 +384,7 @@ Synopsis:
   $0 list-waiting
   $0 list-interrupted
   $0 list-illegal
+  $0 list-timeouted
   $0 list-failed
   $0 list-critical
   $0 list-serious
@@ -530,6 +537,7 @@ Cleanup / bookkeeping:
   $0 clear-serious <screen_id>
   $0 clear-interrupted <screen_id>
   $0 clear-illegal <screen_id>
+  $0 clear-timeouted <screen_id>
   $0 clear-failed  <screen_id>
     Mark the status as "done" and move the logfile away.
 
@@ -578,7 +586,7 @@ function fail
 
 # status handling
 
-status_dir_list="running critical serious interrupted illegal failed done"
+status_dir_list="running critical serious interrupted illegal failed timeouted done"
 
 for i in $status_dir_list archive; do
     mkdir -p "$screener_logdir/$i"
@@ -706,7 +714,7 @@ function get_status
 		    done
 		    echo "" >> "$check"
 		    echo "SCREENER_TIMEOUT $(date +%s) $(date)" >> "$check"
-		    status="-1"
+		    status="$timeouted_status"
 		    (( critical_section )) && status="$critical_status"
 		fi
 	    fi
@@ -721,6 +729,7 @@ function get_status
 		change_status "$id" failed done
 		change_status "$id" critical done
 		change_status "$id" serious done
+		change_status "$id" timeouted done
 		change_status "$id" interrupted done
 		change_status "$id" illegal done
 		change_status "$id" running done
@@ -732,6 +741,8 @@ function get_status
 		change_status "$id" running interrupted
 	    elif (( status == illegal_status )); then
 		change_status "$id" running illegal
+	    elif (( status == timeouted_status )); then
+		change_status "$id" running timeouted
 	    else
 		change_status "$id" running failed
 	    fi
@@ -1342,7 +1353,12 @@ list-interrupted)
 
 list-illegal)
     screen_cron
-    list_status illgegal
+    list_status illegal
+    ;;
+
+list-timeouted)
+    screen_cron
+    list_status timeouted
     ;;
 
 list-done)
@@ -1410,6 +1426,11 @@ clear-interrupted)
 clear-illegal)
     screen_cron
     change_status "$id" illegal done
+    ;;
+
+clear-timeouted)
+    screen_cron
+    change_status "$id" timeouted done
     ;;
 
 purge)
