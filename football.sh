@@ -665,6 +665,9 @@ function fail
 	echo "RECURSIVE_FAILURE (now $status): $txt" >> /dev/stderr
 	status="$recursive_failure"
 	failure_handler=""
+    elif [[ "$BASHPID" != "$main_pid" ]]; then
+	echo "SUB_FAILURE (now $status): $txt" >> /dev/stderr
+	failure_handler=""
     elif (( critical_section && critical_status )); then
 	echo "FAILURE_IN_CRITICAL_SECTION" >> /dev/stderr
     else
