@@ -288,7 +288,7 @@ ssh_auth="${ssh_auth:-}"
 # IMPORTANT: some intermediate progress report is absolutely needed,
 # because otherwise a false-positive TIMEOUT may be assumed when
 # no output is generated for several hours.
-rsync_opt="${rsync_opt:- -aSH --info=progress2,STATS}"
+rsync_opt="${rsync_opt:- -aH --inplace --info=progress2,STATS}"
 
 ## rsync_opt_prepare
 # Additional rsync options for preparation and updating
