@@ -2523,10 +2523,14 @@ function stop_background_progress_reporting
 {
     if [[ "$progress_flag" != "" ]]; then
 	echo "Removing progress_flag: '$progress_flag'"
-	rm -f "$progress_flag"
+	while [[ -e "$progress_flag" ]]; do
+	    rm -f "$progress_flag"
+	    sleep 3
+	done
 	unregister_unlink "$progress_flag"
-	progress_flag=""
+	rm -f "$progress_flag"
 	wait
+	progress_flag=""
     fi
 }
 
