@@ -791,6 +791,15 @@ function list_status
 	if (( show_stamp )) && [[ "$types" =~ " " ]]; then
 	    echo "List of $type:"
 	fi
+	if [[ "$type" = archive ]]; then
+	    (
+		cd $screener_logdir/archive/ &&\
+		    find . -name "*.log" |\
+		    sed 's/^\.\///' |\
+		    sort
+	    )
+	    continue
+	fi
 	local real_type="$type"
 	[[ "$type" =~ waiting|delayed|condition ]] && real_type=running
 	local name
