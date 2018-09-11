@@ -697,9 +697,10 @@ function fail
 	lock_hosts
 	run_local_cleanup_operations
 	echo ""
-	echo "EXIT status=$status"
+	echo "EXIT pid=$BASHPID status=$status"
     fi >> /dev/stderr
     unset exit
+    set -e
     exit $status
 }
 
@@ -728,7 +729,9 @@ function exit
 	run_local_cleanup_operations
     fi >> /dev/stderr
     echo ""
-    echo "EXIT status=$status" >> /dev/stderr
+    echo "EXIT pid=$BASHPID status=$status" >> /dev/stderr
+    unset exit
+    set -e
     exit $status
 }
 
@@ -4218,9 +4221,11 @@ if [[ -d "$football_logdir" ]]; then
 fi
 
 echo "DONE $(date)"
+exit 0
 } 2>&1 | {
     for sig in $trap_signals; do
 	trap "" $sig
     done
     log "$football_logdir" "logs$args_info.$start_stamp.$user_name.log"
 }
+exit $?
