@@ -2499,6 +2499,7 @@ function start_background_progress_reporting
     fi
     echo "SCREENER_INFO="
     progress_flag="$football_logdir/progress.$res"
+    progress_log="$football_logdir/progress.log"
     register_unlink "$progress_flag"
     echo "" > "$progress_flag"
 
@@ -2506,10 +2507,7 @@ function start_background_progress_reporting
     while [[ -e "$progress_flag" ]]; do
 	verbose=0
 	local msg="$(remote "$host" "$cmd")" || break
-	(
-	    set -o noclobber
-	    echo "$(date +%s) $msg" >> "$progress_flag"
-	)
+	echo "$(date +%s) $res $msg" >> "$progress_log"
 	if [[ "$msg" != "$old_msg" ]]; then
 	    echo -e "\nSCREENER_INFO=$msg"
 	    old_msg="$msg"
