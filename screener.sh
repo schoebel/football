@@ -891,12 +891,12 @@ function screen_exists
 {
     local id="$1"
 
-    local session="$(screen -list | grep -o "[0-9]\+.$id" | head -1)"
+    local session="$(screen -list | grep -o "[0-9]\+.$id\s" | head -1 | sed 's/\s//g')"
     if [[ "$session" = "" ]]; then
 	warn "Session '$id' not found."
 	return 1
     fi
-    echo "$session"
+    echo $session
     return 0
 }
 
