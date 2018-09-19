@@ -1559,17 +1559,23 @@ function cm3_want_downtime
 	    echo "Calling Orwell script: $cmd"
 	    ($cmd)
 	    echo "Script rc=$?"
+	    register_cleanup "orwell" "call_hook want_downtime $res 0"
 	fi
-    elif (( orwell_workaround_sleep > 0 )); then
+    else
 	cmd="$orwell_downtime_script hdowntime_list"
 	if [[ "$orwell_downtime_script" != "" ]]; then
+	    unregister_cleanup "orwell"
 	    echo "Calling Orwell script: $cmd"
 	    local result="$($cmd)"
 	    local rc=$?
 	    echo "Script rc=$rc"
 	    echo "$result"
 	    local id_list="$(echo "$result" | grep " $resource.schlund.de" | grep -o "^[0-9]\+")"
-	    if [[ "$id_list" != "" ]]; then
+	    # Do the workaround sleep only when there is no failure.
+	    # Otherwise Orwell is re-enabled ASAP.
+	    if (( orwell_workaround_sleep > 0 )) &&\
+		(( !exit_status )) &&\
+		[[ "$id_list" != "" ]]; then
 		echo "Workaround: sleeping for '$orwell_workaround_sleep' seconds"
 		sleep $orwell_workaround_sleep
 	    fi

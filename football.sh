@@ -627,6 +627,7 @@ EOF
 
 failure_handler=""
 recursive_failure=0
+exit_status=0
 
 function warn
 {
@@ -690,6 +691,7 @@ function fail
 	echo "FAILING with status=$status" >> /dev/stderr
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
+	exit_status="$status"
 	if (( call_finished )); then
 	    (call_hook football_failed "$status" "$0" "$@")
 	fi
@@ -721,6 +723,7 @@ function exit
 	fail "exit $status" "$status"
     fi
     if [[ "$BASHPID" = "$main_pid" ]]; then
+	exit_status="$status"
 	if [[ "${operation//-/_}" =~ $finished_regex ]]; then
 	    call_hook 0 football_finished "$status" "$0" "$@"
 	fi
@@ -789,6 +792,23 @@ function timeout_cmd
 
 declare -g -A local_cleanup_operations=()
 
+function register_cleanup
+{
+    local id="$1"
+    local cmd="$2"
+
+    local_cleanup_operations[$id]="$cmd"
+}
+
+function unregister_cleanup
+{
+    local id="$1"
+
+    local_cleanup_operations[$id]=""
+    unset local_cleanup_operations[$id]
+    unset -n local_cleanup_operations[$id]
+}
+
 function register_unlink
 {
     local path="$1"
@@ -800,9 +820,7 @@ function unregister_unlink
 {
     local path="$1"
 
-    local_cleanup_operations[$path]=""
-    unset local_cleanup_operations[$path]
-    unset -n local_cleanup_operations[$path]
+    unregister_cleanup "$path"
 }
 
 function run_local_cleanup_operations
