@@ -491,7 +491,9 @@ ip_magic="${ip_magic:-1}"
 # a BigCluster constisting of several thousands of machines.
 # When a future version of mars0.1b.y (or 0.2.y) will allow this,
 # this can be disabled.
-do_split_cluster="${do_split_cluster:-1}"
+# do_split_cluster >= 2 means that the resulting MARS clusters should
+# not exceed these number of members, when possible.
+do_split_cluster="${do_split_cluster:-2}"
 
 function cm3_merge_cluster
 {
@@ -544,14 +546,30 @@ function cm3_split_cluster
 	for (( retry=0; retry < 3; retry++ )); do
 	    for host in $host_list; do
 		sleep 5
+		echo "Running split-cluster at '$host'"
 		if remote "$host" "marsadm split-cluster --ssh-port=24" 1; then
 		    ok=1
-		    break
+		    if (( do_split_cluster > 1 )); then
+			# Ensure that nobody has > do_split_cluster members
+			local host2
+			for host2 in $host_list; do
+			    local count="$(remote "$host2" "ls -l /mars/ips/ip-* | wc -l" 1)"
+			    echo "Host '$host2' has '$count' cluster members"
+			    if (( count > do_split_cluster )); then
+				ok=0
+			    fi
+			done
+		    fi
+		    if (( ok )); then
+			echo "Split-cluster seems OK at '$host'"
+			break
+		    fi
 		fi
 		old_host="$host"
 		remote "$host" "marsadm wait-cluster" 1
 	    done
 	    (( ok )) && break
+	    echo "Re-trying split-cluster once again at '$host_list'"
 	    # try to fix asymmetric clusters by mutual re-merging
 	    for host in $host_list; do
 		sleep 5
