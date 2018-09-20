@@ -539,9 +539,26 @@ function cm3_split_cluster
 {
     local host_list="$1"
 
+    local host
+    # Check for senseless split-cluster
+    if (( do_split_cluster > 1 )); then
+	local max_members=$(
+	    for host in $host_list; do
+		remote "$host" "marsadm view-resource-members all" 1
+	    done |\
+		grep -o "\[[0-9]\+" |\
+		grep -o "[0-9]\+" |\
+		sort -n |\
+		tail -1
+	)
+	echo "Maximum resource members at '$host_list' is '$max_members'"
+	if (( max_members > do_split_cluster )); then
+	    echo "EXCEEDING $do_split_cluster: actually running split-cluster would be senseless"
+	    return
+	fi
+    fi
     if (( do_split_cluster )); then
 	local ok=0
-	local host
 	local old_host
 	local retry
 	for (( retry=0; retry < 3; retry++ )); do
