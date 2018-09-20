@@ -1371,6 +1371,20 @@ function get_full_list
     echo $full_list
 }
 
+function check_startable
+{
+    local res="$1"
+    local host_list="$2"
+
+    echo "Checking whether '$res' is startable at '$host_list'"
+    local host
+    for host in $host_list; do
+	if [[ "$(call_hook is_startable "$host" "$res" | tee -a /dev/stderr | tail -1)" != "1" ]]; then
+	    fail "Startup of '$res' is reported as not possible at '$host'"
+	fi
+    done
+}
+
 function handover
 {
     local target="$1"
@@ -1401,9 +1415,11 @@ function handover
 
     wait_for_logfile "$res" "$target"
 
-    call_hook want_downtime "$res" 1
-
     lock_hosts 1 "$current $target" ALL
+
+    check_startable "$res" "$current $target"
+
+    call_hook want_downtime "$res" 1
 
     failure_handler=failure_restart_vm
     failure_restart_primary="$current $target $primary $secondary_list $target_primary $target_secondary"
@@ -2285,12 +2301,15 @@ function migrate_resource
 
     wait_for_logfile "$res" "$target_primary"
 
+    local full_list="$(get_full_list "$source_primary $target_primary $target_secondary")"
+    lock_hosts 1 "$full_list" ALL
+
+    check_startable "$res" "$source_primary"
+    check_startable "" "$target_primary"
+
     call_hook want_downtime "$res" 1
     call_hook tell_action migrate finish
     call_hook update_ticket migrate_finish running
-
-    local full_list="$(get_full_list "$source_primary $target_primary $target_secondary")"
-    lock_hosts 1 "$full_list" ALL
 
     failure_handler=failure_restart_vm
     failure_restart_primary="$source_primary $secondary_list"
@@ -3301,11 +3320,13 @@ function hot_phase
 	fi
     fi
 
+    lock_hosts 1 "$full_list" ALL
+
+    check_startable "$res" "$primary"
+
     call_hook want_downtime "$res" 1
     call_hook tell_action shrink finish
     call_hook update_ticket shrink_finish running
-
-    lock_hosts 1 "$full_list" ALL
 
     failure_handler=failure_restart_vm
     failure_restart_primary="$primary $secondary_list"
