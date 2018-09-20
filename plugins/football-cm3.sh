@@ -1905,6 +1905,10 @@ function cm3_rewrite_args
 	    fi
 	    local members="$(echo $(_get_members "$arg") )"
 	    echo "Cluster '$arg' has members '$members'"
+	    if [[ "$members" =~ istore ]]; then
+		members="$(echo $(_get_members "$arg" | grep istore) )"
+		echo "Cluster '$arg' has istore members '$members'"
+	    fi
 	    if [[ "$members" = "" ]]; then
 		fail "Cluster members of '$arg' cannot be determined" "$illegal_status"
 	    fi
