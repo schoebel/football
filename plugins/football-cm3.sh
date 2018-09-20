@@ -675,6 +675,8 @@ function cm3_check_host
 {
     local host_list="$1"
 
+    lock_hosts 1 "$host_list" ALL
+
     local host
     for host in $host_list; do
 	echo "Checking host '$host'..."
@@ -717,6 +719,9 @@ function cm3_check_host
 	    fail "MARS kernel module is not loaded at $host" "$illegal_status"
 	fi
 	check_needed "mars kernel module" "[a-z]*[0-9.]*[a-z]*" "$mars_version" "$needed_mars"
+	if [[ "$(cm3_is_startable "$host" "" | tee -a /dev/stderr | tail -1)" != "1" ]]; then
+	    fail "Clustermanager cm3 appears to not work at '$host'"
+	fi
     done
 
     echo "Checking that max_cluster_size=$max_cluster_size will not be exceeded at $host_list"
@@ -774,6 +779,7 @@ function cm3_check_host
 	    migrate_two_phase="$two_phase"
 	fi
     fi
+    lock_hosts
 }
 
 ###########################################
@@ -1074,6 +1080,15 @@ function cm3_is_startable
     local host="$1"
     local res="$2"
 
+    if [[ "$res" = "" ]]; then
+	# Check whether the clustermanager works at all...
+	if remote "$host" "cm3 -us" 1; then
+	    echo "1"
+	else
+	    echo "0"
+	fi
+	return
+    fi
     if (remote "$host" "cm3 -us") | grep -q " $res "; then
 	echo "1"
     else
