@@ -463,6 +463,7 @@ function cm3_ssh_indirect
     local cluster="$(_get_cluster_name "$host" 2>/dev/null)"
     local hyper
     for hyper in $(_get_members "$cluster" 2>/dev/null); do
+	[[ "$hyper" =~ icpu ]] || continue
 	local hyper_port="$(cm3_ssh_port "$hyper" 2>/dev/null)"
 	if cm3_check_port "$hyper" "${hyper_port##* }" 1>&2; then
 	    local found="$(ssh $hyper_port $ssh_auth $ssh_opt "root@$hyper" "lxc-ls -1" | grep "^$host$")"
