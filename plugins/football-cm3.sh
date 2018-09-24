@@ -731,7 +731,7 @@ function cm3_check_host
 	echo "Installed marsadm version at $host: '$marsadm_version'"
 	check_needed "marsadm" "[0-9]\." "$marsadm_version" "$needed_marsadm"
 
-	local mars_version="$(remote "$host" "cat /sys/module/mars/version" | awk '{ print $1; }')"
+	local mars_version="$(remote "$host" "cat /sys/module/mars/version" | awk '{ print $1; }' | cut -d- -f1 | sed 's/^mars//')"
 	if [[ "$mars_version" = "" ]]; then
 	    fail "MARS kernel module is not loaded at $host" "$illegal_status"
 	fi
