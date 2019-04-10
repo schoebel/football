@@ -1997,11 +1997,14 @@ function check_vg_space
 
 function get_stripe_extra
 {
+    local host="$1"
+    local vg_name="$2"
+
     # compute LVM stripe number
-    local stripes="$(remote "$host" "vgs" | grep '$vg_name ' | awk '{ print $2; }')"
+    local stripes="$(remote "$host" "vgs | grep '$vg_name ' | awk '{ print \$2; }'")"
     local extra=""
     if (( stripes > 1 )); then
-	echo "Using $stripes LVM stripes" >> /dev/stderr
+	echo "Using $stripes LVM stripes for $host with vg $vg_name :: $extra " >> /dev/stderr
 	extra="-i $stripes"
     fi
     echo "$extra"
@@ -2028,7 +2031,7 @@ function create_migration_space
     local extra="$(get_stripe_extra "$host" "$vg_name")"
 
     # do it
-    remote "$host" "lvcreate -L ${size}k $etxra -n $lv_name $vg_name"
+    remote "$host" "lvcreate -L ${size}k $extra -n $lv_name $vg_name"
     injection_point
     sleep 1
 }
