@@ -627,7 +627,7 @@ function cm3_join_resource
 
 # This is deliberately not documented.
 needed_marsadm="${needed_marsadm:-2.1 1.1}"
-needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0}"
+needed_mars="${needed_mars:-0.1stable49 0.1abeta0 mars0.1abeta0 0.1astable68}"
 max_cluster_size="${max_cluster_size:-4}"
 max_syncs="${max_syncs:-0}"
 
