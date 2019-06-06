@@ -882,7 +882,10 @@ function _get_cluster_name
     [[ "$host" =~ icpu ]] && url="/nodes/$host.schlund.de"
     [[ "$host" =~ istore ]] && url="/storagehosts/$host.schlund.de"
     clustertool GET "$url" |\
-	grep -o "cluster[0-9]\+" |\
+	json_pp |\
+	grep -o '"cluster" : ".*"' |\
+	cut -d: -f2 |\
+	sed 's/[" ]//g' |\
 	sort -u
 }
 
